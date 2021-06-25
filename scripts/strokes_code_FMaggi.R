@@ -569,6 +569,8 @@ stroke_data %>%
 # TRAIN and TEST SET ########
 # _______________________########
 
+# Creating train and test set #####
+
 # We will use 80% of data to train, and 20% of data to test.
 set.seed(1970, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1970)`
 test_index <- createDataPartition(y = stroke_data$stroke, times = 1, p = 0.2,
@@ -578,28 +580,37 @@ train_stroke <- stroke_data[-test_index,]
 
 test_stroke <- stroke_data[test_index,]
 
+# PreProcessing: Centering and Scaling numerical variables #####
 
-# Percent of strokes = 1 in train set ####
+# Review #####
+
+preProcValues <- preProcess(train_stroke, method = c("center", "scale"))
+
+train_stroke_trans <- predict(preProcValues, train_stroke)
+
+test_stroke_trans_trans <- predict(preProcValues, test_stroke)
+
+# __Percent of strokes = 1 in train set ####
 mean(train_stroke$stroke == "stroke") 
 # 0.0425261
 
-# Percent of strokes = 1 in test set ####
+# __Percent of strokes = 1 in test set ####
 mean(test_stroke$stroke == "stroke") 
 # 0.04257486
 
-# Percent of males in train set ####
+# __Percent of males in train set ####
 mean(train_stroke$gender == "Male")
 
-# Percent of females in train set ####
+# __Percent of females in train set ####
 mean(train_stroke$gender == "Female")
 
-# Percent of males in test set ####
+# __Percent of males in test set ####
 mean(test_stroke$gender == "Male")
 
-# Percent of females in test set ####
+# __Percent of females in test set ####
 mean(test_stroke$gender == "Female")
 
-# Distribution of observations by age train #####
+# __Distribution of observations by age train #####
 train_stroke %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -620,7 +631,7 @@ train_stroke %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Distribution of observations by age test #####
+# __Distribution of observations by age test #####
 test_stroke %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -641,7 +652,7 @@ test_stroke %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Percent of strokes by rounded age train ####  
+# __Percent of strokes by rounded age train ####  
 
 train_stroke %>% 
   group_by(age = round(age, -1)) %>%
@@ -662,7 +673,7 @@ train_stroke %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Percent of strokes by rounded age test ####  
+# __Percent of strokes by rounded age test ####  
 
 test_stroke %>% 
   group_by(age = round(age, -1)) %>%
@@ -683,7 +694,7 @@ test_stroke %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Summary table by age (rounded nearest 10) train #####
+# __Summary table by age (rounded nearest 10) train #####
 # age, total of observations, number of strokes, percent of strokes
 
 n_train <- nrow(train_stroke)
@@ -695,7 +706,7 @@ train_stroke %>%
   unique() %>%
   knitr::kable()
 
-# Summary table by age (rounded nearest 10) test #####
+# __Summary table by age (rounded nearest 10) test #####
 # age, total of observations, number of strokes, percent of strokes
 
 n_test <- nrow(test_stroke)
@@ -707,7 +718,7 @@ test_stroke %>%
   unique() %>%
   knitr::kable()
 
-# Summary table by heart_disease train #####
+# __Summary table by heart_disease train #####
 # heart_disease, total of observations, number of strokes, percent of strokes
 train_stroke %>% 
   group_by(heart_disease) %>%
@@ -716,7 +727,7 @@ train_stroke %>%
   unique() %>%
   knitr::kable()
 
-# Summary table by heart_disease train test #####
+# __Summary table by heart_disease train test #####
 # heart_disease, total of observations, number of strokes, percent of strokes
 test_stroke %>% 
   group_by(heart_disease) %>%
@@ -734,7 +745,7 @@ train_stroke %>%
   unique() %>%
   knitr::kable()
 
-# Summary table by avg_glucose_level (round to nearest ten) test #####
+# __Summary table by avg_glucose_level (round to nearest ten) test #####
 # avg_glucose_level, total of observations, number of strokes, percent of strokes
 test_stroke %>% 
   group_by(round(avg_glucose_level, -1)) %>%
@@ -925,6 +936,7 @@ rpart.plot(inf_tree_cp0.001_num)
 
 # RPART native#######
 # Recursive Partitioning and Regression Trees ######
+
 # Default_tree #####
 y_hat_default_tree <- predict(default_tree, test_stroke, type = "class")
 
@@ -939,8 +951,6 @@ confusionMatrix(y_hat_default_tree,
 
 cm_default_tree <- confusionMatrix(y_hat_default_tree, test_stroke$stroke, positive = "stroke")
 cm_default_tree
-
-F_meas(y_hat_default_tree, test_stroke$stroke)
 
 # __Accuracy : 0.9572 ####
 # __Sensitivity : 0.0000 ####
@@ -1737,6 +1747,12 @@ default_tree_under <- rpart(stroke ~ .,
                            data = train_stroke_under)
 rpart.plot(default_tree_under)
 
+print(default_tree_under)
+plotcp(default_tree_under)
+summary(default_tree_under)
+default_tree_under$cp
+
+
 y_hat_default_tree_under <- predict(default_tree_under, test_stroke, type = "class")
 
 confusionMatrix(y_hat_default_tree_under,
@@ -1774,6 +1790,14 @@ gini_tree_cp0.001_under <- rpart(stroke ~.,
                                 data = train_stroke_under, 
                                 parms=list(split=c("gini")),
                                 cp = 0.001)
+
+print(gini_tree_cp0.001_under)
+plotcp(gini_tree_cp0.001_under)
+summary(gini_tree_cp0.001_under)
+gini_tree_cp0.001_under$cp
+
+
+gini_tree_cp0.001_under$cp
 
 y_hat_gini_tree_cp0.001_under <- predict(gini_tree_cp0.001_under, test_stroke, type = "class")
 
@@ -3124,42 +3148,24 @@ F_meas(confusionMatrix(y_hat_naiveBayes_better,
 # Better - NAIVE BAYES #####
 
 # _______________________########
-# TRAIN CONTROL CROSS VAL ########
+# Ensemble ########
 # _______________________########
 
-control <- trainControl(method="repeatedcv", number=10, repeats=3)
+y_hat_models_ensemble <- data.frame(over_mda = y_hat_mda_over, 
+                              over_fda = y_hat_fda_over,
+                              under_default_tree = y_hat_default_tree_under,
+                              under_gini_cp001 = y_hat_gini_tree_cp0.001_under,
+                              both_default_tree = y_hat_default_tree_both,
+                              both_rpart_caret = y_hat_caret_tree_both,
+                              both_rda = y_hat_rda_both$class,
+                              better_nnet = as.factor(y_hat_nnet_better),
+                              better_naiveBayes = y_hat_naiveBayes_better)
+
+str(y_hat_models_ensemble)
+head(y_hat_models_ensemble)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
 # _______________________########
 # Resources ########
 # _______________________########
@@ -3185,6 +3191,7 @@ control <- trainControl(method="repeatedcv", number=10, repeats=3)
 # https://machinelearningmastery.com/non-linear-classification-in-r/
 # http://www.personal.psu.edu/jol2/course/stat597e/notes2/mda.pdf
 # https://www.r-bloggers.com/2013/07/a-brief-look-at-mixture-discriminant-analysis/
+# https://discuss.datasciencedojo.com/t/how-can-i-perform-cross-validation-using-rpart-package-on-titanic-dataset/138
 
 
 # Ver comentarios
