@@ -82,10 +82,10 @@ str(stroke_data)
 head(stroke_data)
 
 # Categorical and binari data as.factors #####
-# BMI as.numeric (NAs intro by coercion)
+# BMI as.numeric (NAs introduced by coercion)
 
 stroke_data <- stroke_data %>% 
-  filter(!bmi == "N/A")  %>% 
+  filter(!bmi == "N/A")  %>% # filtering N/A
   mutate(gender = as.factor(gender), 
          ever_married = as.factor(ever_married),
          work_type = as.factor(work_type),
@@ -110,8 +110,6 @@ n <- nrow(stroke_data)
 # Number of strokes = 1 in data set ####
 sum(stroke_data$stroke == 1) 
 # 209
-
-4909 + 209
 
 # Number of strokes = 0 in data set ####
 sum(stroke_data$stroke == "no_stroke") 
@@ -2666,7 +2664,7 @@ F_meas(confusionMatrix(y_hat_naiveBayes_both,
 # __F_meas, beta = 3 : 0.4836193 #####
 
 # _______________________######## 
-# Beter estimates ######
+# Better estimates ######
 # _______________________######## 
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
@@ -3109,6 +3107,21 @@ F_meas(confusionMatrix(y_hat_naiveBayes_better,
 # __Specificity : 0.77872  ##### 
 # __Balanced Accuracy : 0.75841 ##### 
 # __F_meas, beta = 3 : 0.5024311 #####
+
+# _______________________########
+# SELECTED MODELS ########
+# F_meas, beta = 3 >= 50  ########
+# _______________________########
+
+# Over - MDA #####
+# Over - FDA ##### 
+# Under - Default Tree #####
+# Under - Gini Tree CP = 0.001 #####
+# Both - Default Tree #####
+# Both - Rpart Caret #####
+# Both - RDA #####
+# Better - NNET #####
+# Better - NAIVE BAYES #####
 
 # _______________________########
 # TRAIN CONTROL CROSS VAL ########
