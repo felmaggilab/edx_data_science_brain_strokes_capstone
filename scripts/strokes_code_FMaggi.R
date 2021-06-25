@@ -46,6 +46,9 @@ library(nnet)
 if(!require(kernlab)) install.packages("kernlab", repos = "http://cran.us.r-project.org")
 library(kernlab)
 
+if(!require(e1071)) install.packages("e1071", repos = "http://cran.us.r-project.org")
+library(e1071)
+
 library(viridis)
 library(patchwork)
 library(hrbrthemes)
@@ -65,7 +68,7 @@ library(igraph)
 library(rpart)
 library(rpart.plot)
 library(caret)
-library(e1071)
+
 library(pROC)
 
 # _______________________########
@@ -923,7 +926,7 @@ rpart.plot(inf_tree_cp0.001_num)
 # Imbalanced ########
 # _______________________########
 
-# RPART #######
+# RPART native#######
 # Recursive Partitioning and Regression Trees ######
 # Default_tree #####
 y_hat_default_tree <- predict(default_tree, test_stroke, type = "class")
@@ -1107,7 +1110,7 @@ cm_y_hat_inf_tree_cp0.0023
 # __Balanced Accuracy : 0.50978  #####
 
 
-# Caret rpart tree ######
+# RPART caret ######
 
 train_caret_tree <- train(stroke ~ ., method = "rpart", data = train_stroke)
 
@@ -1129,10 +1132,10 @@ cm_caret_tree
 # __Balanced Accuracy : 0.5000  #####
 
 
-# _______________________########
 # LDA ########
+# Linear Discriminant Analisis ########
 # it generates several warnings! ####
-# _______________________########
+
 
 train_lda <- train(stroke ~ ., method = "lda", data = train_stroke)
 
@@ -1153,9 +1156,8 @@ cm_lda
 # Specificity : 0.9840  ####
 # Balanced Accuracy : 0.5634 ####
 
-# _______________________########
 # KNN ########
-# _______________________########
+# K-Nearest-Neighbor #######
 
 train_knn <- train(stroke ~ ., method = "knn", 
                    data = train_stroke)
@@ -1183,11 +1185,8 @@ cm_knn
 # Specificity : 0.9968 ####
 # Balanced Accuracy : 0.4984  ####
 
-# _______________________########
 # RANDOM FOREST ########
-# _______________________########
-
-# it takes time!
+# it takes time! ######
 
 train_rf <- train(stroke ~ ., method = "rf", 
                   data = train_stroke)
@@ -1289,13 +1288,12 @@ cm_y_hat_gini_tree_cp0.001_over
 # __Specificity : 0.99149    ####
 # __Balanced Accuracy : 0.53146   ####
 
-# Lost Matrix Tree 5 to 1 ####
-# Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
+# Default Gini Tree & Cost Matrix 3 to 1 #####
 
 cost_matrix_tree_over <- rpart(stroke ~ ., 
                                data = train_stroke_over,
                                parms=list(
-                                 loss=matrix(c(0,1,5,0), # A false negative is 5 times worse than a false positive
+                                 loss=matrix(c(0,1,3,0), # A false negative is 5 times worse than a false positive
                                              byrow=TRUE,
                                              nrow=2)))
 
@@ -1319,10 +1317,10 @@ cm_cost_matrix_tree_over <- confusionMatrix(y_hat_cost_matrix_tree_over, test_st
                                             positive = "stroke")
 cm_cost_matrix_tree_over
 
-# __Accuracy : 0.4369  ##### 
-# __Sensitivity : 0.97619 !!!! #####         
-# __Specificity : 0.41277   #####  
-# __Balanced Accuracy : 0.69448  #####  
+# __Accuracy : 0.5642  ##### 
+# __Sensitivity : 0.88095 !!!! #####         
+# __Specificity : 0.55000 #####  
+# __Balanced Accuracy : 0.71548 #####  
 
 # RPART caret ####
 
@@ -1383,7 +1381,7 @@ train_knn3_over <- knn3(stroke ~ .,
 knn3_over <- predict(train_knn3_over, test_stroke)
 
 y_hat_knn3_over <- as.data.frame(knn3_over) %>% 
-  mutate(stroke_1 = ifelse(stroke >= 0.5, "stroke", "no_stroke" )) %>% 
+  mutate(stroke_1 = ifelse(stroke >= 0.05, "stroke", "no_stroke" )) %>% 
   pull(stroke_1) %>% 
   as_factor() %>% 
   relevel(ref = "no_stroke")
@@ -1404,13 +1402,28 @@ cm_knn3_over <- confusionMatrix(y_hat_knn3_over, test_stroke$stroke,
                                positive = "stroke")
 cm_knn3_over
 
-# # __Accuracy : 0.8228  ##### 
-# # __Sensitivity : 0.47619  #####         
-# # __Specificity : 0.83830  ##### 
-# # __Balanced Accuracy : 0.65724  ##### 
+# RANDOM FOREST ########
+# it takes time! ######
 
+train_rf_over <- train(stroke ~ ., method = "rf", 
+                  data = train_stroke_over)
 
+y_hat_rf_over <- predict(train_rf_over, test_stroke, type = "raw")
 
+confusionMatrix(y_hat_rf_over, test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_rf_over, test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_rf_over <- confusionMatrix(y_hat_rf_over, test_stroke$stroke, 
+                         positive = "stroke")
+cm_rf_over
+
+# # __Accuracy : 0.946   ##### 
+# # __Sensitivity : 0.00000  #####         
+# # __Specificity : 0.98830   ##### 
+# # __Balanced Accuracy : 0.49415  ##### 
 
 # MDA ######
 # Mixture Discriminant Analysis ####
@@ -1472,7 +1485,7 @@ cm_rda_over
 # __Specificity : 0.70213 #####
 # __Balanced Accuracy : 0.75583 #####
 
-# NNet: great variability !!!#####
+# NNET: great variability !!!#####
 # Neural Network ####
 
 if(!require(nnet)) install.packages("nnet", repos = "http://cran.us.r-project.org")
@@ -1541,7 +1554,7 @@ cm_fda_over
 # Support Vector Machine #####
 
 set.seed(2, sample.kind="Rounding") 
-# Results are random variables# Results are random variables
+# Results are random variables 
 
 train_ksvm_over <- ksvm(stroke ~., data = train_stroke_over)
 
@@ -1568,10 +1581,32 @@ cm_ksvm_over
 # __Specificity : 0.79894  #####  
 # __Balanced Accuracy : 0.72090  #####
 
+# NAIVE BAYES ######
 
+train_naiveBayes_over <- naiveBayes(stroke ~., data = train_stroke_over)
 
+y_hat_naiveBayes_over <- predict(train_naiveBayes_over, test_stroke)
 
+confusionMatrix(y_hat_naiveBayes_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
+confusionMatrix(y_hat_naiveBayes_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_naiveBayes_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_naiveBayes_over <- confusionMatrix(y_hat_naiveBayes_over, test_stroke$stroke, 
+                                positive = "stroke")
+cm_naiveBayes_over
+
+# __Accuracy : 0.7566  ##### 
+# __Sensitivity : 0.73810  #####         
+# __Specificity : 0.75745  ##### 
+# __Balanced Accuracy : 0.74777  ##### 
 
 
 # _______________________######## 
@@ -1583,7 +1618,7 @@ prop.table(table(train_stroke$stroke))
 
 n_under = sum(train_stroke$stroke == "stroke")
 
-set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+set.seed(1, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
 # Accuracy and balanced accuracy strongly depends on this ramdom process.
 
 train_stroke_under <- ovun.sample(stroke ~ ., data = train_stroke, method = "under", N = n_under*2)$data
