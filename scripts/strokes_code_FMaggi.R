@@ -2594,56 +2594,38 @@ train_mda_better <- mda(stroke ~., data = train_stroke_better)
 
 y_hat_mda_better <- predict(train_mda_better, test_stroke)
 
-confusionMatrix(y_hat_mda_better,
-                test_stroke$stroke, 
-                positive = "stroke")$overall["Accuracy"]
-
-confusionMatrix(y_hat_mda_better,
-                test_stroke$stroke, 
-                positive = "stroke")$overall
-
-confusionMatrix(y_hat_mda_better,
-                test_stroke$stroke, 
-                positive = "stroke")$table
-
-cm_mda_better <- confusionMatrix(y_hat_mda_better, test_stroke$stroke, 
-                               positive = "stroke")
-cm_mda_better
-
-# __Accuracy : 0.7098 ##### 
-# __Sensitivity : 0.69048 #####        
-# __Specificity : 0.71064 ##### 
-# __Balanced Accuracy : 0.70056 ##### 
+# Error in maxdist[l] <- x[l, i] : 
+  # NAs no son permitidos en asignaciones subscritas
 
 # RDA #####
 # Regularized Discriminant Analysis  #####
 
 set.seed(1970, sample.kind="Rounding") 
 
-train_rda_both <- rda(stroke ~., data = train_stroke_both)
+train_rda_better <- rda(stroke ~., data = train_stroke_better)
 
-y_hat_rda_both <- predict(train_rda_both, test_stroke)
+y_hat_rda_better <- predict(train_rda_better, test_stroke)
 
-confusionMatrix(y_hat_rda_both$class,
+confusionMatrix(y_hat_rda_better$class,
                 test_stroke$stroke, 
                 positive = "stroke")$overall["Accuracy"]
 
-confusionMatrix(y_hat_rda_both$class,
+confusionMatrix(y_hat_rda_better$class,
                 test_stroke$stroke, 
                 positive = "stroke")$overall
 
-confusionMatrix(y_hat_rda_both$class,
+confusionMatrix(y_hat_rda_better$class,
                 test_stroke$stroke, 
                 positive = "stroke")$table
 
-cm_rda_both <- confusionMatrix(y_hat_rda_both$class, test_stroke$stroke, 
+cm_rda_better<- confusionMatrix(y_hat_rda_better$class, test_stroke$stroke, 
                                positive = "stroke")
-cm_rda_both
+cm_rda_better
 
-# __Accuracy : 0.722 ##### 
+# __Accuracy : 0.6853 ##### 
 # __Sensitivity : 0.80952 #####        
-# __Specificity : 0.71809 #####
-# __Balanced Accuracy : 0.76380 #####
+# __Specificity : 0.67979 #####
+# __Balanced Accuracy : 0.74466 #####
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -2651,60 +2633,41 @@ cm_rda_both
 set.seed(2, sample.kind="Rounding") 
 # Results are random variables# Results are random variables: great variability!!!
 
-train_nnet_both <- nnet(stroke ~., data = train_stroke_both, size=4, 
+train_nnet_better <- nnet(stroke ~., data = train_stroke_better, size=4, 
                         decay=0.0001, maxit=500)
 
-y_hat_nnet_both <- predict(train_nnet_both, test_stroke, type = "class")
+y_hat_nnet_better <- predict(train_nnet_better, test_stroke, type = "class")
 
-confusionMatrix(as.factor(y_hat_nnet_both),
+confusionMatrix(as.factor(y_hat_nnet_better),
                 test_stroke$stroke, 
-                positive = "stroke")$overall["Accuracy"]
+                positive = "stroke")$overall["Accuracy"] 
 
-confusionMatrix(as.factor(y_hat_nnet_both),
+confusionMatrix(as.factor(y_hat_nnet_better),
                 test_stroke$stroke, 
                 positive = "stroke")$overall
 
-confusionMatrix(as.factor(y_hat_nnet_both),
+confusionMatrix(as.factor(y_hat_nnet_better),
                 test_stroke$stroke, 
                 positive = "stroke")$table
 
-cm_nnet_both <- confusionMatrix(as.factor(y_hat_nnet_both), test_stroke$stroke, 
+cm_nnet_better <- confusionMatrix(as.factor(y_hat_nnet_better), test_stroke$stroke, 
                                 positive = "stroke")
-cm_nnet_both
+cm_nnet_better
 
-# __Accuracy : 0.7882  ####
-# __Sensitivity : 0.71429  ####        
-# __Specificity : 0.79149 ####
-# __Balanced Accuracy : 0.75289 ####
+# __Accuracy : 0.7179  ####
+# __Sensitivity : 0.80952  ####        
+# __Specificity : 0.71383 ####
+# __Balanced Accuracy : 0.76168 ####
 
-# FDA #####
+# FDA: Error #####
 # Flexible Discriminant Analysis #####
 
-train_fda_both <- fda(stroke ~., data = train_stroke_both)
+train_fda_better <- fda(stroke ~., data = train_stroke_better)
 
-y_hat_fda_both <- predict(train_fda_both, test_stroke)
+y_hat_fda_better <- predict(train_fda_better, test_stroke)
 
-confusionMatrix(y_hat_fda_both,
-                test_stroke$stroke, 
-                positive = "stroke")$overall["Accuracy"]
-
-confusionMatrix(y_hat_fda_both,
-                test_stroke$stroke, 
-                positive = "stroke")$overall
-
-confusionMatrix(y_hat_fda_both,
-                test_stroke$stroke, 
-                positive = "stroke")$table
-
-cm_fda_both <- confusionMatrix(y_hat_fda_both, test_stroke$stroke, 
-                               positive = "stroke")
-cm_fda_both
-
-# __Accuracy : 0.721 #####
-# __Sensitivity : 0.76190    #####      
-# __Specificity : 0.71915  ##### 
-# __Balanced Accuracy : 0.74053 #####
-
+# Error in mindist[l] <- ndist[l] : 
+  # NAs no son permitidos en asignaciones subscritas
 
 # KSVM ######
 # Support Vector Machine #####
@@ -2712,58 +2675,57 @@ cm_fda_both
 set.seed(2, sample.kind="Rounding") 
 # Results are random variables 
 
-train_ksvm_both <- ksvm(stroke ~., data = train_stroke_both)
+train_ksvm_better <- ksvm(stroke ~., data = train_stroke_better)
 
-y_hat_ksvm_both <- predict(train_ksvm_both, test_stroke)
+y_hat_ksvm_better <- predict(train_ksvm_better, test_stroke)
 
-confusionMatrix(y_hat_ksvm_both,
+confusionMatrix(y_hat_ksvm_better,
                 test_stroke$stroke, 
                 positive = "stroke")$overall["Accuracy"]
 
-confusionMatrix(y_hat_ksvm_both,
+confusionMatrix(y_hat_ksvm_better,
                 test_stroke$stroke, 
                 positive = "stroke")$overall
 
-confusionMatrix(y_hat_ksvm_both,
+confusionMatrix(y_hat_ksvm_better,
                 test_stroke$stroke, 
                 positive = "stroke")$table
 
-cm_ksvm_both <- confusionMatrix(y_hat_ksvm_both, test_stroke$stroke, 
+cm_ksvm_better <- confusionMatrix(y_hat_ksvm_better, test_stroke$stroke, 
                                 positive = "stroke")
-cm_ksvm_both
+cm_ksvm_better
 
-# __Accuracy : 0.7729 ##### 
-# __Sensitivity : 0.69048 #####      
-# __Specificity : 0.77660  #####  
-# __Balanced Accuracy : 0.73354 #####
+# __Accuracy : 0.7464  ##### 
+# __Sensitivity : 0.71429 #####      
+# __Specificity : 0.74787  #####  
+# __Balanced Accuracy : 0.73108 #####
 
 # NAIVE BAYES ######
 
-train_naiveBayes_both <- naiveBayes(stroke ~., data = train_stroke_both)
+train_naiveBayes_better <- naiveBayes(stroke ~., data = train_stroke_better)
 
-y_hat_naiveBayes_both <- predict(train_naiveBayes_both, test_stroke)
+y_hat_naiveBayes_better <- predict(train_naiveBayes_better, test_stroke)
 
-confusionMatrix(y_hat_naiveBayes_both,
+confusionMatrix(y_hat_naiveBayes_better,
                 test_stroke$stroke, 
                 positive = "stroke")$overall["Accuracy"]
 
-confusionMatrix(y_hat_naiveBayes_both,
+confusionMatrix(y_hat_naiveBayes_better,
                 test_stroke$stroke, 
                 positive = "stroke")$overall
 
-confusionMatrix(y_hat_naiveBayes_both,
+confusionMatrix(y_hat_naiveBayes_better,
                 test_stroke$stroke, 
                 positive = "stroke")$table
 
-cm_naiveBayes_both <- confusionMatrix(y_hat_naiveBayes_both, test_stroke$stroke, 
+cm_naiveBayes_better <- confusionMatrix(y_hat_naiveBayes_better, test_stroke$stroke, 
                                       positive = "stroke")
-cm_naiveBayes_both
+cm_naiveBayes_better
 
-# __Accuracy : 0.7525  ##### 
+# __Accuracy : 0.777  ##### 
 # __Sensitivity : 0.73810  #####         
-# __Specificity : 0.75319   ##### 
-# __Balanced Accuracy : 0.74564  ##### 
-
+# __Specificity : 0.77872  ##### 
+# __Balanced Accuracy : 0.75841 ##### 
 
 # _______________________########
 # TRAIN CONTROL CROSS VAL ########
