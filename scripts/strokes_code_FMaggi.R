@@ -1251,11 +1251,18 @@ cm_default_tree_over <- confusionMatrix(y_hat_default_tree_over, test_stroke$str
                                         positive = "stroke")
 cm_default_tree_over
 
+F_meas(confusionMatrix(y_hat_default_tree_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7342  ####
 # __Sensitivity : 0.7619   ####         
 # __Specificity : 0.7330 ####
 # __Balanced Accuracy : 0.747  ####
-
+# __F_meas, beta = 3 : 0.484115   ####
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
@@ -1282,10 +1289,18 @@ cm_gini_tree_cp0.001_over <- confusionMatrix(y_hat_gini_tree_cp0.001_over, test_
                                                    positive = "stroke")
 cm_gini_tree_cp0.001_over
 
+F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.8982  ####
 # __Sensitivity : 0.42857 ####       
 # __Specificity : 0.91915 ####
 # __Balanced Accuracy : 0.67386 ####
+# __F_meas, beta = 3 : 0.3813559  ####
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 
@@ -1316,10 +1331,19 @@ cm_cost_matrix_tree_over <- confusionMatrix(y_hat_cost_matrix_tree_over, test_st
                                             positive = "stroke")
 cm_cost_matrix_tree_over
 
+F_meas(confusionMatrix(y_hat_cost_matrix_tree_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.5642  ##### 
 # __Sensitivity : 0.88095 !!!! #####         
 # __Specificity : 0.55000 #####  
-# __Balanced Accuracy : 0.71548 #####  
+# __Balanced Accuracy : 0.71548 #####
+# __F_meas, beta = 3 : 0.3813559 - its has sense?? #####
+# We are appliying a cost matrix
 
 # RPART caret ####
 
@@ -1327,20 +1351,30 @@ train_caret_tree_over <- train(stroke ~ ., method = "rpart", data = train_stroke
 
 y_hat_caret_tree_over <- predict(train_caret_tree_over, test_stroke)
 
-confusionMatrix(y_hat_caret_tree_over, test_stroke$stroke, 
+confusionMatrix(y_hat_caret_tree_over, 
+                test_stroke$stroke, 
                 positive = "stroke")$overall["Accuracy"]
 
-confusionMatrix(y_hat_caret_tree_over, test_stroke$stroke, 
+confusionMatrix(y_hat_caret_tree_over, 
+                test_stroke$stroke, 
                 positive = "stroke")$table
 
 cm_caret_tree_over <- confusionMatrix(y_hat_caret_tree_over, test_stroke$stroke, 
                                       positive = "stroke")
 cm_caret_tree_over
 
-## __Accuracy : 0.7179   ####
-## __Sensitivity : 0.7619      ####        
-## __Specificity : 0.7160   ####
-## __Balanced Accuracy : 0.7389    ####
+F_meas(confusionMatrix(y_hat_caret_tree_over, 
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.7179   ####
+# __Sensitivity : 0.7619      ####        
+# __Specificity : 0.7160   ####
+# __Balanced Accuracy : 0.7389    ####
+# __F_meas, beta = 3 : 0.4726736 #####
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
@@ -1366,12 +1400,20 @@ cm_knn_over <- confusionMatrix(y_hat_knn_over, test_stroke$stroke,
                                positive = "stroke")
 cm_knn_over
 
-# # __Accuracy : 0.8228  ##### 
-# # __Sensitivity : 0.47619  #####         
-# # __Specificity : 0.83830  ##### 
-# # __Balanced Accuracy : 0.65724  ##### 
+F_meas(confusionMatrix(y_hat_knn_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
 
-# KNN3 native: cutoff >= 0.5#######
+# __Accuracy : 0.8228  ##### 
+# __Sensitivity : 0.47619  #####         
+# __Specificity : 0.83830  ##### 
+# __Balanced Accuracy : 0.65724  #####
+# __F_meas, beta = 3 : 0.3636364 #####
+
+# KNN3 native: cutoff >= 0.5 #######
 
 train_knn3_over <- knn3(stroke ~ ., 
                         data = train_stroke_over)
@@ -1400,10 +1442,18 @@ cm_knn3_over <- confusionMatrix(y_hat_knn3_over, test_stroke$stroke,
                                positive = "stroke")
 cm_knn3_over
 
-# Accuracy : 0.8228   ##### 
-# Sensitivity : 0.47619   ##### 
-# Specificity : 0.83830   ##### 
-# Balanced Accuracy : 0.65724  ##### 
+F_meas(confusionMatrix(y_hat_knn3_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.8228   ##### 
+# __Sensitivity : 0.47619   ##### 
+# __Specificity : 0.83830   ##### 
+# __Balanced Accuracy : 0.65724  ##### 
+# __F_meas, beta = 3 : 0.3636364 #####
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -1423,10 +1473,17 @@ cm_rf_over <- confusionMatrix(y_hat_rf_over, test_stroke$stroke,
                          positive = "stroke")
 cm_rf_over
 
+F_meas(confusionMatrix(y_hat_rf_over, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # # __Accuracy : 0.946   ##### 
 # # __Sensitivity : 0.00000  #####         
 # # __Specificity : 0.98830   ##### 
 # # __Balanced Accuracy : 0.49415  ##### 
+# __F_meas, beta = 3 : NaN #####
 
 # MDA ######
 # Mixture Discriminant Analysis ####
@@ -1454,10 +1511,18 @@ cm_mda_over <- confusionMatrix(y_hat_mda_over, test_stroke$stroke,
                                positive = "stroke")
 cm_mda_over
 
+F_meas(confusionMatrix(y_hat_mda_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7424   ##### 
 # __Sensitivity : 0.78571    #####        
 # __Specificity : 0.74043    ##### 
 # __Balanced Accuracy : 0.76307    ##### 
+# __F_meas, beta = 3 : 0.5038168 #####
 
 # RDA #####
 # Regularized Discriminant Analysis  #####
@@ -1483,10 +1548,18 @@ cm_rda_over <- confusionMatrix(y_hat_rda_over$class, test_stroke$stroke,
                                positive = "stroke")
 cm_rda_over
 
+F_meas(confusionMatrix(y_hat_rda_over$class,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7067  ##### 
 # __Sensitivity : 0.80952 #####        
 # __Specificity : 0.70213 #####
 # __Balanced Accuracy : 0.75583 #####
+# __F_meas, beta = 3 : 0.4913295 #####
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -1520,10 +1593,18 @@ cm_nnet_over <- confusionMatrix(as.factor(y_hat_nnet_over), test_stroke$stroke,
                                 positive = "stroke")
 cm_nnet_over
 
+F_meas(confusionMatrix(as.factor(y_hat_nnet_over),
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7525 ####
 # __Sensitivity : 0.76190 ####        
 # __Specificity : 0.75213 ####
 # __Balanced Accuracy : 0.75702 ####
+# __F_meas, beta = 3 : 0.4976672 #####
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -1548,10 +1629,18 @@ cm_fda_over <- confusionMatrix(y_hat_fda_over, test_stroke$stroke,
                                positive = "stroke")
 cm_fda_over
 
+F_meas(confusionMatrix(y_hat_fda_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7261  ####
 # __Sensitivity : 0.80952  ####        
 # __Specificity : 0.72234  ####  
 # __Balanced Accuracy : 0.76593  ####
+# __F_meas, beta = 3 : 0.5052006 #####
 
 # KSVM ######
 # Support Vector Machine #####
@@ -1579,10 +1668,18 @@ cm_ksvm_over <- confusionMatrix(y_hat_ksvm_over, test_stroke$stroke,
                                 positive = "stroke")
 cm_ksvm_over
 
+F_meas(confusionMatrix(y_hat_ksvm_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7923 ##### 
 # __Sensitivity : 0.64286    #####      
 # __Specificity : 0.79894  #####  
 # __Balanced Accuracy : 0.72090  #####
+# __F_meas, beta = 3 : 0.4545455 #####
 
 # NAIVE BAYES ######
 
@@ -1606,10 +1703,18 @@ cm_naiveBayes_over <- confusionMatrix(y_hat_naiveBayes_over, test_stroke$stroke,
                                 positive = "stroke")
 cm_naiveBayes_over
 
+F_meas(confusionMatrix(y_hat_naiveBayes_over,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7566  ##### 
 # __Sensitivity : 0.73810  #####         
 # __Specificity : 0.75745  ##### 
 # __Balanced Accuracy : 0.74777  ##### 
+# __F_meas, beta = 3 : 0.4866562 #####
 
 # _______________________######## 
 # Undersampling #####
@@ -1652,10 +1757,18 @@ cm_default_tree_under <- confusionMatrix(y_hat_default_tree_under, test_stroke$s
                                         positive = "stroke")
 cm_default_tree_under
 
+F_meas(confusionMatrix(y_hat_default_tree_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7189  ####
 # __Sensitivity : 0.83333 !!!! ####         
 # __Specificity : 0.71383 ####
 # __Balanced Accuracy : 0.77358  ####
+# __F_meas, beta = 3 : 0.5131965 #####
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
@@ -1682,10 +1795,19 @@ cm_gini_tree_cp0.001_under <- confusionMatrix(y_hat_gini_tree_cp0.001_under, tes
                                                    positive = "stroke")
 cm_gini_tree_cp0.001_under
 
+F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7413 ####
 # __Sensitivity : 0.80952 ####       
 # __Specificity : 0.73830  ####
 # __Balanced Accuracy : 0.77391 ####
+# __F_meas, beta = 3 : 0.5167173 #####
+
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 
@@ -1716,10 +1838,19 @@ cm_cost_matrix_tree_under <- confusionMatrix(y_hat_cost_matrix_tree_under, test_
                                             positive = "stroke")
 cm_cost_matrix_tree_under
 
+F_meas(confusionMatrix(y_hat_cost_matrix_tree_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.5519  ##### 
 # __Sensitivity : 0.90476 !!!! #####         
 # __Specificity : 0.53617 #####  
-# __Balanced Accuracy : 0.72047 #####  
+# __Balanced Accuracy : 0.72047 ##### 
+# __F_meas, beta = 3 : 0.4460094 #####
+
 
 # RPART caret ####
 
@@ -1737,10 +1868,17 @@ cm_caret_tree_under <- confusionMatrix(y_hat_caret_tree_under, test_stroke$strok
                                       positive = "stroke")
 cm_caret_tree_under
 
-## __Accuracy : 0.6202 ####
-## __Sensitivity : 0.85714 ####        
-## __Specificity : 0.60957 ####
-## __Balanced Accuracy : 0.73336 ####
+F_meas(confusionMatrix(y_hat_caret_tree_under, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.6202 ####
+# __Sensitivity : 0.85714 ####        
+# __Specificity : 0.60957 ####
+# __Balanced Accuracy : 0.73336 ####
+# __F_meas, beta = 3 : 0.4609475 #####
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
@@ -1766,10 +1904,18 @@ cm_knn_under <- confusionMatrix(y_hat_knn_under, test_stroke$stroke,
                                positive = "stroke")
 cm_knn_under
 
-# # __Accuracy : 0.6548 ##### 
-# # __Sensitivity : 0.78571 #####         
-# # __Specificity : 0.64894 ##### 
-# # __Balanced Accuracy : 0.71733 ##### 
+F_meas(confusionMatrix(y_hat_knn_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.6548 ##### 
+# __Sensitivity : 0.78571 #####         
+# __Specificity : 0.64894 ##### 
+# __Balanced Accuracy : 0.71733 #####
+# __F_meas, beta = 3 : 0.4453441 #####
 
 # KNN3 native: cutoff >= 0.5 #######
 # K-Nearest-Neighbor ####### 
@@ -1801,10 +1947,18 @@ cm_knn3_under <- confusionMatrix(y_hat_knn3_under, test_stroke$stroke,
                                 positive = "stroke")
 cm_knn3_under
 
+F_meas(confusionMatrix(y_hat_knn3_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.6589 ##### 
 # __Sensitivity : 0.78571 #####          
 # __Specificity : 0.65319 ##### 
 # __Balanced Accuracy : 0.71945 ##### 
+# __F_meas, beta = 3 : 0.4477612 #####
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -1824,10 +1978,17 @@ cm_rf_under <- confusionMatrix(y_hat_rf_under, test_stroke$stroke,
                               positive = "stroke")
 cm_rf_under
 
+F_meas(confusionMatrix(y_hat_rf_under, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.947 ##### 
 # __Sensitivity : 0.00000  #####         
 # __Specificity : 0.98936  ##### 
 # __Balanced Accuracy : 0.49468 ##### 
+# __F_meas, beta = 3 : NaN #####
 
 # MDA: error ######
 # Mixture Discriminant Analysis ####
@@ -1866,10 +2027,18 @@ cm_rda_under <- confusionMatrix(y_hat_rda_under$class, test_stroke$stroke,
                                positive = "stroke")
 cm_rda_under
 
+F_meas(confusionMatrix(y_hat_rda_under$class,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.6823  ##### 
 # __Sensitivity : 0.80952  #####        
 # __Specificity : 0.67660 #####
 # __Balanced Accuracy : 0.74306 #####
+# __F_meas, beta = 3 : 0.4748603 #####
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -1898,10 +2067,18 @@ cm_nnet_under <- confusionMatrix(as.factor(y_hat_nnet_under), test_stroke$stroke
                                 positive = "stroke")
 cm_nnet_under
 
+F_meas(confusionMatrix(as.factor(y_hat_nnet_under),
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.9572  ####
 # __Sensitivity : 0.00000  ####        
 # __Specificity : 1.00000 ####
 # __Balanced Accuracy : 0.50000####
+# __F_meas, beta = 3 : NaN #####
 
 # FDA: error #####
 # Flexible Discriminant Analysis #####
@@ -1940,10 +2117,18 @@ cm_ksvm_under <- confusionMatrix(y_hat_ksvm_under, test_stroke$stroke,
                                 positive = "stroke")
 cm_ksvm_under
 
+F_meas(confusionMatrix(y_hat_ksvm_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.6823 ##### 
 # __Sensitivity : 0.78571 #####      
 # __Specificity : 0.67766 #####  
 # __Balanced Accuracy : 0.73169 #####
+# __F_meas, beta = 3 : 0.4621849 #####
 
 # NAIVE BAYES ######
 
@@ -1967,10 +2152,18 @@ cm_naiveBayes_under <- confusionMatrix(y_hat_naiveBayes_under, test_stroke$strok
                                       positive = "stroke")
 cm_naiveBayes_under
 
+F_meas(confusionMatrix(y_hat_naiveBayes_under,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7892  ##### 
 # __Sensitivity : 0.69048  #####         
 # __Specificity : 0.79362   ##### 
-# __Balanced Accuracy : 0.74205  ##### 
+# __Balanced Accuracy : 0.74205  #####
+# __F_meas, beta = 3 : 0.4825291 #####
 
 # _______________________######## 
 # Oversamplig and Undersampling: both #####
@@ -2013,10 +2206,18 @@ cm_default_tree_both <- confusionMatrix(y_hat_default_tree_both, test_stroke$str
                                          positive = "stroke")
 cm_default_tree_both
 
+F_meas(confusionMatrix(y_hat_default_tree_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.779   ####
 # __Sensitivity : 0.73810 ####         
 # __Specificity : 0.78085 ####
 # __Balanced Accuracy : 0.75947 ####
+# __F_meas, beta = 3 : 0.504065 #####
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
@@ -2043,10 +2244,18 @@ cm_gini_tree_cp0.001_both <- confusionMatrix(y_hat_gini_tree_cp0.001_both, test_
                                               positive = "stroke")
 cm_gini_tree_cp0.001_both
 
+F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.8157 ####
 # __Sensitivity : 0.54762 ####       
 # __Specificity : 0.82766  ####
 # __Balanced Accuracy : 0.68764 ####
+# __F_meas, beta = 3 : 0.4085258 #####
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 
@@ -2077,10 +2286,18 @@ cm_cost_matrix_tree_both <- confusionMatrix(y_hat_cost_matrix_tree_both, test_st
                                              positive = "stroke")
 cm_cost_matrix_tree_both
 
+F_meas(confusionMatrix(y_hat_cost_matrix_tree_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.6049 ##### 
 # __Sensitivity : 0.88095 #####         
 # __Specificity : 0.59255 #####  
-# __Balanced Accuracy : 0.73675#####  
+# __Balanced Accuracy : 0.73675#####
+# __F_meas, beta = 3 : 0.4636591 #####
 
 # RPART caret ####
 
@@ -2098,10 +2315,17 @@ cm_caret_tree_both <- confusionMatrix(y_hat_caret_tree_both, test_stroke$stroke,
                                        positive = "stroke")
 cm_caret_tree_both
 
-## __Accuracy : 0.7699 ####
-## __Sensitivity : 0.76190  ####        
-## __Specificity : 0.77021 ####
-## __Balanced Accuracy : 0.76606 ####
+F_meas(confusionMatrix(y_hat_caret_tree_both, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.7699 ####
+# __Sensitivity : 0.76190  ####        
+# __Specificity : 0.77021 ####
+# __Balanced Accuracy : 0.76606 ####
+# __F_meas, beta = 3 : 0.5111821 #####
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
@@ -2127,10 +2351,18 @@ cm_knn_both <- confusionMatrix(y_hat_knn_both, test_stroke$stroke,
                                 positive = "stroke")
 cm_knn_both
 
-# # __Accuracy : 0.7566 ##### 
-# # __Sensitivity : 0.64286 #####         
-# # __Specificity : 0.76170 ##### 
-# # __Balanced Accuracy : 0.70228 ##### 
+F_meas(confusionMatrix(y_hat_knn_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.7566 ##### 
+# __Sensitivity : 0.64286 #####         
+# __Specificity : 0.76170 ##### 
+# __Balanced Accuracy : 0.70228 #####
+# __F_meas, beta = 3 : 0.4292528 #####
 
 # KNN3 native: cutoff >= 0.5 #######
 # K-Nearest-Neighbor ####### 
@@ -2162,10 +2394,18 @@ cm_knn3_both <- confusionMatrix(y_hat_knn3_both, test_stroke$stroke,
                                  positive = "stroke")
 cm_knn3_both
 
+F_meas(confusionMatrix(y_hat_knn3_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7566 ##### 
 # __Sensitivity : 0.64286 #####          
 # __Specificity : 0.76170 ##### 
-# __Balanced Accuracy : 0.70228 ##### 
+# __Balanced Accuracy : 0.70228 #####
+# __F_meas, beta = 3 : 0.4292528 #####
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -2185,10 +2425,17 @@ cm_rf_both <- confusionMatrix(y_hat_rf_both, test_stroke$stroke,
                                positive = "stroke")
 cm_rf_both
 
+F_meas(confusionMatrix(y_hat_rf_both, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.9358 ##### 
 # __Sensitivity : 0.28571 #####         
 # __Specificity : 0.96489  ##### 
-# __Balanced Accuracy : 0.62530 ##### 
+# __Balanced Accuracy : 0.62530 #####
+# __F_meas, beta = 3 : 0.2836879 #####
 
 # MDA  ######
 # Mixture Discriminant Analysis ####
@@ -2216,10 +2463,18 @@ cm_mda_both <- confusionMatrix(y_hat_mda_both, test_stroke$stroke,
                                positive = "stroke")
 cm_mda_both
 
+F_meas(confusionMatrix(y_hat_mda_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7098 ##### 
 # __Sensitivity : 0.69048 #####        
 # __Specificity : 0.71064 ##### 
-# __Balanced Accuracy : 0.70056 ##### 
+# __Balanced Accuracy : 0.70056 #####
+# __F_meas, beta = 3 : 0.4270987 #####
 
 # RDA #####
 # Regularized Discriminant Analysis  #####
@@ -2246,10 +2501,18 @@ cm_rda_both <- confusionMatrix(y_hat_rda_both$class, test_stroke$stroke,
                                 positive = "stroke")
 cm_rda_both
 
+F_meas(confusionMatrix(y_hat_rda_both$class,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.722 ##### 
 # __Sensitivity : 0.80952 #####        
 # __Specificity : 0.71809 #####
 # __Balanced Accuracy : 0.76380 #####
+# __F_meas, beta = 3 : 0.5022157 #####
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -2278,10 +2541,18 @@ cm_nnet_both <- confusionMatrix(as.factor(y_hat_nnet_both), test_stroke$stroke,
                                  positive = "stroke")
 cm_nnet_both
 
+F_meas(confusionMatrix(as.factor(y_hat_nnet_both),
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7882  ####
 # __Sensitivity : 0.71429  ####        
 # __Specificity : 0.79149 ####
 # __Balanced Accuracy : 0.75289 ####
+# __F_meas, beta = 3 : 0.4966887 #####
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -2306,10 +2577,18 @@ cm_fda_both <- confusionMatrix(y_hat_fda_both, test_stroke$stroke,
                                positive = "stroke")
 cm_fda_both
 
+F_meas(confusionMatrix(y_hat_fda_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.721 #####
 # __Sensitivity : 0.76190    #####      
 # __Specificity : 0.71915  ##### 
 # __Balanced Accuracy : 0.74053 #####
+# __F_meas, beta = 3 : 0.4747774 #####
 
 
 # KSVM ######
@@ -2338,10 +2617,18 @@ cm_ksvm_both <- confusionMatrix(y_hat_ksvm_both, test_stroke$stroke,
                                  positive = "stroke")
 cm_ksvm_both
 
+F_meas(confusionMatrix(y_hat_ksvm_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7729 ##### 
 # __Sensitivity : 0.69048 #####      
 # __Specificity : 0.77660  #####  
 # __Balanced Accuracy : 0.73354 #####
+# __F_meas, beta = 3 : 0.4700162 #####
 
 # NAIVE BAYES ######
 
@@ -2365,10 +2652,18 @@ cm_naiveBayes_both <- confusionMatrix(y_hat_naiveBayes_both, test_stroke$stroke,
                                        positive = "stroke")
 cm_naiveBayes_both
 
+F_meas(confusionMatrix(y_hat_naiveBayes_both,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7525  ##### 
 # __Sensitivity : 0.73810  #####         
 # __Specificity : 0.75319   ##### 
-# __Balanced Accuracy : 0.74564  ##### 
+# __Balanced Accuracy : 0.74564  #####
+# __F_meas, beta = 3 : 0.4836193 #####
 
 # _______________________######## 
 # Beter estimates ######
@@ -2407,10 +2702,18 @@ cm_default_tree_better <- confusionMatrix(y_hat_default_tree_better, test_stroke
                                         positive = "stroke")
 cm_default_tree_better
 
+F_meas(confusionMatrix(y_hat_default_tree_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.8248 ####
 # __Sensitivity : 0.64286 ####         
 # __Specificity : 0.83298 ####
 # __Balanced Accuracy : 0.73792 ####
+# __F_meas, beta = 3 : 0.480427 #####
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
@@ -2433,14 +2736,23 @@ confusionMatrix(y_hat_gini_tree_cp0.001_better,
                 test_stroke$stroke, 
                 positive = "stroke")$table
 
-cm_gini_tree_cp0.001_better <- confusionMatrix(y_hat_gini_tree_cp0.001_better, test_stroke$stroke, 
-                                             positive = "stroke")
+cm_gini_tree_cp0.001_better <- confusionMatrix(y_hat_gini_tree_cp0.001_better, 
+                                               test_stroke$stroke, 
+                                               positive = "stroke")
 cm_gini_tree_cp0.001_better
+
+F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
 
 # __Accuracy : 0.8839 ####
 # __Sensitivity : 0.47619 ####       
 # __Specificity : 0.90213  ####
 # __Balanced Accuracy : 0.68916  ####
+# __F_meas, beta = 3 : 0.4081633 #####
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 
@@ -2471,10 +2783,18 @@ cm_cost_matrix_tree_better <- confusionMatrix(y_hat_cost_matrix_tree_better, tes
                                             positive = "stroke")
 cm_cost_matrix_tree_better
 
+F_meas(confusionMatrix(y_hat_cost_matrix_tree_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.612 ##### 
 # __Sensitivity : 0.83333 #####         
 # __Specificity : 0.60213 #####  
 # __Balanced Accuracy : 0.71773 #####  
+# __F_meas, beta = 3 : 0.4447268 #####
 
 # RPART caret ####
 
@@ -2492,10 +2812,17 @@ cm_caret_tree_better <- confusionMatrix(y_hat_caret_tree_better, test_stroke$str
                                       positive = "stroke")
 cm_caret_tree_better
 
+F_meas(confusionMatrix(y_hat_caret_tree_better, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 ## __Accuracy : 0.8778  ####
 ## __Sensitivity : 0.40476  ####        
 ## __Specificity : 0.89894 ####
 ## __Balanced Accuracy : 0.65185 ####
+# __F_meas, beta = 3 : 0.3469388 #####
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
@@ -2521,10 +2848,18 @@ cm_knn_better <- confusionMatrix(y_hat_knn_better, test_stroke$stroke,
                                positive = "stroke")
 cm_knn_better
 
-# # __Accuracy : 0.7128 ##### 
-# # __Sensitivity : 0.80952  #####         
-# # __Specificity : 0.70851 ##### 
-# # __Balanced Accuracy : 0.75902 ##### 
+F_meas(confusionMatrix(y_hat_knn_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
+# __Accuracy : 0.7128 ##### 
+# __Sensitivity : 0.80952  #####         
+# __Specificity : 0.70851 ##### 
+# __Balanced Accuracy : 0.75902 ##### 
+# __F_meas, beta = 3 : 0.4956268 #####
 
 # KNN3 native: cutoff >= 0.5 #######
 # K-Nearest-Neighbor ####### 
@@ -2556,10 +2891,19 @@ cm_knn3_better <- confusionMatrix(y_hat_knn3_better, test_stroke$stroke,
                                 positive = "stroke")
 cm_knn3_better
 
+F_meas(confusionMatrix(y_hat_knn3_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7301 ##### 
 # __Sensitivity : 0.78571  #####          
 # __Specificity : 0.72766 ##### 
 # __Balanced Accuracy : 0.75669 ##### 
+# __F_meas, beta = 3 : 0.4947526 #####
+
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -2579,10 +2923,17 @@ cm_rf_better <- confusionMatrix(y_hat_rf_better, test_stroke$stroke,
                               positive = "stroke")
 cm_rf_better
 
+F_meas(confusionMatrix(y_hat_rf_better, test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.9236  ##### 
 # __Sensitivity : 0.35714  #####         
 # __Specificity : 0.94894  ##### 
-# __Balanced Accuracy : 0.65304 ##### 
+# __Balanced Accuracy : 0.65304 #####
+# __F_meas, beta = 3 : 0.3401361 #####
 
 # MDA: error ######
 # Mixture Discriminant Analysis ####
@@ -2622,10 +2973,18 @@ cm_rda_better<- confusionMatrix(y_hat_rda_better$class, test_stroke$stroke,
                                positive = "stroke")
 cm_rda_better
 
+F_meas(confusionMatrix(y_hat_rda_better$class,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.6853 ##### 
 # __Sensitivity : 0.80952 #####        
 # __Specificity : 0.67979 #####
 # __Balanced Accuracy : 0.74466 #####
+# __F_meas, beta = 3 : 0.4768583 #####
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -2654,10 +3013,18 @@ cm_nnet_better <- confusionMatrix(as.factor(y_hat_nnet_better), test_stroke$stro
                                 positive = "stroke")
 cm_nnet_better
 
+F_meas(confusionMatrix(as.factor(y_hat_nnet_better),
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7179  ####
 # __Sensitivity : 0.80952  ####        
 # __Specificity : 0.71383 ####
 # __Balanced Accuracy : 0.76168 ####
+# __F_meas, beta = 3 : 0.4992658 #####
 
 # FDA: Error #####
 # Flexible Discriminant Analysis #####
@@ -2695,10 +3062,18 @@ cm_ksvm_better <- confusionMatrix(y_hat_ksvm_better, test_stroke$stroke,
                                 positive = "stroke")
 cm_ksvm_better
 
+F_meas(confusionMatrix(y_hat_ksvm_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.7464  ##### 
 # __Sensitivity : 0.71429 #####      
 # __Specificity : 0.74787  #####  
 # __Balanced Accuracy : 0.73108 #####
+# __F_meas, beta = 3 : 0.4651163 #####
 
 # NAIVE BAYES ######
 
@@ -2722,10 +3097,18 @@ cm_naiveBayes_better <- confusionMatrix(y_hat_naiveBayes_better, test_stroke$str
                                       positive = "stroke")
 cm_naiveBayes_better
 
+F_meas(confusionMatrix(y_hat_naiveBayes_better,
+                       test_stroke$stroke, 
+                       positive = "stroke")$table, 
+       reference = Reference,
+       relevant = "stroke",
+       beta = 3)
+
 # __Accuracy : 0.777  ##### 
 # __Sensitivity : 0.73810  #####         
 # __Specificity : 0.77872  ##### 
 # __Balanced Accuracy : 0.75841 ##### 
+# __F_meas, beta = 3 : 0.5024311 #####
 
 # _______________________########
 # TRAIN CONTROL CROSS VAL ########
