@@ -31,6 +31,20 @@ library(randomForest)
 if(!require(fastAdaboost)) install.packages("fastAdaboost", repos = "http://cran.us.r-project.org")
 library(fastAdaboost)
 
+if(!require(ROSE)) install.packages("ROSE", repos = "http://cran.us.r-project.org")
+library(ROSE)
+
+if(!require(mda)) install.packages("mda", repos = "http://cran.us.r-project.org")
+library(mda)
+
+if(!require(klaR)) install.packages("klaR", repos = "http://cran.us.r-project.org")
+library(klaR)
+
+if(!require(nnet)) install.packages("nnet", repos = "http://cran.us.r-project.org")
+library(nnet)
+
+if(!require(kernlab)) install.packages("kernlab", repos = "http://cran.us.r-project.org")
+library(kernlab)
 
 library(viridis)
 library(patchwork)
@@ -52,6 +66,7 @@ library(rpart)
 library(rpart.plot)
 library(caret)
 library(e1071)
+library(pROC)
 
 # _______________________########
 # DATA DOWNLOAD ########
@@ -779,7 +794,7 @@ test_stroke %>%
 # Rpart tunning parameters ######
 minsplit_tune <- tune.rpart(stroke ~ .,
                             data = train_stroke, 
-                            minsplit = seq(10,100,10))
+                            minsplit = seq(1,100,5))
 plot(minsplit_tune, main = "tune minsplit")
 
 cp_tune <- tune.rpart(stroke ~ .,
@@ -809,8 +824,7 @@ rpart.plot(default_tree)
 gini_tree_cp0.001 <- rpart(stroke ~., 
                    data = train_stroke, 
                    parms=list(split=c("gini")),
-                   cp = 0.001,
-                   maxdepth = 5)
+                   cp = 0.001)
 rpart.plot(gini_tree_cp0.001)
 
 # __Gini Tree, CP = 0.0024, minslit = 20, minbucket round 20/3, maxdepht = 30 ######
@@ -848,6 +862,14 @@ inf_tree_cp0.0023 <- rpart(stroke ~.,
                           parms=list(split=c("information")),
                           cp = 0.0023)
 rpart.plot(inf_tree_cp0.0023)
+
+# __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 6 #####
+inf_tree_cp0.001_max6 <- rpart(stroke ~., 
+                           data = train_stroke, 
+                           parms=list(split=c("information")),
+                           cp = 0.001,
+                           maxdepth = 6)
+rpart.plot(inf_tree_cp0.001_max6)
 
 #Categorical Data #####
 train_stroke_categorical <- train_stroke %>% 
@@ -897,223 +919,845 @@ inf_tree_cp0.001_num <- rpart(stroke ~.,
 rpart.plot(inf_tree_cp0.001_num)
 
 # _______________________########
-# TRAIN CONTROL CROSS VAL ########
+# ORIGINAL DATA ########
+# Imbalanced ########
 # _______________________########
 
-control <- trainControl(method="repeatedcv", number=10, repeats=3)
-
-# _______________________########
-# TESTING RPART TREES ########
-# _______________________########
-
-
-# default_tree #####
+# RPART #######
+# Recursive Partitioning and Regression Trees ######
+# Default_tree #####
 y_hat_default_tree <- predict(default_tree, test_stroke, type = "class")
 
 confusionMatrix(y_hat_default_tree,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_default_tree,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, positive = "stroke")$overall
 
 confusionMatrix(y_hat_default_tree,
-                test_stroke$stroke)$table
+                test_stroke$stroke, positive = "stroke")$table
 
-cm_default_tree <- confusionMatrix(y_hat_default_tree, test_stroke$stroke)
+cm_default_tree <- confusionMatrix(y_hat_default_tree, test_stroke$stroke, positive = "stroke")
 cm_default_tree
+
+F_meas(y_hat_default_tree, test_stroke$stroke)
+
+# __Accuracy : 0.9572 ####
+# __Sensitivity : 0.0000 ####
+# __Specificity : 1.0000 ####
+# __Balanced Accuracy : 0.5000 ####
+
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
 y_hat_gini_tree_cp0.001 <- predict(gini_tree_cp0.001, test_stroke, type = "class")
 
 confusionMatrix(y_hat_gini_tree_cp0.001,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_gini_tree_cp0.001,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, positive = "stroke")$overall
 
 confusionMatrix(y_hat_gini_tree_cp0.001,
-                test_stroke$stroke)$table
+                test_stroke$stroke, positive = "stroke")$table
 
-cm_y_hat_gini_tree_cp0.001 <- confusionMatrix(y_hat_gini_tree_cp0.001, test_stroke$stroke)
+cm_y_hat_gini_tree_cp0.001 <- confusionMatrix(y_hat_gini_tree_cp0.001, test_stroke$stroke, 
+                                              positive = "stroke")
 cm_y_hat_gini_tree_cp0.001
+
+# __Accuracy : 0.9521 ####
+# __Sensitivity : 0.07143  ####
+# __Specificity : 0.99149 ####
+# __Balanced Accuracy : 0.53146 ####
+
 
 # Gini Tree, CP = 0.0024, minslit = 20, minbucket round 20/3, maxdepht = 30 ######
 
 y_hat_gini_tree_cp0.0024 <- predict(gini_tree_cp0.0024, test_stroke, type = "class")
 
 confusionMatrix(y_hat_gini_tree_cp0.0024,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_gini_tree_cp0.0024,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, 
+                positive = "stroke")$overall
 
 confusionMatrix(y_hat_gini_tree_cp0.0024,
-                test_stroke$stroke)$table
+                test_stroke$stroke, 
+                positive = "stroke")$table
 
-cm_y_hat_gini_tree_cp0.0024 <- confusionMatrix(y_hat_gini_tree_cp0.0024, test_stroke$stroke)
+cm_y_hat_gini_tree_cp0.0024 <- confusionMatrix(y_hat_gini_tree_cp0.0024, test_stroke$stroke, 
+                                               positive = "stroke")
 cm_y_hat_gini_tree_cp0.0024
+
+# __Accuracy : 0.9532 ######
+# __Sensitivity : 0.04762 ######
+# __Specificity : 0.99362 ######
+# __Balanced Accuracy : 0.52062 ######
+
+
+# Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 5 ######
+
+y_hat_gini_tree_cp0.001_max5 <- predict(gini_tree_cp0.001_max5, test_stroke, type = "class")
+
+confusionMatrix(y_hat_gini_tree_cp0.001_max5,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_gini_tree_cp0.001_max5,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_gini_tree_cp0.001_max5,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_y_hat_gini_tree_cp0.001_max5 <- confusionMatrix(y_hat_gini_tree_cp0.001_max5, 
+                                                   test_stroke$stroke, 
+                                                   positive = "stroke")
+cm_y_hat_gini_tree_cp0.001_max5
+
+F_meas(y_hat_gini_tree_cp0.001_max5, test_stroke$stroke)
+
+# __Accuracy : 0.9542  ######
+# __Sensitivity : 0.02381 ######
+# __Specificity : 0.99574 ######
+# __Balanced Accuracy : 0.50978 ######
+
 
 # Information Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
 y_hat_inf_tree <- predict(inf_tree, test_stroke, type = "class")
 
 confusionMatrix(y_hat_inf_tree,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, 
+                positive = "stroke", 
+                positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_inf_tree,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, 
+                positive = "stroke", 
+                positive = "stroke")$overall
 
 confusionMatrix(y_hat_inf_tree,
-                test_stroke$stroke)$table
+                test_stroke$stroke, 
+                positive = "stroke", 
+                positive = "stroke")$table
 
-cm_y_hat_inf_tree <- confusionMatrix(y_hat_inf_tree, test_stroke$stroke)
+cm_y_hat_inf_tree <- confusionMatrix(y_hat_inf_tree, test_stroke$stroke, 
+                                     positive = "stroke")
 cm_y_hat_inf_tree
+
+# __Accuracy : 0.9572  ######
+# __Sensitivity : 0.0000  ######
+# __Specificity : 1.0000 ######
+# __Balanced Accuracy : 0.5000 ######
+
 
 # Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
 y_hat_inf_tree_cp0.001 <- predict(inf_tree_cp0.001, test_stroke, type = "class")
 
 confusionMatrix(y_hat_inf_tree_cp0.001,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_inf_tree_cp0.001,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, 
+                positive = "stroke")$overall
 
 confusionMatrix(y_hat_inf_tree_cp0.001,
-                test_stroke$stroke)$table
+                test_stroke$stroke, 
+                positive = "stroke")$table
 
-cm_y_hat_inf_tree_cp0.001 <- confusionMatrix(y_hat_inf_tree_cp0.001, test_stroke$stroke)
+cm_y_hat_inf_tree_cp0.001 <- confusionMatrix(y_hat_inf_tree_cp0.001, test_stroke$stroke, 
+                                             positive = "stroke")
 cm_y_hat_inf_tree_cp0.001
+
+# __Accuracy : 0.9532  #####
+# __Sensitivity : 0.04762  #####
+# __Specificity : 0.993617  #####
+# __Balanced Accuracy : 0.52062  #####
+
 
 # Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 
 y_hat_inf_tree_cp0.0023 <- predict(inf_tree_cp0.0023, test_stroke, type = "class")
 
 confusionMatrix(y_hat_inf_tree_cp0.0023,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_inf_tree_cp0.0023,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, 
+                positive = "stroke")$overall
 
 confusionMatrix(y_hat_inf_tree_cp0.0023,
-                test_stroke$stroke)$table
+                test_stroke$stroke, 
+                positive = "stroke")$table
 
-cm_y_hat_inf_tree_cp0.0023 <- confusionMatrix(y_hat_inf_tree_cp0.0023, test_stroke$stroke)
+cm_y_hat_inf_tree_cp0.0023 <- confusionMatrix(y_hat_inf_tree_cp0.0023, test_stroke$stroke, 
+                                              positive = "stroke")
 cm_y_hat_inf_tree_cp0.0023
 
+# __Accuracy : 0.9542  #####
+# __Sensitivity : 0.02381  #####        
+# __Specificity : 0.99574 #####
+# __Balanced Accuracy : 0.50978  #####
+
+
+# Caret rpart tree ######
+
+train_caret_tree <- train(stroke ~ ., method = "rpart", data = train_stroke)
+
+y_hat_caret_tree <- predict(train_caret_tree, test_stroke)
+
+confusionMatrix(y_hat_caret_tree, test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_caret_tree, test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_caret_tree <- confusionMatrix(y_hat_caret_tree, test_stroke$stroke, 
+                                 positive = "stroke")
+cm_caret_tree
+
+# __Accuracy : 0.9572  ######
+# __Sensitivity : 0.0000 #####         
+# __Specificity : 1.0000 #####
+# __Balanced Accuracy : 0.5000  #####
+
+
 # _______________________########
-# TESTING LDA ########
+# LDA ########
+# it generates several warnings! ####
 # _______________________########
 
 train_lda <- train(stroke ~ ., method = "lda", data = train_stroke)
 
 y_hat_lda <- predict(train_lda, test_stroke)
 
-confusionMatrix(y_hat_lda, test_stroke$stroke)$overall["Accuracy"]
+confusionMatrix(y_hat_lda, test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
-confusionMatrix(y_hat_lda, test_stroke$stroke)$table
+confusionMatrix(y_hat_lda, test_stroke$stroke, 
+                positive = "stroke")$table
 
-cm_lda <- confusionMatrix(y_hat_lda, test_stroke$stroke)
+cm_lda <- confusionMatrix(y_hat_lda, test_stroke$stroke, 
+                          positive = "stroke")
 cm_lda
 
+# Accuracy : 0.9481 ####
+# Sensitivity : 0.1429  ####        
+# Specificity : 0.9840  ####
+# Balanced Accuracy : 0.5634 ####
+
 # _______________________########
-# TESTING KNN ########
+# KNN ########
 # _______________________########
 
 train_knn <- train(stroke ~ ., method = "knn", 
-                   data = train_stroke,
-                   tuneGrid = data.frame(k = seq(5, 50, 2)))
-
-train_knn$bestTune
-summary(train_knn)
+                   data = train_stroke)
 
 y_hat_knn <- predict(train_knn, test_stroke)
 
 confusionMatrix(y_hat_knn,
-                test_stroke$stroke)$overall["Accuracy"]
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
 confusionMatrix(y_hat_knn,
-                test_stroke$stroke)$overall
+                test_stroke$stroke, 
+                positive = "stroke")$overall
 
 confusionMatrix(y_hat_knn,
-                test_stroke$stroke)$table
+                test_stroke$stroke, 
+                positive = "stroke")$table
 
-cm_knn <- confusionMatrix(y_hat_knn, test_stroke$stroke)
+cm_knn <- confusionMatrix(y_hat_knn, test_stroke$stroke, 
+                          positive = "stroke")
 cm_knn
 
+# Accuracy : 0.9542  ####
+# Sensitivity :  0.0000  ####        
+# Specificity : 0.9968 ####
+# Balanced Accuracy : 0.4984  ####
+
 # _______________________########
-# TESTING RANDOM FOREST ########
+# RANDOM FOREST ########
 # _______________________########
 
-nodesize <- seq(1, 51, 10)
-acc <- sapply(nodesize, function(ns){
-  train(stroke ~ ., method = "rf", data = train_stroke,
-        tuneGrid = data.frame(mtry = 2),
-        nodesize = ns)$results$Accuracy
-})
-qplot(nodesize, acc)
+# it takes time!
 
-train_rf <- randomForest(stroke ~ ., data=train_stroke,
-                         nodesize = nodesize[which.max(acc)])
+train_rf <- train(stroke ~ ., method = "rf", 
+                  data = train_stroke)
 
-y_hat_rf <- predict( train_rf, test_stroke)
+y_hat_rf <- predict(train_rf, test_stroke, type = "raw")
 
-confusionMatrix(y_hat_rf, test_stroke$stroke)$overall["Accuracy"]
+confusionMatrix(y_hat_rf, test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
 
-confusionMatrix(y_hat_rf, test_stroke$stroke)$table
+confusionMatrix(y_hat_rf, test_stroke$stroke, 
+                positive = "stroke")$table
 
-cm_rf <- confusionMatrix(y_hat_rf, test_stroke$stroke)
+cm_rf <- confusionMatrix(y_hat_rf, test_stroke$stroke, 
+                         positive = "stroke")
 cm_rf
 
+# Accuracy : 0.9572  ####
+# Sensitivity : 0.0000     ####     
+# Specificity : 1.0000   ####
+# Balanced Accuracy : 0.5000  ####
 
 # _______________________########
-# TESTING ADABOOST ########
+# BALANCED DATA ########
+# _______________________######## 
+# _______________________######## 
+# Oversampling #####
+# _______________________######## 
+
+table(train_stroke$stroke)
+prop.table(table(train_stroke$stroke))
+
+n_over = sum(train_stroke$stroke == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_over <- ovun.sample(stroke ~ ., data = train_stroke, method = "over", N = n_over*2)$data
+table(train_stroke_over$stroke)
+
+# RPART native #######
+# Recursive Partitioning and Regression Trees ######
+
+# Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+default_tree_over <- rpart(stroke ~ ., 
+                      data = train_stroke_over)
+rpart.plot(default_tree_over)
+
+y_hat_default_tree_over <- predict(default_tree_over, test_stroke, type = "class")
+
+confusionMatrix(y_hat_default_tree_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_default_tree_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_default_tree_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_default_tree_over <- confusionMatrix(y_hat_default_tree_over, test_stroke$stroke, 
+                                        positive = "stroke")
+cm_default_tree_over
+
+# __Accuracy : 0.7342  ####
+# __Sensitivity : 0.7619   ####         
+# __Specificity : 0.7330 ####
+# __Balanced Accuracy : 0.747  ####
+
+
+# Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+
+gini_tree_cp0.001_over <- rpart(stroke ~., 
+                           data = train_stroke_over, 
+                           parms=list(split=c("gini")),
+                           cp = 0.001)
+
+y_hat_gini_tree_cp0.001_over <- predict(gini_tree_cp0.001_over, test_stroke, type = "class")
+
+confusionMatrix(y_hat_gini_tree_cp0.001_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_gini_tree_cp0.001_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_gini_tree_cp0.001_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_y_hat_gini_tree_cp0.001_over <- confusionMatrix(y_hat_gini_tree_cp0.001, test_stroke$stroke, 
+                                                   positive = "stroke")
+cm_y_hat_gini_tree_cp0.001_over
+
+# __Accuracy : 0.9521  ####
+# __Sensitivity : 0.07143     ####       
+# __Specificity : 0.99149    ####
+# __Balanced Accuracy : 0.53146   ####
+
+# Lost Matrix Tree 5 to 1 ####
+# Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
+
+cost_matrix_tree_over <- rpart(stroke ~ ., 
+                               data = train_stroke_over,
+                               parms=list(
+                                 loss=matrix(c(0,1,5,0), # A false negative is 5 times worse than a false positive
+                                             byrow=TRUE,
+                                             nrow=2)))
+
+rpart.plot(cost_matrix_tree_over)
+
+y_hat_cost_matrix_tree_over <- predict(cost_matrix_tree_over, test_stroke, type = "class")
+
+confusionMatrix(y_hat_cost_matrix_tree_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_cost_matrix_tree_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_cost_matrix_tree_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_cost_matrix_tree_over <- confusionMatrix(y_hat_cost_matrix_tree_over, test_stroke$stroke, 
+                                            positive = "stroke")
+cm_cost_matrix_tree_over
+
+# __Accuracy : 0.4369  ##### 
+# __Sensitivity : 0.97619 !!!! #####         
+# __Specificity : 0.41277   #####  
+# __Balanced Accuracy : 0.69448  #####  
+
+# RPART caret ####
+
+train_caret_tree_over <- train(stroke ~ ., method = "rpart", data = train_stroke_over)
+
+y_hat_caret_tree_over <- predict(train_caret_tree_over, test_stroke)
+
+confusionMatrix(y_hat_caret_tree_over, test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_caret_tree_over, test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_caret_tree_over <- confusionMatrix(y_hat_caret_tree_over, test_stroke$stroke, 
+                                      positive = "stroke")
+cm_caret_tree_over
+
+## __Accuracy : 0.7179   ####
+## __Sensitivity : 0.7619      ####        
+## __Specificity : 0.7160   ####
+## __Balanced Accuracy : 0.7389    ####
+
+#KNN caret #######
+# K-Nearest-Neighbor #######
+
+train_knn_over <- train(stroke ~ ., method = "knn", 
+                   data = train_stroke_over)
+
+y_hat_knn_over <- predict(train_knn_over, test_stroke)
+
+confusionMatrix(y_hat_knn_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_knn_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_knn_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_knn_over <- confusionMatrix(y_hat_knn_over, test_stroke$stroke, 
+                               positive = "stroke")
+cm_knn_over
+
+# # __Accuracy : 0.8228  ##### 
+# # __Sensitivity : 0.47619  #####         
+# # __Specificity : 0.83830  ##### 
+# # __Balanced Accuracy : 0.65724  ##### 
+
+# KNN3 native#######
+# K-Nearest-Neighbor ####### 
+
+train_knn3_over <- knn3(stroke ~ ., 
+                        data = train_stroke_over)
+
+knn3_over <- predict(train_knn3_over, test_stroke)
+
+y_hat_knn3_over <- as.data.frame(knn3_over) %>% 
+  mutate(stroke_1 = ifelse(stroke >= 0.5, "stroke", "no_stroke" )) %>% 
+  pull(stroke_1) %>% 
+  as_factor() %>% 
+  relevel(ref = "no_stroke")
+
+confusionMatrix(y_hat_knn3_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_knn3_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_knn3_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_knn3_over <- confusionMatrix(y_hat_knn3_over, test_stroke$stroke, 
+                               positive = "stroke")
+cm_knn3_over
+
+# # __Accuracy : 0.8228  ##### 
+# # __Sensitivity : 0.47619  #####         
+# # __Specificity : 0.83830  ##### 
+# # __Balanced Accuracy : 0.65724  ##### 
+
+
+
+
+# MDA ######
+# Mixture Discriminant Analysis ####
+
+set.seed(1970, sample.kind="Rounding") 
+# Results are random variables
+         
+train_mda_over <- mda(stroke ~., data = train_stroke_over)
+
+y_hat_mda_over <- predict(train_mda_over, test_stroke)
+
+confusionMatrix(y_hat_mda_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_mda_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_mda_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_mda_over <- confusionMatrix(y_hat_mda_over, test_stroke$stroke, 
+                               positive = "stroke")
+cm_mda_over
+
+# __Accuracy : 0.7424   ##### 
+# __Sensitivity : 0.78571    #####        
+# __Specificity : 0.74043    ##### 
+# __Balanced Accuracy : 0.76307    ##### 
+
+# RDA #####
+# Regularized Discriminant Analysis  #####
+
+set.seed(1970, sample.kind="Rounding") 
+train_rda_over <- rda(stroke ~., data = train_stroke_over)
+
+y_hat_rda_over <- predict(train_rda_over, test_stroke)
+
+confusionMatrix(y_hat_rda_over$class,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_rda_over$class,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_rda_over$class,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_rda_over <- confusionMatrix(y_hat_rda_over$class, test_stroke$stroke, 
+                               positive = "stroke")
+cm_rda_over
+
+# __Accuracy : 0.7067  ##### 
+# __Sensitivity : 0.80952 #####        
+# __Specificity : 0.70213 #####
+# __Balanced Accuracy : 0.75583 #####
+
+# NNet: great variability !!!#####
+# Neural Network ####
+
+if(!require(nnet)) install.packages("nnet", repos = "http://cran.us.r-project.org")
+library(nnet)
+
+set.seed(2, sample.kind="Rounding") 
+# Results are random variables# Results are random variables: great variability!!!
+
+train_nnet_over <- nnet(stroke ~., data = train_stroke_over, size=4, 
+                        decay=0.0001, maxit=500)
+
+y_hat_nnet_over <- predict(train_nnet_over, test_stroke, type = "class")
+
+head(y_hat_nnet_over)
+
+confusionMatrix(as.factor(y_hat_nnet_over),
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(as.factor(y_hat_nnet_over),
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(as.factor(y_hat_nnet_over),
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_nnet_over <- confusionMatrix(as.factor(y_hat_nnet_over), test_stroke$stroke, 
+                                positive = "stroke")
+cm_nnet_over
+
+# __Accuracy : 0.7525 ####
+# __Sensitivity : 0.76190 ####        
+# __Specificity : 0.75213 ####
+# __Balanced Accuracy : 0.75702 ####
+
+# FDA #####
+# Flexible Discriminant Analysis #####
+
+train_fda_over <- fda(stroke ~., data = train_stroke_over)
+
+y_hat_fda_over <- predict(train_fda_over, test_stroke)
+
+confusionMatrix(y_hat_fda_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_fda_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_fda_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_fda_over <- confusionMatrix(y_hat_fda_over, test_stroke$stroke, 
+                               positive = "stroke")
+cm_fda_over
+
+# __Accuracy : 0.7261  ####
+# __Sensitivity : 0.80952  ####        
+# __Specificity : 0.72234  ####  
+# __Balanced Accuracy : 0.76593  ####
+
+# KSVM ######
+# Support Vector Machine #####
+
+set.seed(2, sample.kind="Rounding") 
+# Results are random variables# Results are random variables
+
+train_ksvm_over <- ksvm(stroke ~., data = train_stroke_over)
+
+y_hat_ksvm_over <- predict(train_ksvm_over, test_stroke)
+
+confusionMatrix(y_hat_ksvm_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_ksvm_over,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_ksvm_over,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_ksvm_over <- confusionMatrix(y_hat_ksvm_over, test_stroke$stroke, 
+                                positive = "stroke")
+cm_ksvm_over
+
+# __Accuracy : 0.7923 ##### 
+# __Sensitivity : 0.64286    #####      
+# __Specificity : 0.79894  #####  
+# __Balanced Accuracy : 0.72090  #####
+
+
+
+
+
+
+
+# _______________________######## 
+# Undersampling #####
+# _______________________######## 
+
+table(train_stroke$stroke)
+prop.table(table(train_stroke$stroke))
+
+n_under = sum(train_stroke$stroke == "stroke")
+
+set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_under <- ovun.sample(stroke ~ ., data = train_stroke, method = "under", N = n_under*2)$data
+table(train_stroke_under$stroke)
+
+# Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+default_tree_under <- rpart(stroke ~ ., 
+                           data = train_stroke_under)
+rpart.plot(default_tree_under)
+
+y_hat_default_tree_under <- predict(default_tree_under, test_stroke, type = "class")
+
+confusionMatrix(y_hat_default_tree_under,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_default_tree_under,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_default_tree_under,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_default_tree_under <- confusionMatrix(y_hat_default_tree_under, test_stroke$stroke, 
+                                         positive = "stroke")
+cm_default_tree_under
+
+# __Accuracy : 0.667  #####
+# __Sensitivity : 0.83333  !!!!  #####
+# __Specificity : 0.65957 #####
+# __Balanced Accuracy : 0.74645  #####
+
+
+# Caret rpart tree ####
+
+train_caret_tree_under <- train(stroke ~ ., method = "rpart", data = train_stroke_over)
+
+y_hat_caret_tree_under <- predict(train_caret_tree_under, test_stroke)
+
+confusionMatrix(y_hat_caret_tree_under, test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_caret_tree_under, test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_caret_tree_under <- confusionMatrix(y_hat_caret_tree_under, test_stroke$stroke, 
+                                       positive = "stroke")
+cm_caret_tree_under
+
+# __Accuracy : 0.7179  #####
+# __Sensitivity : 0.7619     #####       
+# __Specificity : 0.7160  #####
+# __Balanced Accuracy : 0.7389   #####
+
+# _______________________######## 
+# Oversamplig and Undersampling: both #####
+# _______________________######## 
+
+table(train_stroke$stroke)
+prop.table(table(train_stroke$stroke))
+
+n_both = sum(train_stroke$stroke == "stroke") + sum(train_stroke$stroke == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_both <- ovun.sample(stroke ~ ., data = train_stroke, method = "both", p = 0.5, N = n_both)$data
+table(train_stroke_both$stroke)
+
+# Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+default_tree_both <- rpart(stroke ~ ., 
+                            data = train_stroke_both)
+rpart.plot(default_tree_both)
+
+y_hat_default_tree_both <- predict(default_tree_both, test_stroke, type = "class")
+
+confusionMatrix(y_hat_default_tree_both,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_default_tree_both,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_default_tree_both,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_default_tree_both <- confusionMatrix(y_hat_default_tree_both, test_stroke$stroke, 
+                                        positive = "stroke")
+cm_default_tree_both
+
+# __Accuracy : 0.779     #####
+# __Sensitivity : 0.73810         #####     
+# __Specificity : 0.78085      #####     
+# __Balanced Accuracy : 0.7595 !!!!!   #####
+
+
+# _______________________######## 
+# Beter estimates ######
+# _______________________######## 
+
+set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_better <- ROSE(stroke ~ ., data = train_stroke)$data
+table(train_stroke_better_est$stroke)
+
+# Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+default_tree_better <- rpart(stroke ~ ., 
+                           data = train_stroke_better)
+rpart.plot(default_tree_better)
+
+y_hat_default_tree_better <- predict(default_tree_better, test_stroke, type = "class")
+
+confusionMatrix(y_hat_default_tree_better,
+                test_stroke$stroke, 
+                positive = "stroke")$overall["Accuracy"]
+
+confusionMatrix(y_hat_default_tree_better,
+                test_stroke$stroke, 
+                positive = "stroke")$overall
+
+confusionMatrix(y_hat_default_tree_better,
+                test_stroke$stroke, 
+                positive = "stroke")$table
+
+cm_default_tree_better <- confusionMatrix(y_hat_default_tree_better, test_stroke$stroke, 
+                                          positive = "stroke")
+cm_default_tree_better
+
+# __Accuracy : 0.8248  #####
+# __Sensitivity : 0.6429 #####     
+# __Specificity : 0.8330 ##### 
+# __Balanced Accuracy : 0.7379 #####
+
+
+# _______________________########
+# TRAIN CONTROL CROSS VAL ########
 # _______________________########
 
-train_adaboost <- train(stroke ~ ., method = "adaboost", 
-                   data = train_stroke, trControl=control)
-
-confusionMatrix(predict(train_adaboost, test_stroke),
-                test_stroke$stroke)$overall["Accuracy"]
-
-confusionMatrix(predict(train_adaboost, test_stroke),
-                test_stroke$stroke)$overall
-
-confusionMatrix(predict(train_adaboost, test_stroke),
-                test_stroke$stroke)$table
-
-y_hat_adaboost <- predict(train_adaboost, test_stroke)
-
-cm_adaboost <- confusionMatrix(y_hat_adaboost, test_stroke$stroke)
-cm_adaboost
+control <- trainControl(method="repeatedcv", number=10, repeats=3)
 
 
- 
-# _______________________########
-# TESTING RANDOM FOREST ########
-# _______________________########
- 
-nodesize <- seq(1, 51, 10)
-acc <- sapply(nodesize, function(ns){
-  train(stroke ~ ., method = "rf", data = train_stroke,
-         tuneGrid = data.frame(mtry = 2),
-         nodesize = ns)$results$Accuracy
-})
-qplot(nodesize, acc)
- 
-train_rf <- randomForest(stroke ~ ., data=train_stroke,
-                            nodesize = nodesize[which.max(acc)])
- 
-y_hat_rf <- predict( train_rf, test_stroke)
- 
-confusionMatrix(y_hat_rf, test_stroke$stroke)$overall["Accuracy"]
- 
-confusionMatrix(y_hat_rf, test_stroke$stroke)$table
- 
-cm_rf <- confusionMatrix(y_hat_rf, test_stroke$stroke)
-cm_rf
- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
  
 # _______________________########
 # Resources ########
@@ -1128,6 +1772,34 @@ cm_rf
 # https://www.socr.umich.edu/people/dinov/courses/DSPA_notes/14_ImprovingModelPerformance.html
 # https://csantill.github.io/RTuningModelParameters/
 # http://datamining.togaware.com/survivor/Tuning_rpart.html
+# https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
+# https://machinelearningmastery.com/cost-sensitive-learning-for-imbalanced-classification/
+# https://bmcbioinformatics.biomedcentral.com/track/pdf/10.1186/1471-2105-10-S1-S22.pdf
+# https://mlr.mlr-org.com/articles/tutorial/cost_sensitive_classif.html
+# https://www.rdocumentation.org/packages/DMwR/versions/0.4.1/topics/SMOTE# https://cran.r-project.org/web/packages/costsensitive/costsensitive.pdf
+# https://intobioinformatics.wordpress.com/2019/11/26/how-to-easily-make-a-roc-curve-in-r/
+# https://www.learnbymarketing.com/tutorials/rpart-decision-trees-in-r/
+# https://www.learnbymarketing.com/methods/classification-and-regression-decision-trees-explained/
+# https://www.learnbymarketing.com/481/decision-tree-flavors-gini-info-gain/
+# https://machinelearningmastery.com/non-linear-classification-in-r/
+# http://www.personal.psu.edu/jol2/course/stat597e/notes2/mda.pdf
+# https://www.r-bloggers.com/2013/07/a-brief-look-at-mixture-discriminant-analysis/
+
+
+# Ver comentarios
+
+# https://topepo.github.io/caret/train-models-by-tag.html#Two_Class_Only
+# Cost-Sensitive CART
+
+# method = 'rpartCost'
+# Type: Classification
+
+# Tuning parameters:
+  
+# cp (Complexity Parameter)
+# Cost (Cost)
+# Required packages: rpart, plyr
+
  
 
 
