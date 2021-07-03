@@ -986,6 +986,18 @@ inf_tree_cp0.001_num <- rpart(stroke ~.,
                               cp = 0.001)
 rpart.plot(inf_tree_cp0.001_num)
 
+
+# _______________________########
+# TRAIN CONTOL  ########
+# For Caret Trains ########
+# _______________________########
+
+ctrl <- trainControl(method="repeatedcv", 
+                     number = 10,
+                     repeats = 5, summaryFunction=twoClassSummary, classProbs=T,
+                     savePredictions = T)
+
+
 # _______________________########
 # ORIGINAL DATA ########
 # Imbalanced ########
@@ -1014,6 +1026,24 @@ cm_gini_tree_cp0.01
 
 F_meas(confusionMatrix(y_hat_gini_tree_cp0.01,
                        test_stroke_t$stroke)$table, beta = 1)
+
+# ROC Curve
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.01 <- predict(gini_tree_cp0.01,
+                              test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+class(roc_gini_tree_cp0.01)
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_gini_tree_cp0.01$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_gini_tree_cp0.01$stroke, levels = c("stroke", "no_stroke")))
+
 
 # __Accuracy : 0.9572 ####
 # __Sensitivity : 0.0000 ####
@@ -1051,7 +1081,23 @@ precision <- 3/(3+39)
 beta <- 1
 
 (1+beta^2) * precision * recall/((beta^2 * precision) + recall)
+
 # OK
+
+# ROC Curve
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.001 <- predict(train_knn_over,
+                                test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_gini_tree_cp0.001$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_gini_tree_cp0.001$stroke, levels = c("stroke", "no_stroke")))
 
 # __Accuracy : 0.9491 ####
 # __Sensitivity : 0.071429  ####
@@ -1207,7 +1253,8 @@ F_meas(confusionMatrix(y_hat_inf_tree_cp0.0023,
 
 
 # RPART caret ######
-train_caret_tree <- train(stroke ~ ., method = "rpart", data = train_stroke_t)
+train_caret_tree <- train(stroke ~ ., method = "rpart", data = train_stroke_t, 
+                          trControl = ctrl)
 
 y_hat_caret_tree <- predict(train_caret_tree, test_stroke_t)
 
@@ -1221,17 +1268,20 @@ cm_caret_tree
 F_meas(confusionMatrix(y_hat_caret_tree,
                        test_stroke_t$stroke)$table, beta = 1)
 
-# __Accuracy : 0.9572  ######
-# __Sensitivity : 0.0000 #####         
-# __Specificity : 1.0000 #####
-# __Balanced Accuracy : 0.5000  #####
-# __F_meas, beta = 1 : NA #####
+res <- evalm(list(train_caret_tree),gnames=c('RPART caret'), positive = "stroke")
+
+# __Accuracy : 0.9501  ######
+# __Sensitivity : 0.095238 #####         
+# __Specificity : 0.988298 #####
+# __Balanced Accuracy : 0.541768  #####
+# __F_meas, beta = 0.1403509  #####
 
 
 # LDA ########
 # Linear Discriminant Analisis ########
 # it generates several warnings! **** ####
-train_lda <- train(stroke ~ ., method = "lda", data = train_stroke_t)
+train_lda <- train(stroke ~ ., method = "lda", data = train_stroke_t, 
+                   trControl = ctrl)
 
 y_hat_lda <- predict(train_lda, test_stroke_t)
 
@@ -1245,7 +1295,7 @@ cm_lda
 F_meas(confusionMatrix(y_hat_lda,
                        test_stroke_t$stroke)$table, beta = 1)
 
-res <- evalm(list(train_lda),gnames=c('LDA'))
+res <- evalm(list(train_lda),gnames=c('LDA') , positive = "stroke")
 
 # Accuracy : 0.9491 ####
 # Sensitivity : 0.119048  ####        
@@ -1256,7 +1306,8 @@ res <- evalm(list(train_lda),gnames=c('LDA'))
 # KNN ########
 # K-Nearest-Neighbor #######
 train_knn <- train(stroke ~ ., method = "knn", 
-                   data = train_stroke_t)
+                   data = train_stroke_t, 
+                   trControl = ctrl)
 
 y_hat_knn <- predict(train_knn, test_stroke_t)
 
@@ -1275,6 +1326,8 @@ cm_knn
 F_meas(confusionMatrix(y_hat_knn,
                        test_stroke_t$stroke)$table, beta = 1)
 
+res <- evalm(list(train_knn),gnames=c('KNN') , positive = "stroke")
+
 # Accuracy : 0.9572  ####
 # Sensitivity :  0.000000  ####        
 # Specificity : 1.00000 ####
@@ -1284,7 +1337,8 @@ F_meas(confusionMatrix(y_hat_knn,
 # RANDOM FOREST ########
 # it takes time! ######
 train_rf <- train(stroke ~ ., method = "rf", 
-                  data = train_stroke_t)
+                  data = train_stroke_t, 
+                  trControl = ctrl)
 
 y_hat_rf <- predict(train_rf, test_stroke_t, type = "raw")
 
@@ -1304,11 +1358,6 @@ cm_rf
 # _______________________########
 # BALANCED DATA ########
 # _______________________######## 
-
-# Train Control: CV, number 10 ######
-cross_val <- trainControl(method='cv',  
-                          number = 10, summaryFunction=twoClassSummary, classProbs=T,
-                          savePredictions = T)
 
 # _______________________######## 
 # Oversampling #####
@@ -1362,11 +1411,27 @@ cm_gini_tree_cp0.01_over
 F_meas(confusionMatrix(y_hat_gini_tree_cp0.01_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.01_over <- predict(gini_tree_cp0.01_over,
+                               test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_gini_tree_cp0.01_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_gini_tree_cp0.01_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.7515  ####
 # __Sensitivity : 0.73810   ####         
 # __Specificity : 0.75213 ####
 # __Balanced Accuracy : 0.74511  ####
 # __F_meas, beta = 1 : 0.2026144   ####
+# __AUC : 0.7384 ######
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 gini_tree_cp0.001_over <- rpart(stroke ~., 
@@ -1396,11 +1461,27 @@ cm_gini_tree_cp0.001_over
 F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.001_over <- predict(gini_tree_cp0.001_over,
+                                     test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_gini_tree_cp0.001_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_gini_tree_cp0.001_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.8982  ####
 # __Sensitivity : 0.42857 ####       
 # __Specificity : 0.91915 ####
 # __Balanced Accuracy : 0.67386 ####
 # __F_meas, beta = 1 : 0.1960784  ####
+# __AUC : 0.3733 ######
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 cost_matrix_tree_over <- rpart(stroke ~ ., 
@@ -1432,15 +1513,33 @@ cm_cost_matrix_tree_over
 F_meas(confusionMatrix(y_hat_cost_matrix_tree_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_cost_matrix_tree_over <- predict(cost_matrix_tree_over,
+                                      test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_cost_matrix_tree_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_cost_matrix_tree_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.6202   ##### 
 # __Sensitivity : 0.92857 !!!! #####         
 # __Specificity : 0.60638#####  
 # __Balanced Accuracy : 0.76748 #####
 # __F_meas, beta = 1 : 0.172949 #####
+# __AUC : 0.7584 ######
 
 
 # RPART caret ####
-train_caret_tree_over <- train(stroke ~ ., method = "rpart", data = train_stroke_over)
+train_caret_tree_over <- train(stroke ~ ., method = "rpart",
+                               data = train_stroke_over, 
+                               trControl = ctrl)
 
 plot(train_caret_tree_over)
 summary(train_caret_tree_over)
@@ -1459,16 +1558,34 @@ cm_caret_tree_over
 F_meas(confusionMatrix(y_hat_caret_tree_over, 
                        test_stroke_t$stroke)$table, beta = 1, estimator = "binary")
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_caret_tree_over <- predict(train_caret_tree_over,
+                        test_stroke_t, type = "prob")
+
+class(roc_caret_tree_over)
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_caret_tree_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_caret_tree_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.8045   ####
 # __Sensitivity : 0.71429      ####        
 # __Specificity : 0.80851  ####
 # __Balanced Accuracy : 0.76140   ####
 # __F_meas, beta = 1 : 0.2380952  #####
+# __AUC : 0.8067 ######
+
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
 train_knn_over <- train(stroke ~ ., method = "knn", 
-                   data = train_stroke_over)
+                   data = train_stroke_over, 
+                   trControl = ctrl)
 
 plot(train_knn_over)
 summary(train_knn_over)
@@ -1490,11 +1607,26 @@ cm_knn_over
 F_meas(confusionMatrix(y_hat_knn_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
-# __Accuracy : 0.8371  ##### 
-# __Sensitivity : 0.28571  #####         
-# __Specificity : 0.86170  ##### 
-# __Balanced Accuracy : 0.57371   #####
-# __F_meas, beta = 1 : 0.1304348 #####
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_knn_over <- predict(train_knn_over,
+                               test_stroke_t, type = "prob")
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_knn_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_knn_over$stroke, levels = c("stroke", "no_stroke")))
+
+
+# __Accuracy : 0.8035   ##### 
+# __Sensitivity : 0.38095  #####         
+# __Specificity : 0.82234  ##### 
+# __Balanced Accuracy : 0.60165   #####
+# __F_meas, beta = 1 : 0.1422222 #####
+# __AUC : 0.4003 ######
 
 # KNN3 native: cutoff >= 0.5 #######
 train_knn3_over <- knn3(stroke ~ ., 
@@ -1525,17 +1657,34 @@ cm_knn3_over
 F_meas(confusionMatrix(y_hat_knn3_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_knn3_over <- predict(train_knn3_over,
+                              test_stroke_t, type = "prob") %>% 
+  data.frame()
+  
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_knn3_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_knn3_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.8371   ##### 
 # __Sensitivity : 0.28571   ##### 
 # __Specificity : 0.86170   ##### 
 # __Balanced Accuracy : 0.57371  ##### 
 # __F_meas, beta = 1 : 0.1304348 #####
+# __AUC : 0.4259 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
 
 train_rf_over <- train(stroke ~ ., method = "rf", 
-                  data = train_stroke_over)
+                  data = train_stroke_over, 
+                  trControl = ctrl)
 
 plot(train_rf_over)
 summary(train_knn_over)
@@ -1552,11 +1701,26 @@ cm_rf_over
 F_meas(confusionMatrix(y_hat_rf_over, test_stroke_t$stroke)$table, 
        reference = Reference, beta = 1)
 
-# # __Accuracy : 0.9501   ##### 
-# # __Sensitivity : 0.071429  #####         
-# # __Specificity : 0.989362   ##### 
-# # __Balanced Accuracy : 0.530395  ##### 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_rf_over <- predict(train_rf_over,
+                               test_stroke_t, type = "prob")
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_rf_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_rf_over$stroke, levels = c("stroke", "no_stroke")))
+
+# __Accuracy : 0.9501   ##### 
+# __Sensitivity : 0.071429  #####         
+# __Specificity : 0.989362   ##### 
+# __Balanced Accuracy : 0.530395  ##### 
 # __F_meas, beta = 1 : 0.1090909 #####
+# __AUC : 0.7912 ??????? ###### 
 
 # MDA ######
 # Mixture Discriminant Analysis ####
@@ -1588,11 +1752,26 @@ cm_mda_over
 F_meas(confusionMatrix(y_hat_mda_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_mda_over <- predict(train_mda_over,
+                             test_stroke_t, type = "prob")
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_mda_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_mda_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.7424   ##### 
 # __Sensitivity : 0.80952    #####        
 # __Specificity : 0.73936    ##### 
 # __Balanced Accuracy : 0.77444 2    ##### 
 # __F_meas, beta = 1 : 0.211838  #####
+# __AUC : 0.8466 ###### 
 
 # RDA #####
 # Regularized Discriminant Analysis  #####
@@ -1621,11 +1800,26 @@ cm_rda_over
 F_meas(confusionMatrix(y_hat_rda_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_rda_over <- predict(train_rda_over,
+                              test_stroke_t, type = "prob")
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_rda_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_rda_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.7475  ##### 
 # __Sensitivity : 0.80952 #####        
 # __Specificity : 0.74468  #####
 # __Balanced Accuracy : 0.77710 #####
 # __F_meas, beta = 1 : 0.2151899 #####
+# __AUC : 0.8616 ###### 
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -1657,11 +1851,26 @@ cm_nnet_over
 F_meas(confusionMatrix(as.factor(y_hat_nnet_over),
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_nnet_over <- predict(train_nnet_over,
+                              test_stroke_t, type = "prob")
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_nnet_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_nnet_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.8096 ####
 # __Sensitivity : 0.54762 ####        
 # __Specificity : 0.82128  ####
 # __Balanced Accuracy : 0.68445  ####
 # __F_meas, beta = 1 : 0.1974249 #####
+# __AUC : 0.7479 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -1685,11 +1894,26 @@ cm_fda_over
 F_meas(confusionMatrix(y_hat_fda_over,
                        test_stroke_t$stroke)$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_fda_over <- predict(train_fda_over,
+                               test_stroke_t, type = "prob")
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_fda_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_fda_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.7342   ####
 # __Sensitivity : 0.73810  ####        
 # __Specificity : 0.73404 ####  
 # __Balanced Accuracy : 0.73607   ####
 # __F_meas, beta = 1 : 0.1919505 #####
+# __AUC : 0.8122 ###### 
 
 # SVMLinearWeights2 ######
 # Support Vector Machine #####
@@ -1719,11 +1943,21 @@ F_meas(confusionMatrix(y_hat_SVMLinearWeights2_over,
                        test_stroke_t$stroke, 
                        positive = "stroke")$table, beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_SVMLinearWeights2_over <- predict(train_SVMLinearWeights2_over,
+                                            test_stroke_t, type = "prob")
+
+# Error in predict.train(train_SVMLinearWeights2_over, test_stroke_t, type = "prob") : 
+# only classification models that produce probabilities are allowed
+
 # __Accuracy : 0.7811 ##### 
 # __Sensitivity : 0.57143    #####      
 # __Specificity : 0.79043  #####  
 # __Balanced Accuracy 0.68093 #####
 # __F_meas, beta = 1 : 0.1825095 #####
+# __AUC : Error ###### 
 
 # NAIVE BAYES ######
 train_naiveBayes_over <- train(stroke ~ ., method = "naive_bayes", 
@@ -1746,11 +1980,26 @@ cm_naiveBayes_over
 F_meas(confusionMatrix(y_hat_naiveBayes_over,
                        test_stroke_t$stroke)$table,beta = 1)
 
+# ROC Curve
+
+# Calc. Probs for every class
+roc_train_naiveBayes_over <- predict(train_naiveBayes_over,
+                              test_stroke_t, type = "prob")
+
+# Curve graph
+plot(roc(response = test_stroke_t$stroke, 
+         predictor = roc_train_naiveBayes_over$stroke, levels = c("stroke", "no_stroke")))
+
+# Area under the curve
+auc(roc(response = test_stroke_t$stroke, 
+        predictor = roc_train_naiveBayes_over$stroke, levels = c("stroke", "no_stroke")))
+
 # __Accuracy : 0.3452  ##### 
 # __Sensitivity : 1.00000  #####         
 # __Specificity : 0.31596##### 
 # __Balanced Accuracy : 0.65798  ##### 
 # __F_meas, beta = 3 : 0.1155433 #####
+# __AUC : 0.8294 ######
 
 # _______________________######## 
 # Undersampling #####
