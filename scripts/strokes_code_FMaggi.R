@@ -1174,7 +1174,7 @@ cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pea
 # ___CATEGORICAL VARIABLES #####
 
 # Random Forest Method #####
-variables_rf_both <- stroke_data_over %>%
+variables_rf_both <- stroke_data_both %>%
   select(-age, -avg_glucose_level, -bmi)
 
 
@@ -1250,6 +1250,130 @@ stroke_data_both %>%
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
 
+# Better Estimates #####
+
+table(stroke_data$stroke)
+prop.table(table(stroke_data$stroke))
+
+set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+stroke_data_better <- ROSE(stroke ~ ., data = stroke_data)$data
+table(stroke_data_better$stroke)
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke"
+stroke_data_better$stroke <- relevel(stroke_data_better$stroke, ref = "stroke")
+
+table(stroke_data_better$stroke)
+prop.table(table(stroke_data_better$stroke))
+
+# ____COR. OF NUMERICAL VARIABLES #####
+
+# Age vs Avg Glucose Level #####
+stroke_data_better %>% 
+  ggplot(aes(age, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_better$age, stroke_data_better$avg_glucose_level)
+cor.test(stroke_data_better$age, stroke_data_better$avg_glucose_level, method = "pearson")
+
+# BMI vs Avg Glucose Level #####
+stroke_data_better %>% 
+  ggplot(aes(bmi, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_better$bmi, stroke_data_better$avg_glucose_level)
+cor.test(stroke_data_better$bmi, stroke_data_better$avg_glucose_level, method = "pearson")
+
+# Age vs BMI #####
+stroke_data_better %>% 
+  ggplot(aes(age, bmi)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_better$age, stroke_data_better$bmi)
+cor.test(stroke_data_better$age, stroke_data_better$avg_glucose_level, method = "pearson")
+
+# ___CATEGORICAL VARIABLES #####
+
+# Random Forest Method #####
+variables_rf_better <- stroke_data_better %>%
+  select(-age, -avg_glucose_level, -bmi)
+
+
+randforest_model_better <- randomForest(formula = stroke ~ . ,
+                                      data = variables_rf_better,
+                                      mtry = 5,
+                                      importance = TRUE, 
+                                      ntree = 1000) 
+
+importance_better <- as.data.frame(randforest_model_better$importance)
+importance_better<- rownames_to_column(importance_better,var = "variable")
+
+importance1_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                                       y = MeanDecreaseAccuracy,
+                                                       fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Better") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_better
+
+importance2_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseGini),
+                                                       y = MeanDecreaseGini,
+                                                       fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - better") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_better
+
+# Contrast of proportions #####
+
+# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+stroke_categorical_better <- stroke_data_better %>% 
+  filter(!gender == "Other") %>% 
+  select(gender, hypertension, heart_disease, ever_married, work_type,
+         Residence_type, smoking_status, stroke)
+
+stroke_categorical_tidy_better <- data.frame(stroke_categorical_better %>%
+                                             gather(key = "variable", value = "group",-stroke))
+
+# Se añade un identificador formado por el nombre de la variable y el grupo 
+stroke_categorical_tidy_better <- stroke_categorical_tidy_better %>%
+  mutate(group_variable = paste(variable, group, sep = "_"))
+
+# Función que calcula el test de proporciones para la columna "Stroke" de un df
+proportion_test_better <- function(df){
+  n_strokes <- sum(df$stroke == "stroke") 
+  n_no_stroke     <- sum(df$stroke == "no_stroke")
+  n_total <- n_strokes + n_no_stroke
+  test <- prop.test(x = n_strokes, n = n_total, p = 0.5)
+  prop_strokes <- n_strokes / n_total
+  return(data.frame(p_value = test$p.value, prop_strokes))
+}
+
+# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
+# test_proporcion()
+prop_analisis_better <- stroke_categorical_tidy_better %>%
+  group_by(group_variable) %>%
+  nest() %>%
+  arrange(group_variable) %>%
+  mutate(prop_test = map(.x = data, .f = proportion_test_better)) %>%
+  unnest(prop_test) %>%
+  arrange(p_value) %>% 
+  select(group_variable,p_value, prop_strokes) %>% 
+  head(20)
+prop_analisis_better
+
+# Near Zero variance
+stroke_data_better %>% 
+  select(-stroke) %>% 
+  nearZeroVar(saveMetrics = TRUE)
 
 
 
@@ -3891,7 +4015,7 @@ table(train_stroke_better$stroke)
 
 str(train_stroke_better)
 
-# Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke"
 train_stroke_better$stroke <- relevel(train_stroke_better$stroke, ref = "stroke")
 
 # RPART native #######
