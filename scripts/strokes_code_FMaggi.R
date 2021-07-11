@@ -227,11 +227,11 @@ stroke_data %>%
   summarise(mean(stroke == "stroke"))
 # 0.0414
 
-# ____NUMERICAL VARIABLES____ ######
+# NUMERICAL VARIABLES____ ######
 
-# ____AGE (continuous)######
+# AGE (continuous)######
 
-# Statistical Age Data  ####
+# __Statistical Age Data  ####
 
 stroke_data %>% 
   group_by(stroke) %>% 
@@ -241,7 +241,7 @@ stroke_data %>%
             max_age = max(age)) %>% 
   kable()
 
-# Density Plot: Age per Class ####
+# __Density Plot: Age per Class ####
 
 stroke_data %>% ggplot(aes(age, fill = stroke)) +
   geom_density(alpha = 0.2, bw = 1)
@@ -249,13 +249,13 @@ stroke_data %>% ggplot(aes(age, fill = stroke)) +
 stroke_data %>% ggplot(aes(age, y = ..count.., fill = stroke)) +
   geom_density(alpha = 0.2, bw = 1)
 
-# Box Plot: Age per Class ####
+# __Box Plot: Age per Class ####
 
 stroke_data %>% ggplot(aes(stroke, age, color = stroke)) +
   geom_boxplot() +
   geom_jitter(alpha = 0.3, width = 0.15)
 
-# Summary table by age #####
+# __Summary table by age #####
 # age, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(age) %>%
@@ -265,7 +265,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# Summary table by age (filtering only positive strokes cases) #####
+# __Summary table by age (filtering only positive strokes cases) #####
 # age, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(age) %>%
@@ -275,7 +275,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# Distribution of observations by age #####
+# __Distribution of observations by age #####
 stroke_data %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -296,7 +296,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Number of strokes by age  ######
+# __Number of strokes by age  ######
 stroke_data %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -317,7 +317,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Percent of strokes by age ####
+# __Percent of strokes by age ####
 stroke_data %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -338,7 +338,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Summary table by age (rounded nearest 10) #####
+# __Summary table by age (rounded nearest 10) #####
 # age, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(round(age, -1)) %>%
@@ -347,7 +347,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# Distribution of observations by rounded age  #####
+# __Distribution of observations by rounded age  #####
 stroke_data %>% 
   group_by(age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -367,7 +367,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Number of strokes by rounded age  #####
+# __Number of strokes by rounded age  #####
 stroke_data %>% 
   group_by(age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -387,7 +387,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Percent of strokes by rounded age  ####  
+# __Percent of strokes by rounded age  ####  
 stroke_data %>% 
   group_by(age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -407,9 +407,9 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# ____AVG GLUCOSE LEVEL (continuous) ######
+# AVG GLUCOSE LEVEL (continuous) ######
 
-# Statistical Glucose Data  ####
+# __Statistical Glucose Data  ####
 
 stroke_data %>% 
   group_by(stroke) %>% 
@@ -419,7 +419,7 @@ stroke_data %>%
             max_glucose = max(avg_glucose_level)) %>% 
   kable()
 
-# Density Plot: Avg Level per Class ####
+# __Density Plot: Avg Level per Class ####
 
 stroke_data %>% ggplot(aes(avg_glucose_level, fill = stroke)) +
   geom_density(alpha = 0.2, bw = 5)
@@ -427,13 +427,13 @@ stroke_data %>% ggplot(aes(avg_glucose_level, fill = stroke)) +
 stroke_data %>% ggplot(aes(avg_glucose_level, y = ..count.., fill = stroke)) +
   geom_density(alpha = 0.2, bw = 1)
 
-# Box Plot: Avg Level per Class ####
+# __Box Plot: Avg Level per Class ####
 
 stroke_data %>% ggplot(aes(stroke, avg_glucose_level, color = stroke)) +
   geom_boxplot() +
   geom_jitter(alpha = 0.3, width = 0.15)
 
-# Summary table by avg_glucose_level (round to nearest ten) #####
+# __Summary table by avg_glucose_level (round to nearest ten) #####
 # avg_glucose_level, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(round(avg_glucose_level, -1)) %>%
@@ -442,7 +442,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# Distribution of observations by rounded avg_glucose_level  #####
+# __Distribution of observations by rounded avg_glucose_level  #####
 stroke_data %>% 
   group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -462,7 +462,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Number of strokes by rounded avg_glucose_level  #####
+# __Number of strokes by rounded avg_glucose_level  #####
 stroke_data %>% 
   group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -482,7 +482,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Percent of strokes by rounded avg_glucose_level ####  
+# __Percent of strokes by rounded avg_glucose_level ####  
 stroke_data %>% 
   group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -502,9 +502,9 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# ____BMI (continuous) ######
+# BMI (continuous) ######
 
-# Statistical BMI Data  ####
+# __Statistical BMI Data  ####
 
 stroke_data %>% 
   group_by(stroke) %>% 
@@ -514,7 +514,7 @@ stroke_data %>%
             max_glucose = max(bmi)) %>% 
   kable()
 
-# Density Plot: Avg Glucose Level per Class ####
+# __Density Plot: Avg Glucose Level per Class ####
 
 stroke_data %>% ggplot(aes(bmi, fill = stroke)) +
   geom_density(alpha = 0.2, bw = 1)
@@ -522,13 +522,13 @@ stroke_data %>% ggplot(aes(bmi, fill = stroke)) +
 stroke_data %>% ggplot(aes(bmi, y = ..count.., fill = stroke)) +
   geom_density(alpha = 0.2, bw = 1)
 
-# Box Plot: Avg Level Glucose  per Class ####
+# __Box Plot: Avg Level Glucose  per Class ####
 
 stroke_data %>% ggplot(aes(stroke, bmi, color = stroke)) +
   geom_boxplot() +
   geom_jitter(alpha = 0.3, width = 0.15)
 
-# Summary table by bmi (round to nearest ten) #####
+# __Summary table by bmi (round to nearest ten) #####
 # bmi, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
@@ -539,7 +539,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# Distribution of observations by rounded bmi  #####
+# __Distribution of observations by rounded bmi  #####
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
@@ -561,7 +561,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Number of strokes by rounded bmi  #####
+# __Number of strokes by rounded bmi  #####
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
@@ -583,7 +583,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Percent of strokes by rounded bmi ####  
+# __Percent of strokes by rounded bmi ####  
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
@@ -605,11 +605,11 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# ____CATEGORICAL VARIABLES_____ ######
+# CATEGORICAL VARIABLES######
 
-# ____GENDER (binary)_____ ######
+# GENDER (binary)_____ ######
 
-# Gender distribution #####
+# __Gender distribution #####
 stroke_data %>% 
   filter(!gender == "Other") %>% 
   ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
@@ -619,7 +619,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Summary table by gender #####
+# __Summary table by gender #####
 # gender, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   filter(!gender == "Other") %>% 
@@ -630,9 +630,9 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# ____HYPERTENSION (binary)____ ######
+# HYPERTENSION (binary) ######
 
-# Hypertension distribution #####
+# __Hypertension distribution #####
 stroke_data %>% 
   ggplot(aes(x = hypertension, y = ..count.., fill = stroke)) +
   geom_bar() +
@@ -641,7 +641,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Summary table by hypertension #####
+# __Summary table by hypertension #####
 # hypertension, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(hypertension) %>%
@@ -650,9 +650,9 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# ____HEART DESEASE (binary)____ ######
+# HEART DESEASE (binary) ######
 
-# Heart_disease distribution #####
+# __Heart_disease distribution #####
 stroke_data %>% 
   ggplot(aes(x = heart_disease, y = ..count.., fill = stroke)) +
   geom_bar() +
@@ -661,7 +661,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Summary table by heart_disease #####
+# __Summary table by heart_disease #####
 # heart_disease, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(heart_disease) %>%
@@ -670,7 +670,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# ____EVER MARRIED (binary)____ ######
+# __EVER MARRIED (binary) ######
 
 # Ever_married distribution #####
 stroke_data %>% 
@@ -681,7 +681,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Summary table by ever_married #####
+# __Summary table by ever_married #####
 # ever_married, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(ever_married) %>%
@@ -690,9 +690,9 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# ____WORK TYPE (nominal)____ ######
+# WORK TYPE (nominal) ######
 
-# Ever_married distribution #####
+# __Work_type distribution #####
 stroke_data %>% 
   ggplot(aes(x = work_type, y = ..count.., fill = stroke)) +
   geom_bar() +
@@ -701,7 +701,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Summary table by work_type #####
+# __Summary table by work_type #####
 # work_type, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(work_type) %>%
@@ -710,9 +710,9 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# ____RESIDENCE TYPE (binary)____ ######
+# RESIDENCE TYPE (binary)######
 
-# Residence_type distribution #####
+# __Residence_type distribution #####
 stroke_data %>% 
   ggplot(aes(x = Residence_type, y = ..count.., fill = stroke)) +
   geom_bar() +
@@ -730,9 +730,9 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# ____SMOKING STATUS (nominal)____ ######
+# SMOKING STATUS (nominal) ######
 
-# Smoking_status distribution #####
+# __Smoking_status distribution #####
 stroke_data %>% 
   ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
   geom_bar() +
@@ -741,7 +741,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Summary table by smoking_status  #####
+# __Summary table by smoking_status  #####
 # smoking_status, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(smoking_status) %>%
@@ -754,9 +754,9 @@ stroke_data %>%
 # VARIABLE IMPORTANCE: Looking for variables I ########
 # _______________________########
 
-# ____COR. OF NUMERICAL VARIABLES #####
+# COR. OF NUMERICAL VARIABLES #####
 
-# Age vs Avg Glucose Level #####
+# __Age vs Avg Glucose Level #####
 stroke_data %>% 
   ggplot(aes(age, avg_glucose_level)) +
   geom_point() +
@@ -765,7 +765,7 @@ stroke_data %>%
 cor(stroke_data$age, stroke_data$avg_glucose_level)
 cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
 
-# BMI vs Avg Glucose Level #####
+# __BMI vs Avg Glucose Level #####
 stroke_data %>% 
   ggplot(aes(bmi, avg_glucose_level)) +
   geom_point() +
@@ -774,7 +774,7 @@ stroke_data %>%
 cor(stroke_data$bmi, stroke_data$avg_glucose_level)
 cor.test(stroke_data$bmi, stroke_data$avg_glucose_level, method = "pearson")
 
-# Age vs BMI #####
+# __Age vs BMI #####
 stroke_data %>% 
   ggplot(aes(age, bmi)) +
   geom_point() +
@@ -783,9 +783,9 @@ stroke_data %>%
 cor(stroke_data$age, stroke_data$bmi)
 cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
 
-# ___CATEGORICAL VARIABLES #####
+# CATEGORICAL VARIABLES #####
 
-# Random Forest Method #####
+# __Random Forest Method #####
 variables_rf <- stroke_data %>%
   select(-age, -avg_glucose_level, -bmi)
 
@@ -821,7 +821,7 @@ importance2
 
 # It seems that separate class will not be easy!
 
-# Contrast of proportions #####
+# __Contrast of proportions #####
 
 # Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
 stroke_categorical <- stroke_data %>% 
@@ -860,13 +860,15 @@ prop_analisis <- stroke_categorical_tidy %>%
   kable()
 prop_analisis
 
-# Near Zero variance
+# NUM and CAT: Near Zero Variance Analysis #####
 stroke_data %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
 
 
-# ___TREES (rpart): Loking for variables II  ########
+# _______________________########
+# TREES (rpart): Loking for variables II ########
+# _______________________########
 
 # Rpart tunning parameters ######
 minsplit_tune <- tune.rpart(stroke ~ .,
@@ -993,10 +995,12 @@ inf_tree_cp0.001_num <- rpart(stroke ~.,
 rpart.plot(inf_tree_cp0.001_num)
 
 # _______________________########
-# BALANCED DATA ########
+# BALANCED DATA: Loking for variables III ########
 # _______________________########
 
+# _______________________########
 # Over Sampling ######
+# _______________________########
 table(stroke_data$stroke)
 prop.table(table(stroke_data$stroke))
 
@@ -1015,9 +1019,9 @@ stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
 table(stroke_data_over$stroke)
 prop.table(table(stroke_data_over$stroke))
 
-# ____COR. OF NUMERICAL VARIABLES #####
+# COR. OF NUMERICAL VARIABLES #####
 
-# Age vs Avg Glucose Level #####
+# __Age vs Avg Glucose Level #####
 stroke_data_over %>% 
   ggplot(aes(age, avg_glucose_level)) +
   geom_point() +
@@ -1026,7 +1030,7 @@ stroke_data_over %>%
 cor(stroke_data_over$age, stroke_data_over$avg_glucose_level)
 cor.test(stroke_data_over$age, stroke_data_over$avg_glucose_level, method = "pearson")
 
-# BMI vs Avg Glucose Level #####
+# __BMI vs Avg Glucose Level #####
 stroke_data_over %>% 
   ggplot(aes(bmi, avg_glucose_level)) +
   geom_point() +
@@ -1035,7 +1039,7 @@ stroke_data_over %>%
 cor(stroke_data_over$bmi, stroke_data_over$avg_glucose_level)
 cor.test(stroke_data_over$bmi, stroke_data_over$avg_glucose_level, method = "pearson")
 
-# Age vs BMI #####
+# __Age vs BMI #####
 stroke_data_over %>% 
   ggplot(aes(age, bmi)) +
   geom_point() +
@@ -1044,9 +1048,9 @@ stroke_data_over %>%
 cor(stroke_data_over$age, stroke_data_over$bmi)
 cor.test(stroke_data_over$age, stroke_data_over$avg_glucose_level, method = "pearson")
 
-# ___CATEGORICAL VARIABLES #####
+# CATEGORICAL VARIABLES #####
 
-# Random Forest Method #####
+# __ Random Forest Method #####
 variables_rf_over <- stroke_data_over %>%
   select(-age, -avg_glucose_level, -bmi)
 
@@ -1080,7 +1084,7 @@ importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, Mea
   theme(legend.position = "bottom")
 importance2_over
 
-# Contrast of proportions #####
+# __Contrast of proportions #####
 
 # Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
 stroke_categorical_over <- stroke_data_over %>% 
@@ -1118,12 +1122,14 @@ prop_analisis_over <- stroke_categorical_tidy_over %>%
   head(20)
 prop_analisis_over
 
-# Near Zero variance
+# NUM and CAT: Near Zero Variance Analysis #####
 stroke_data_over %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
 
+# _______________________########
 # Over_Under Sampling: Both ######
+# _______________________########
 
 table(stroke_data$stroke)
 prop.table(table(stroke_data$stroke))
@@ -1142,9 +1148,9 @@ stroke_data_both$stroke <- relevel(stroke_data_both$stroke, ref = "stroke")
 table(stroke_data_over$stroke)
 prop.table(table(stroke_data_over$stroke))
 
-# ____COR. OF NUMERICAL VARIABLES #####
+# COR. OF NUMERICAL VARIABLES #####
 
-# Age vs Avg Glucose Level #####
+#__ Age vs Avg Glucose Level #####
 stroke_data_both %>% 
   ggplot(aes(age, avg_glucose_level)) +
   geom_point() +
@@ -1153,7 +1159,7 @@ stroke_data_both %>%
 cor(stroke_data_both$age, stroke_data_both$avg_glucose_level)
 cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pearson")
 
-# BMI vs Avg Glucose Level #####
+#__ BMI vs Avg Glucose Level #####
 stroke_data_both %>% 
   ggplot(aes(bmi, avg_glucose_level)) +
   geom_point() +
@@ -1162,7 +1168,7 @@ stroke_data_both %>%
 cor(stroke_data_both$bmi, stroke_data_both$avg_glucose_level)
 cor.test(stroke_data_both$bmi, stroke_data_both$avg_glucose_level, method = "pearson")
 
-# Age vs BMI #####
+#__ Age vs BMI #####
 stroke_data_both %>% 
   ggplot(aes(age, bmi)) +
   geom_point() +
@@ -1171,9 +1177,9 @@ stroke_data_both %>%
 cor(stroke_data_both$age, stroke_data_both$bmi)
 cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pearson")
 
-# ___CATEGORICAL VARIABLES #####
+# CATEGORICAL VARIABLES #####
 
-# Random Forest Method #####
+#__ Random Forest Method #####
 variables_rf_both <- stroke_data_both %>%
   select(-age, -avg_glucose_level, -bmi)
 
@@ -1207,7 +1213,7 @@ importance2_both <- ggplot(data = importance_both, aes(x = reorder(variable, Mea
   theme(legend.position = "bottom")
 importance2_both
 
-# Contrast of proportions #####
+#__Contrast of proportions #####
 
 # Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
 stroke_categorical_both <- stroke_data_both %>% 
@@ -1250,7 +1256,9 @@ stroke_data_both %>%
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
 
+# _______________________########
 # Better Estimates #####
+# _______________________########
 
 table(stroke_data$stroke)
 prop.table(table(stroke_data$stroke))
@@ -1267,9 +1275,9 @@ stroke_data_better$stroke <- relevel(stroke_data_better$stroke, ref = "stroke")
 table(stroke_data_better$stroke)
 prop.table(table(stroke_data_better$stroke))
 
-# ____COR. OF NUMERICAL VARIABLES #####
+# COR. OF NUMERICAL VARIABLES #####
 
-# Age vs Avg Glucose Level #####
+#__Age vs Avg Glucose Level #####
 stroke_data_better %>% 
   ggplot(aes(age, avg_glucose_level)) +
   geom_point() +
@@ -1278,7 +1286,7 @@ stroke_data_better %>%
 cor(stroke_data_better$age, stroke_data_better$avg_glucose_level)
 cor.test(stroke_data_better$age, stroke_data_better$avg_glucose_level, method = "pearson")
 
-# BMI vs Avg Glucose Level #####
+#__BMI vs Avg Glucose Level #####
 stroke_data_better %>% 
   ggplot(aes(bmi, avg_glucose_level)) +
   geom_point() +
@@ -1287,7 +1295,7 @@ stroke_data_better %>%
 cor(stroke_data_better$bmi, stroke_data_better$avg_glucose_level)
 cor.test(stroke_data_better$bmi, stroke_data_better$avg_glucose_level, method = "pearson")
 
-# Age vs BMI #####
+#__Age vs BMI #####
 stroke_data_better %>% 
   ggplot(aes(age, bmi)) +
   geom_point() +
@@ -1296,9 +1304,9 @@ stroke_data_better %>%
 cor(stroke_data_better$age, stroke_data_better$bmi)
 cor.test(stroke_data_better$age, stroke_data_better$avg_glucose_level, method = "pearson")
 
-# ___CATEGORICAL VARIABLES #####
+# CATEGORICAL VARIABLES #####
 
-# Random Forest Method #####
+#__Random Forest Method #####
 variables_rf_better <- stroke_data_better %>%
   select(-age, -avg_glucose_level, -bmi)
 
@@ -1332,7 +1340,7 @@ importance2_better <- ggplot(data = importance_better, aes(x = reorder(variable,
   theme(legend.position = "bottom")
 importance2_better
 
-# Contrast of proportions #####
+#__Contrast of proportions #####
 
 # Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
 stroke_categorical_better <- stroke_data_better %>% 
@@ -1370,12 +1378,10 @@ prop_analisis_better <- stroke_categorical_tidy_better %>%
   head(20)
 prop_analisis_better
 
-# Near Zero variance
+# NUM and CAT: Near Zero Variance Analysis #####
 stroke_data_better %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
-
-
 
 # _______________________########
 # TRAIN and TEST SET ########
