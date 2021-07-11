@@ -142,7 +142,6 @@ str(stroke_data)
 head(stroke_data)
 
 # Categorical and binary data as.factors #####
-# BMI as.numeric (NAs introduced by coercion)
 
 stroke_data <- stroke_data %>% 
   filter(!bmi == "N/A")  %>% # filtering bmi = N/A
@@ -166,19 +165,23 @@ str(stroke_data)
 
 # _______________________########
 # EXPLORATORY DATA ANALYSIS ########
+# https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
+
 # _______________________########
 
-#Number of observations
+
+#Number of observations ######
 n <- nrow(stroke_data)
+n
 # 4909
 
 # Number of strokes = 1 in data set ####
-sum(stroke_data$stroke == "stroke") 
+n_strokes <-  sum(stroke_data$stroke == "stroke") 
 # 209
 
-# Number of strokes = 0 in data set ####
-sum(stroke_data$stroke == "no_stroke") 
-# 4700
+# Strokes proportion #####
+table(stroke_data$stroke)
+prop.table(table(stroke_data$stroke))
 
 # Number of gender = Male in data set ####
 n_males <- sum(stroke_data$gender == "Male") 
@@ -224,15 +227,33 @@ stroke_data %>%
   summarise(mean(stroke == "stroke"))
 # 0.0414
 
-# Summary table by gender #####
-# gender, total of observations, number of strokes, percent of strokes
+# ____NUMERICAL VARIABLES____ ######
+
+# ____AGE (continuous)######
+
+# Statistical Age Data  ####
+
 stroke_data %>% 
-  group_by(gender) %>%
-  summarise(total = n(), percent = round(total/n, 3), 
-            strokes = sum(stroke == "stroke"), 
-            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+  group_by(stroke) %>% 
+  summarise(avg_age = round(mean(age),1),
+            median_age = round(median(age)),
+            min_age = min(age),
+            max_age = max(age)) %>% 
+  kable()
+
+# Density Plot: Age per Class ####
+
+stroke_data %>% ggplot(aes(age, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+stroke_data %>% ggplot(aes(age, y = ..count.., fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+# Box Plot: Age per Class ####
+
+stroke_data %>% ggplot(aes(stroke, age, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)
 
 # Summary table by age #####
 # age, total of observations, number of strokes, percent of strokes
@@ -254,7 +275,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# __Distribution of observations by age #####
+# Distribution of observations by age #####
 stroke_data %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -275,7 +296,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Number of strokes by age  ######
+# Number of strokes by age  ######
 stroke_data %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -296,7 +317,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Percent of strokes by age ####
+# Percent of strokes by age ####
 stroke_data %>% 
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
@@ -326,7 +347,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# __Distribution of observations by rounded age  #####
+# Distribution of observations by rounded age  #####
 stroke_data %>% 
   group_by(age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -346,7 +367,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Number of strokes by rounded age  #####
+# Number of strokes by rounded age  #####
 stroke_data %>% 
   group_by(age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -365,8 +386,8 @@ stroke_data %>%
   labs(title = "Number of Strokes by Age (Rounded)") +
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
-  
-# __Percent of strokes by rounded age  ####  
+
+# Percent of strokes by rounded age  ####  
 stroke_data %>% 
   group_by(age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -386,50 +407,31 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# Summary table by hypertension #####
-# hypertension, total of observations, number of strokes, percent of strokes
-stroke_data %>% 
-  group_by(hypertension) %>%
-  summarise( total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
-             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+# ____AVG GLUCOSE LEVEL (continuous) ######
 
-# Summary table by heart_disease #####
-# heart_disease, total of observations, number of strokes, percent of strokes
-stroke_data %>% 
-  group_by(heart_disease) %>%
-  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
-            stroke_percent = round(mean(stroke =="stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+# Statistical Glucose Data  ####
 
-# Summary table by ever_married #####
-# ever_married, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
-  group_by(ever_married) %>%
-  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
-            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+  group_by(stroke) %>% 
+  summarise(avg_glucose = round(mean(avg_glucose_level),1),
+            median_glucose = round(median(avg_glucose_level)),
+            min_glucose = min(avg_glucose_level),
+            max_glucose = max(avg_glucose_level)) %>% 
+  kable()
 
-# Summary table by work_type #####
-# work_type, total of observations, number of strokes, percent of strokes
-stroke_data %>% 
-  group_by(work_type) %>%
-  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
-            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+# Density Plot: Avg Level per Class ####
 
-# Summary table by Residence_type #####
-# age, total of observations, number of strokes, percent of strokes
-stroke_data %>% 
-  group_by(Residence_type) %>%
-  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
-            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+stroke_data %>% ggplot(aes(avg_glucose_level, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 5)
+
+stroke_data %>% ggplot(aes(avg_glucose_level, y = ..count.., fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+# Box Plot: Avg Level per Class ####
+
+stroke_data %>% ggplot(aes(stroke, avg_glucose_level, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)
 
 # Summary table by avg_glucose_level (round to nearest ten) #####
 # avg_glucose_level, total of observations, number of strokes, percent of strokes
@@ -440,7 +442,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# __Distribution of observations by rounded avg_glucose_level  #####
+# Distribution of observations by rounded avg_glucose_level  #####
 stroke_data %>% 
   group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -460,7 +462,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Number of strokes by rounded avg_glucose_level  #####
+# Number of strokes by rounded avg_glucose_level  #####
 stroke_data %>% 
   group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -480,7 +482,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Percent of strokes by rounded avg_glucose_level ####  
+# Percent of strokes by rounded avg_glucose_level ####  
 stroke_data %>% 
   group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -500,6 +502,32 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
+# ____BMI (continuous) ######
+
+# Statistical BMI Data  ####
+
+stroke_data %>% 
+  group_by(stroke) %>% 
+  summarise(avg_glucose = round(mean(bmi),1),
+            median_glucose = round(median(bmi)),
+            min_glucose = min(bmi),
+            max_glucose = max(bmi)) %>% 
+  kable()
+
+# Density Plot: Avg Glucose Level per Class ####
+
+stroke_data %>% ggplot(aes(bmi, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+stroke_data %>% ggplot(aes(bmi, y = ..count.., fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+# Box Plot: Avg Level Glucose  per Class ####
+
+stroke_data %>% ggplot(aes(stroke, bmi, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)
+
 # Summary table by bmi (round to nearest ten) #####
 # bmi, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
@@ -511,7 +539,7 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# __Distribution of observations by rounded bmi  #####
+# Distribution of observations by rounded bmi  #####
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
@@ -533,7 +561,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Number of strokes by rounded bmi  #####
+# Number of strokes by rounded bmi  #####
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
@@ -555,7 +583,7 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
-# __Percent of strokes by rounded bmi ####  
+# Percent of strokes by rounded bmi ####  
 stroke_data %>% 
   filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
@@ -577,6 +605,142 @@ stroke_data %>%
   theme(plot.title = element_text(size = 10, face = "bold")) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
+# ____CATEGORICAL VARIABLES_____ ######
+
+# ____GENDER (binary)_____ ######
+
+# Gender distribution #####
+stroke_data %>% 
+  filter(!gender == "Other") %>% 
+  ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Gender") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Summary table by gender #####
+# gender, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  filter(!gender == "Other") %>% 
+  group_by(gender) %>%
+  summarise(total = n(), percent = round(total/n, 3), 
+            strokes = sum(stroke == "stroke"), 
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# ____HYPERTENSION (binary)____ ######
+
+# Hypertension distribution #####
+stroke_data %>% 
+  ggplot(aes(x = hypertension, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Hypertension") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Summary table by hypertension #####
+# hypertension, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(hypertension) %>%
+  summarise( total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# ____HEART DESEASE (binary)____ ######
+
+# Heart_disease distribution #####
+stroke_data %>% 
+  ggplot(aes(x = heart_disease, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Heart_disease") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Summary table by heart_disease #####
+# heart_disease, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(heart_disease) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke =="stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# ____EVER MARRIED (binary)____ ######
+
+# Ever_married distribution #####
+stroke_data %>% 
+  ggplot(aes(x = ever_married, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Ever_married") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Summary table by ever_married #####
+# ever_married, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(ever_married) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# ____WORK TYPE (nominal)____ ######
+
+# Ever_married distribution #####
+stroke_data %>% 
+  ggplot(aes(x = work_type, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Work_type") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Summary table by work_type #####
+# work_type, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(work_type) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# ____RESIDENCE TYPE (binary)____ ######
+
+# Residence_type distribution #####
+stroke_data %>% 
+  ggplot(aes(x = Residence_type, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Residence_type") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Summary table by Residence_type #####
+# age, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(Residence_type) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# ____SMOKING STATUS (nominal)____ ######
+
+# Smoking_status distribution #####
+stroke_data %>% 
+  ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Smoking_status") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
 # Summary table by smoking_status  #####
 # smoking_status, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
@@ -586,40 +750,508 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# Summary table by age - Males (rounded) #####
-# age, total of observations, number of strokes, percent of strokes
-stroke_data %>% 
-  filter(gender == "Male") %>% 
-  group_by(round(age, -1)) %>%
-  summarise(total = n(), percent = round(total/n_males, 3), strokes = sum(stroke == "stroke"),
-            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+# _______________________########
+# VARIABLE IMPORTANCE: Looking for variables I ########
+# _______________________########
 
-# Summary table by age - Females (rounded) #####
-# age, total of observations, number of strokes, percent of strokes
-stroke_data %>% 
-  filter(gender == "Female") %>% 
-  group_by(round(age, -1)) %>%
-  summarise(total = n(), percent = round(total/n_females, 2), strokes = sum(stroke == "stroke"),
-            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
-  unique() %>%
-  knitr::kable()
+# ____COR. OF NUMERICAL VARIABLES #####
 
+# Age vs Avg Glucose Level #####
 stroke_data %>% 
-  mutate(stroke = as.factor(stroke)) %>% 
-  ggplot(aes(age, avg_glucose_level, color = stroke)) +
-  geom_point()
+  ggplot(aes(age, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
 
-stroke_data %>% 
-  mutate(stroke = as.factor(stroke), bmi = as.numeric(bmi)) %>% 
-  ggplot(aes(bmi, avg_glucose_level, color = stroke)) +
-  geom_point()
+cor(stroke_data$age, stroke_data$avg_glucose_level)
+cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
 
+# BMI vs Avg Glucose Level #####
 stroke_data %>% 
-  mutate(stroke = as.factor(stroke), bmi = as.numeric(bmi)) %>% 
-  ggplot(aes(age, bmi, color = stroke)) +
-  geom_point()
+  ggplot(aes(bmi, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data$bmi, stroke_data$avg_glucose_level)
+cor.test(stroke_data$bmi, stroke_data$avg_glucose_level, method = "pearson")
+
+# Age vs BMI #####
+stroke_data %>% 
+  ggplot(aes(age, bmi)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data$age, stroke_data$bmi)
+cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
+
+# ___CATEGORICAL VARIABLES #####
+
+# Random Forest Method #####
+variables_rf <- stroke_data %>%
+  select(-age, -avg_glucose_level, -bmi)
+
+
+randforest_model <- randomForest(formula = stroke ~ . ,
+                                  data = variables_rf,
+                                  mtry = 5,
+                                  importance = TRUE, 
+                                  ntree = 1000) 
+
+importance <- as.data.frame(randforest_model$importance)
+importance <- rownames_to_column(importance,var = "variable")
+
+importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                     y = MeanDecreaseAccuracy,
+                                     fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1
+
+importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseGini),
+                                     y = MeanDecreaseGini,
+                                     fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2
+
+# It seems that separate class will not be easy!
+
+# Contrast of proportions #####
+
+# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+stroke_categorical <- stroke_data %>% 
+  filter(!gender == "Other") %>% 
+  select(gender, hypertension, heart_disease, ever_married, work_type,
+         Residence_type, smoking_status, stroke)
+
+stroke_categorical_tidy <- data.frame(stroke_categorical %>%
+  gather(key = "variable", value = "group",-stroke))
+
+# Se añade un identificador formado por el nombre de la variable y el grupo 
+stroke_categorical_tidy <- stroke_categorical_tidy %>%
+  mutate(group_variable = paste(variable, group, sep = "_"))
+
+# Función que calcula el test de proporciones para la columna "Stroke" de un df
+proportion_test <- function(df){
+  n_strokes <- sum(df$stroke == "stroke") 
+  n_no_stroke     <- sum(df$stroke == "no_stroke")
+  n_total <- n_strokes + n_no_stroke
+  test <- prop.test(x = n_strokes, n = n_total, p = 0.04257486)
+  prop_strokes <- n_strokes / n_total
+  return(data.frame(p_value = test$p.value, prop_strokes))
+}
+
+# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
+# test_proporcion()
+prop_analisis <- stroke_categorical_tidy %>%
+  group_by(group_variable) %>%
+  nest() %>%
+  arrange(group_variable) %>%
+  mutate(prop_test = map(.x = data, .f = proportion_test)) %>%
+  unnest(prop_test) %>%
+  arrange(p_value) %>% 
+  select(group_variable,p_value, prop_strokes) %>% 
+  head(10) %>% 
+  kable()
+prop_analisis
+
+# Near Zero variance
+stroke_data %>% 
+  select(-stroke) %>% 
+  nearZeroVar(saveMetrics = TRUE)
+
+
+# ___TREES (rpart): Loking for variables II  ########
+
+# Rpart tunning parameters ######
+minsplit_tune <- tune.rpart(stroke ~ .,
+                            data = stroke_data, 
+                            minsplit = seq(1,100,5))
+plot(minsplit_tune, main = "tune minsplit")
+
+cp_tune <- tune.rpart(stroke ~ .,
+                      data = stroke_data, 
+                      cp = seq(0.000, 0.02, len = 50))
+plot(cp_tune, main = "tune cp")
+
+cp_tune <- train(stroke ~ ., 
+                 method = "rpart",
+                 tuneGrid = data.frame(cp = seq(0.000, 0.02, len = 50)),
+                 data = stroke_data)
+plot(cp_tune)
+
+maxdepth_tune <- tune.rpart(stroke ~ .,
+                            data = stroke_data, 
+                            maxdepth = 1:30)
+plot(maxdepth_tune, main = "tune maxdepth")
+
+# All Data #####
+
+# __Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+rpart.plot(rpart(stroke ~ ., 
+                 data = stroke_data)) # Default rpart tree
+
+# __Gini Tree, CP = 0.001, minsplit = 20, minbucket round 20/3, maxdepht = 30 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("gini")),
+                 cp = 0.001))
+
+# __Gini Tree, CP = 0.0024, minslit = 20, minbucket round 20/3, maxdepht = 30 ######
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("gini")),
+                 cp = 0.0024))
+
+# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 5 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("gini")),
+                 cp = 0.001,
+                 maxdepth = 5))
+
+# __Information Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("information"))))
+
+# __Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepth = 30 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("information")),
+                 cp = 0.001))
+
+# __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("information")),
+                 cp = 0.0023))
+
+# __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 6 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("information")),
+                 cp = 0.0023,
+                 maxdepth = 6))
+
+inf_tree_cp0.001_max6 <- rpart(stroke ~., 
+                               data = train_stroke_t, 
+                               parms=list(split=c("information")),
+                               cp = 0.0023,
+                               maxdepth = 6)
+
+#Categorical Data and Binary Data #####
+stroke_categorical <- stroke_data %>% 
+  select(gender, hypertension, heart_disease, ever_married, work_type,
+         Residence_type, smoking_status, stroke)
+
+# __Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+default_tree_cat <- rpart(stroke ~ ., 
+                          data = stroke_categorical)
+rpart.plot(default_tree_cat)
+
+# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+gini_tree_cp0.001_cat <- rpart(stroke ~., 
+                               data = stroke_categorical, 
+                               parms=list(split=c("gini")),
+                               cp = 0.001)
+rpart.plot(gini_tree_cp0.001_cat)
+
+# __Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+inf_tree_cp0.001_cat <- rpart(stroke ~., 
+                              data = stroke_categorical, 
+                              parms=list(split=c("information")),
+                              cp = 0.001)
+rpart.plot(inf_tree_cp0.001_cat)
+
+#Numerical Data #####
+stroke_numerical <- stroke_data %>% 
+  select(age, avg_glucose_level, bmi, stroke)
+
+# __Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+default_tree_num <- rpart(stroke ~ ., 
+                          data = stroke_numerical)
+rpart.plot(default_tree_num)
+
+# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+gini_tree_cp0.001_num <- rpart(stroke ~., 
+                               data = stroke_numerical, 
+                               parms=list(split=c("gini")),
+                               cp = 0.001)
+rpart.plot(gini_tree_cp0.001_num)
+
+# __Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+inf_tree_cp0.001_num <- rpart(stroke ~., 
+                              data = stroke_numerical, 
+                              parms=list(split=c("information")),
+                              cp = 0.001)
+rpart.plot(inf_tree_cp0.001_num)
+
+# _______________________########
+# BALANCED DATA ########
+# _______________________########
+
+# Over Sampling ######
+table(stroke_data$stroke)
+prop.table(table(stroke_data$stroke))
+
+n_over = sum(stroke_data == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
+# Every time we run the code, we get a different ovun.sample
+# Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this ramdom process.
+
+stroke_data_over <- ovun.sample(stroke ~ ., data = stroke_data, method = "over", N = n_over*2)$data
+table(stroke_data_over$stroke)
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke"
+stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
+
+table(stroke_data_over$stroke)
+prop.table(table(stroke_data_over$stroke))
+
+# ____COR. OF NUMERICAL VARIABLES #####
+
+# Age vs Avg Glucose Level #####
+stroke_data_over %>% 
+  ggplot(aes(age, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_over$age, stroke_data_over$avg_glucose_level)
+cor.test(stroke_data_over$age, stroke_data_over$avg_glucose_level, method = "pearson")
+
+# BMI vs Avg Glucose Level #####
+stroke_data_over %>% 
+  ggplot(aes(bmi, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_over$bmi, stroke_data_over$avg_glucose_level)
+cor.test(stroke_data_over$bmi, stroke_data_over$avg_glucose_level, method = "pearson")
+
+# Age vs BMI #####
+stroke_data_over %>% 
+  ggplot(aes(age, bmi)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_over$age, stroke_data_over$bmi)
+cor.test(stroke_data_over$age, stroke_data_over$avg_glucose_level, method = "pearson")
+
+# ___CATEGORICAL VARIABLES #####
+
+# Random Forest Method #####
+variables_rf_over <- stroke_data_over %>%
+  select(-age, -avg_glucose_level, -bmi)
+
+
+randforest_model_over <- randomForest(formula = stroke ~ . ,
+                                 data = variables_rf_over,
+                                 mtry = 5,
+                                 importance = TRUE, 
+                                 ntree = 1000) 
+
+importance_over <- as.data.frame(randforest_model_over$importance)
+importance_over <- rownames_to_column(importance_over,var = "variable")
+
+importance1_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                             y = MeanDecreaseAccuracy,
+                                             fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Over") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_over
+
+importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseGini),
+                                             y = MeanDecreaseGini,
+                                             fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - Over") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_over
+
+# Contrast of proportions #####
+
+# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+stroke_categorical_over <- stroke_data_over %>% 
+  filter(!gender == "Other") %>% 
+  select(gender, hypertension, heart_disease, ever_married, work_type,
+         Residence_type, smoking_status, stroke)
+
+stroke_categorical_tidy_over <- data.frame(stroke_categorical_over %>%
+                                        gather(key = "variable", value = "group",-stroke))
+
+# Se añade un identificador formado por el nombre de la variable y el grupo 
+stroke_categorical_tidy_over <- stroke_categorical_tidy_over %>%
+  mutate(group_variable = paste(variable, group, sep = "_"))
+
+# Función que calcula el test de proporciones para la columna "Stroke" de un df
+proportion_test_over <- function(df){
+  n_strokes <- sum(df$stroke == "stroke") 
+  n_no_stroke     <- sum(df$stroke == "no_stroke")
+  n_total <- n_strokes + n_no_stroke
+  test <- prop.test(x = n_strokes, n = n_total, p = 0.5)
+  prop_strokes <- n_strokes / n_total
+  return(data.frame(p_value = test$p.value, prop_strokes))
+}
+
+# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
+# test_proporcion()
+prop_analisis_over <- stroke_categorical_tidy_over %>%
+  group_by(group_variable) %>%
+  nest() %>%
+  arrange(group_variable) %>%
+  mutate(prop_test = map(.x = data, .f = proportion_test_over)) %>%
+  unnest(prop_test) %>%
+  arrange(p_value) %>% 
+  select(group_variable,p_value, prop_strokes) %>% 
+  head(20)
+prop_analisis_over
+
+# Near Zero variance
+stroke_data_over %>% 
+  select(-stroke) %>% 
+  nearZeroVar(saveMetrics = TRUE)
+
+# Over_Under Sampling: Both ######
+
+table(stroke_data$stroke)
+prop.table(table(stroke_data$stroke))
+
+n_both = sum(stroke_data$stroke == "stroke") + sum(stroke_data$stroke == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+stroke_data_both <- ovun.sample(stroke ~ ., data = stroke_data, method = "both", p = 0.5, N = n_both)$data
+table(stroke_data_both$stroke)
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke"
+stroke_data_both$stroke <- relevel(stroke_data_both$stroke, ref = "stroke")
+
+table(stroke_data_over$stroke)
+prop.table(table(stroke_data_over$stroke))
+
+# ____COR. OF NUMERICAL VARIABLES #####
+
+# Age vs Avg Glucose Level #####
+stroke_data_both %>% 
+  ggplot(aes(age, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_both$age, stroke_data_both$avg_glucose_level)
+cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pearson")
+
+# BMI vs Avg Glucose Level #####
+stroke_data_both %>% 
+  ggplot(aes(bmi, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_both$bmi, stroke_data_both$avg_glucose_level)
+cor.test(stroke_data_both$bmi, stroke_data_both$avg_glucose_level, method = "pearson")
+
+# Age vs BMI #####
+stroke_data_both %>% 
+  ggplot(aes(age, bmi)) +
+  geom_point() +
+  geom_smooth()
+
+cor(stroke_data_both$age, stroke_data_both$bmi)
+cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pearson")
+
+# ___CATEGORICAL VARIABLES #####
+
+# Random Forest Method #####
+variables_rf_both <- stroke_data_over %>%
+  select(-age, -avg_glucose_level, -bmi)
+
+
+randforest_model_both <- randomForest(formula = stroke ~ . ,
+                                      data = variables_rf_both,
+                                      mtry = 5,
+                                      importance = TRUE, 
+                                      ntree = 1000) 
+
+importance_both <- as.data.frame(randforest_model_both$importance)
+importance_both <- rownames_to_column(importance_both,var = "variable")
+
+importance1_both <- ggplot(data = importance_both, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                                       y = MeanDecreaseAccuracy,
+                                                       fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Both") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_both
+
+importance2_both <- ggplot(data = importance_both, aes(x = reorder(variable, MeanDecreaseGini),
+                                                       y = MeanDecreaseGini,
+                                                       fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - Both") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_both
+
+# Contrast of proportions #####
+
+# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+stroke_categorical_both <- stroke_data_both %>% 
+  filter(!gender == "Other") %>% 
+  select(gender, hypertension, heart_disease, ever_married, work_type,
+         Residence_type, smoking_status, stroke)
+
+stroke_categorical_tidy_both <- data.frame(stroke_categorical_both %>%
+                                             gather(key = "variable", value = "group",-stroke))
+
+# Se añade un identificador formado por el nombre de la variable y el grupo 
+stroke_categorical_tidy_both <- stroke_categorical_tidy_both %>%
+  mutate(group_variable = paste(variable, group, sep = "_"))
+
+# Función que calcula el test de proporciones para la columna "Stroke" de un df
+proportion_test_both <- function(df){
+  n_strokes <- sum(df$stroke == "stroke") 
+  n_no_stroke     <- sum(df$stroke == "no_stroke")
+  n_total <- n_strokes + n_no_stroke
+  test <- prop.test(x = n_strokes, n = n_total, p = 0.5)
+  prop_strokes <- n_strokes / n_total
+  return(data.frame(p_value = test$p.value, prop_strokes))
+}
+
+# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
+# test_proporcion()
+prop_analisis_both <- stroke_categorical_tidy_both %>%
+  group_by(group_variable) %>%
+  nest() %>%
+  arrange(group_variable) %>%
+  mutate(prop_test = map(.x = data, .f = proportion_test_both)) %>%
+  unnest(prop_test) %>%
+  arrange(p_value) %>% 
+  select(group_variable,p_value, prop_strokes) %>% 
+  head(20)
+prop_analisis_both
+
+# Near Zero variance
+stroke_data_both %>% 
+  select(-stroke) %>% 
+  nearZeroVar(saveMetrics = TRUE)
+
+
+
 
 # _______________________########
 # TRAIN and TEST SET ########
@@ -855,136 +1487,7 @@ test_stroke %>%
 
 # There are several changes in percentages by avg_glucose level!
 
-# _______________________########
-# TREES (rpart): Loking for variables  ########
-# _______________________########
 
-# Rpart tunning parameters ######
-minsplit_tune <- tune.rpart(stroke ~ .,
-                            data = train_stroke_t, 
-                            minsplit = seq(1,100,5))
-plot(minsplit_tune, main = "tune minsplit")
-
-cp_tune <- tune.rpart(stroke ~ .,
-                      data = train_stroke_t, 
-                      cp = seq(0.000, 0.02, len = 50))
-plot(cp_tune, main = "tune cp")
-
-cp_tune <- train(stroke ~ ., 
-                 method = "rpart",
-                 tuneGrid = data.frame(cp = seq(0.000, 0.02, len = 50)),
-                 data = train_stroke_t)
-plot(cp_tune)
-
-maxdepth_tune <- tune.rpart(stroke ~ .,
-                            data = train_stroke_t, 
-                            maxdepth = 1:30)
-plot(maxdepth_tune, main = "tune maxdepth")
-
-# All Data #####
-
-# __Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
-rpart.plot(rpart(stroke ~ ., 
-                 data = train_stroke)) # Default rpart tree
-
-
-# __Gini Tree, CP = 0.001, minsplit = 20, minbucket round 20/3, maxdepht = 30 #####
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("gini")),
-                 cp = 0.001))
-
-# __Gini Tree, CP = 0.0024, minslit = 20, minbucket round 20/3, maxdepht = 30 ######
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("gini")),
-                 cp = 0.0024))
-
-# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 5 #####
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("gini")),
-                 cp = 0.001,
-                 maxdepth = 5))
-
-# __Information Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("information"))))
-
-# __Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepth = 30 #####
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("information")),
-                 cp = 0.001))
-
-# __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("information")),
-                 cp = 0.0023))
-
-# __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 6 #####
-rpart.plot(rpart(stroke ~., 
-                 data = train_stroke, 
-                 parms=list(split=c("information")),
-                 cp = 0.0023,
-                 maxdepth = 6))
-
-inf_tree_cp0.001_max6 <- rpart(stroke ~., 
-                           data = train_stroke_t, 
-                           parms=list(split=c("information")),
-                           cp = 0.0023,
-                           maxdepth = 6)
-
-
-#Categorical Data and Binary Data #####
-train_stroke_categorical <- train_stroke %>% 
-  select(gender, hypertension, heart_disease, ever_married, work_type,
-         Residence_type, smoking_status, stroke)
-
-# __Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
-default_tree_cat <- rpart(stroke ~ ., 
-                      data = train_stroke_categorical)
-rpart.plot(default_tree_cat)
-
-# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
-gini_tree_cp0.001_cat <- rpart(stroke ~., 
-                           data = train_stroke_categorical, 
-                           parms=list(split=c("gini")),
-                           cp = 0.001)
-rpart.plot(gini_tree_cp0.001_cat)
-# __Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
-
-inf_tree_cp0.001_cat <- rpart(stroke ~., 
-                          data = train_stroke_categorical, 
-                          parms=list(split=c("information")),
-                          cp = 0.001)
-rpart.plot(inf_tree_cp0.001_cat)
-
-
-#Numerical Data #####
-train_stroke_numerical <- stroke_data %>% 
-  select(age, avg_glucose_level, bmi, stroke)
-
-# __Default Tree: Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
-default_tree_num <- rpart(stroke ~ ., 
-                          data = train_stroke_numerical)
-rpart.plot(default_tree_num)
-
-# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
-gini_tree_cp0.001_num <- rpart(stroke ~., 
-                               data = train_stroke_numerical, 
-                               parms=list(split=c("gini")),
-                               cp = 0.001)
-rpart.plot(gini_tree_cp0.001_num)
-
-# __Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
-inf_tree_cp0.001_num <- rpart(stroke ~., 
-                              data = train_stroke_numerical, 
-                              parms=list(split=c("information")),
-                              cp = 0.001)
-rpart.plot(inf_tree_cp0.001_num)
 
 
 # _______________________########
@@ -1752,6 +2255,8 @@ plotcp(gini_tree_cp0.01_over)
 summary(gini_tree_cp0.01_over)
 
 rpart.plot(gini_tree_cp0.01_over)
+print(gini_tree_cp0.01_over)
+summary(gini_tree_cp0.01_over)
 
 y_hat_gini_tree_cp0.01_over <- predict(gini_tree_cp0.01_over, test_stroke_t, 
                                        type = "class")
@@ -2626,12 +3131,12 @@ sens_roc_gini_tree_cp0.01_both <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_both)
 
-# __Accuracy :   ####
-# __Sensitivity :    ####         
-# __Specificity :  ####
-# __Balanced Accuracy :   ####
-# __F_meas, beta = 1 :    ####
-# __AUC Sens vs Spec :  ######
+# __Accuracy :  0.7556 ####
+# __Sensitivity :   0.73810 ####         
+# __Specificity : 0.75638 ####
+# __Balanced Accuracy : 0.74724  ####
+# __F_meas, beta = 1 :  0.205298  ####
+# __AUC Sens vs Spec : 0.7518 ######
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 gini_tree_cp0.001_both <- rpart(stroke ~., 
@@ -2684,12 +3189,12 @@ sens_espec_roc_gini_tree_cp0.001_both <- plot(roc(response = test_stroke_t$strok
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_both)
 
-# __Accuracy :   ####
-# __Sensitivity :  ####       
-# __Specificity :  ####
-# __Balanced Accuracy :  ####
-# __F_meas, beta = 1 :   ####
-# __AUC Sens vs Spec :  ######
+# __Accuracy : 0.836  ####
+# __Sensitivity : 0.40476 ####       
+# __Specificity : 0.85532 ####
+# __Balanced Accuracy : 0.63004  ####
+# __F_meas, beta = 1 : 0.174359   ####
+# __AUC Sens vs Spec : 0.3567 ######
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 cost_matrix_tree_both <- rpart(stroke ~ ., 
@@ -2726,7 +3231,7 @@ F_meas(confusionMatrix(y_hat_cost_matrix_tree_both,
                        test_stroke_t$stroke)$table, beta = 1)
 
 # Calc. Probs for every class
-roc_cost_matrix_tree_over <- predict(cost_matrix_tree_both,
+roc_cost_matrix_tree_both <- predict(cost_matrix_tree_both,
                                      test_stroke_t, type = "prob") %>% 
   data.frame()
 
@@ -2744,12 +3249,12 @@ sens_espec_roc_cost_matrix_tree_both <- plot(roc(response = test_stroke_t$stroke
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_both)
 
-# __Accuracy :    ##### 
-# __Sensitivity :  #####         
-# __Specificity : #####  
-# __Balanced Accuracy :  #####
-# __F_meas, beta = 1 :  #####
-# __AUC Sens vs Spec :  ######
+# __Accuracy : 0.6029   ##### 
+# __Sensitivity : 0.85714  #####         
+# __Specificity : 0.59149 #####  
+# __Balanced Accuracy : 0.72432  #####
+# __F_meas, beta = 1 : 0.1558442  #####
+# __AUC Sens vs Spec : 0.7704 ######
 
 
 # RPART caret ####
@@ -2831,12 +3336,12 @@ roc_tp_fp_caret_tree_both <- evalm(list(train_caret_tree_both),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('CARET Tree - both'))
 
-# __Accuracy :    ####
-# __Sensitivity :       ####        
-# __Specificity :   ####
-# __Balanced Accuracy :    ####
-# __F_meas, beta = 1 :   #####
-# __AUC Sens vs Spec :  ######
+# __Accuracy :  0.8177   ####
+# __Sensitivity : 0.71429      ####        
+# __Specificity : 0.82234  ####
+# __Balanced Accuracy : 0.76831   ####
+# __F_meas, beta = 1 : 0.251046  #####
+# __AUC Sens vs Spec : 0.808 ######
 
 
 #KNN caret #######
@@ -2921,12 +3426,12 @@ roc_tp_fp_knn_both <- evalm(list(train_knn_both),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('KNN - both'))
 
-# __Accuracy :    ##### 
-# __Sensitivity :   #####         
-# __Specificity :   ##### 
-# __Balanced Accuracy :    #####
-# __F_meas, beta = 1 :  #####
-# __AUC Sens vs Spec :  ######
+# __Accuracy : 0.7699  ##### 
+# __Sensitivity : 0.52381  #####         
+# __Specificity : 0.78085  ##### 
+# __Balanced Accuracy : 0.65233  #####
+# __F_meas, beta = 1 : 0.162963 #####
+# __AUC Sens vs Spec : 0.6498 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -2938,7 +3443,7 @@ train_rf_both <- train(stroke ~ ., method = "rf",
 plot(train_rf_both)
 summary(train_knn_both)
 
-y_hat_rf_over <- predict(train_rf_both, test_stroke_t, type = "raw")
+y_hat_rf_both <- predict(train_rf_both, test_stroke_t, type = "raw")
 
 # Model Evaluation ::::::::
 
@@ -3007,80 +3512,73 @@ roc_tp_fp_rf_both <- evalm(list(train_rf_both),
                            title = "True Positive - False Positive rate ROC",
                            gnames=c('Random Forest - both'))
 
-# __Accuracy :    ##### 
-# __Sensitivity :   #####         
-# __Specificity :    ##### 
-# __Balanced Accuracy :   ##### 
-# __F_meas, beta = 1 :  #####
-# # __AUC Sens vs Spec :   ###### 
+# __Accuracy : 0.9134   ##### 
+# __Sensitivity : 0.119048  #####         
+# __Specificity : 0.948936   ##### 
+# __Balanced Accuracy : 0.533992  ##### 
+# __F_meas, beta = 1 : 0.1052632 #####
+# # __AUC Sens vs Spec : 0.7989  ###### 
 
-# MDA: EVAL ERROR ######
+# MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
-set.seed(1970, sample.kind="Rounding") 
+# set.seed(1970, sample.kind="Rounding") 
 # Results are random variables
 
-train_mda_both <- train(stroke ~ ., method = "mda", 
-                        data = train_stroke_both,
-                        trControl = ctrl) # Several Warnings
+# train_mda_both <- train(stroke ~ ., method = "mda", 
+# data = train_stroke_both,
+# trControl = ctrl) # Several Warnings
 
-plot(train_mda_both)
-print(train_mda_both)
-summary(train_mda_both)
+# Error: Stopping
+# Además: There were 50 or more warnings (use warnings() to see the first 50)
 
-y_hat_mda_both <- predict(train_mda_both, test_stroke_t)
+# plot(train_mda_both)
+# print(train_mda_both)
+# summary(train_mda_both)
+
+# y_hat_mda_both <- predict(train_mda_both, test_stroke_t)
 
 # Model Evaluation ::::::::
 
-confusionMatrix(y_hat_mda_both,
-                test_stroke_t$stroke)$overall["Accuracy"]
+# confusionMatrix(y_hat_mda_both,
+# test_stroke_t$stroke)$overall["Accuracy"]
 
-confusionMatrix(y_hat_mda_both,
-                test_stroke$stroke)$overall
+# confusionMatrix(y_hat_mda_both,
+# test_stroke$stroke)$overall
 
-confusionMatrix(y_hat_mda_both,
-                test_stroke_t$stroke)$table
+# confusionMatrix(y_hat_mda_both,
+# test_stroke_t$stroke)$table
 
-cm_mda_both<- confusionMatrix(y_hat_mda_both, test_stroke_t$stroke, 
-                               positive = "stroke")
-cm_mda_both
+# cm_mda_both<- confusionMatrix(y_hat_mda_both, test_stroke_t$stroke, 
+# positive = "stroke")
+# cm_mda_both
 
 # F_Meas
 
-F_meas(confusionMatrix(y_hat_mda_both,
-                       test_stroke_t$stroke)$table, beta = 1)
+# F_meas(confusionMatrix(y_hat_mda_both,
+# test_stroke_t$stroke)$table, beta = 1)
 
 # Calc. Probs for every class
-roc_mda_both <- predict(train_mda_both,
-                        test_stroke_t, type = "prob")
+# roc_mda_both <- predict(train_mda_both,
+# test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
-sens_espec_roc_mdaboth <-plot(roc(response = test_stroke_t$stroke, 
-                                   predictor = roc_mda_both$stroke, levels = c("stroke", "no_stroke")), 
-                               print.auc = TRUE,
-                               xlim = c(1,0),
-                               ylim = c(0,1),
-                               xlab = "Specificity", 
-                               ylab ="Sensibility", 
-                               main = "MDA - Over")
+# sens_espec_roc_mdaboth <-plot(roc(response = test_stroke_t$stroke, 
+# predictor = roc_mda_both$stroke, levels = c("stroke", "no_stroke")), 
+# print.auc = TRUE,
+# xlim = c(1,0),
+# ylim = c(0,1),
+# xlab = "Specificity", 
+# ylab ="Sensibility", 
+# main = "MDA - Over")
 
 # Sensitivity vs Specificity AUC
-auc(sens_espec_roc_mda_both)
+# auc(sens_espec_roc_mda_both)
 
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
-eval_mda_both <- evalm(list(train_mda_both), 
-                       positive = "stroke",
-                       gnames=c('MDA - both')) 
-
-# ERROR
-# Error in names(x) <- value : 
-# el atributo 'names' [1] debe tener la misma longitud que el vector [0]
-# Además: Warning messages:
-# 1: Removed 7520 row(s) containing missing values (geom_path). 
-# 2: Removed 1 rows containing missing values (geom_segment). 
-# 3: Removed 7520 row(s) containing missing values (geom_path). 
-# 4: Removed 7520 row(s) containing missing values (geom_path). 
-
+# eval_mda_both <- evalm(list(train_mda_both), 
+# positive = "stroke",
+# gnames=c('MDA - both')) 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 # cc_mda_both <- evalm(list(train_mda_both), 
@@ -3109,13 +3607,6 @@ eval_mda_both <- evalm(list(train_mda_both),
 # plots = "r",
 # title = "True Positive - False Positive rate ROC",
 # gnames=c('MDA - both'))
-
-# __Accuracy :    ##### 
-# __Sensitivity :     #####        
-# __Specificity :    ##### 
-# __Balanced Accuracy :      ##### 
-# __F_meas, beta = 1 :   #####
-# __AUC Sens vs Spec :  ###### 
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -3154,7 +3645,7 @@ F_meas(confusionMatrix(as.factor(y_hat_nnet_both),
                        test_stroke_t$stroke)$table, beta = 1)
 
 # Calc. Probs for every class
-roc_nnet_over <- predict(train_nnet_both,
+roc_nnet_both <- predict(train_nnet_both,
                          test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
@@ -3206,19 +3697,19 @@ roc_tp_fp_nnet_both <- evalm(list(train_nnet_both),
                              title = "True Positive - False Positive rate ROC",
                              gnames=c('NNET - both'))
 
-# __Accuracy :  ####
-# __Sensitivity :  ####        
-# __Specificity :   ####
-# __Balanced Accuracy :    ####
-# __F_meas, beta = 1 :  #####
-# __AUC Sens vs Spec  ###### 
+# __Accuracy : 0.7729 ####
+# __Sensitivity : 0.57143 ####        
+# __Specificity : 0.78191  ####
+# __Balanced Accuracy : 0.67667   ####
+# __F_meas, beta = 1 : 0.1771218 #####
+# __AUC Sens vs Spec : 0.7862 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
 train_fda_both <- train(stroke ~ ., method = "fda", 
                         data = train_stroke_both, trControl = ctrl)
 
-y_hat_fda_over <- predict(train_fda_both, test_stroke_t)
+y_hat_fda_both <- predict(train_fda_both, test_stroke_t)
 
 # Model Evaluation ::::::::
 
@@ -3293,12 +3784,12 @@ roc_tp_fp_fda_both <- evalm(list(train_fda_both),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('FDA - both'))
 
-# __Accuracy :    ####
-# __Sensitivity :   ####        
-# __Specificity :  ####  
-# __Balanced Accuracy :    ####
-# __F_meas, beta = 1 :  #####
-# # __AUC Sens vs Spec :  ###### 
+# __Accuracy : 0.7403   ####
+# __Sensitivity : 0.85714  ####        
+# __Specificity : 0.73511 ####  
+# __Balanced Accuracy :  0.79612  ####
+# __F_meas, beta = 1 : 0.2201835 #####
+# __AUC Sens vs Spec : 0.8465 ###### 
 
 
 # NAIVE BAYES ######
@@ -3381,12 +3872,12 @@ roc_tp_fp_naiveBayes_both <- evalm(list(train_naiveBayes_both),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('Naive Bayes - both'))
 
-# __Accuracy :   ##### 
-# __Sensitivity :   #####         
-# __Specificity :  ##### 
-# __Balanced Accuracy :   ##### 
-# __F_meas, beta = 1 :  #####
-# __AUC :  ######
+# __Accuracy : 0.4338  ##### 
+# __Sensitivity : 0.97619  #####         
+# __Specificity : 0.40957 ##### 
+# __Balanced Accuracy : 0.69288  ##### 
+# __F_meas, beta = 1 : 0.1285266 #####
+# __AUC Sens vs Spec : 0.8472 ######
 
 # _______________________######## 
 # Better estimates ######
@@ -3456,12 +3947,12 @@ sens_roc_gini_tree_cp0.01_better <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_better)
 
-# __Accuracy :   ####
-# __Sensitivity :    ####         
-# __Specificity :  ####
-# __Balanced Accuracy :   ####
-# __F_meas, beta = 1 :    ####
-# __AUC Sens vs Spec :  ######
+# __Accuracy : 0.6253  ####
+# __Sensitivity : 0.92857   ####         
+# __Specificity : 0.61170  ####
+# __Balanced Accuracy : 0.77014  ####
+# __F_meas, beta = 1 :  0.1748879  ####
+# __AUC Sens vs Spec : 0.7701 ######
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 gini_tree_cp0.001_better <- rpart(stroke ~., 
@@ -3514,12 +4005,12 @@ sens_espec_roc_gini_tree_cp0.001_better <- plot(roc(response = test_stroke_t$str
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_better)
 
-# __Accuracy :   ####
-# __Sensitivity :  ####       
-# __Specificity :  ####
-# __Balanced Accuracy :  ####
-# __F_meas, beta = 1 :   ####
-# __AUC Sens vs Spec :  ######
+# __Accuracy : 0.836   ####
+# __Sensitivity : 0.40476 ####       
+# __Specificity : 0.85532  ####
+# __Balanced Accuracy : 0.63004  ####
+# __F_meas, beta = 1 : 0.174359  ####
+# __AUC Sens vs Spec : 0.8041 ######
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 cost_matrix_tree_better <- rpart(stroke ~ ., 
@@ -3574,16 +4065,16 @@ sens_espec_roc_cost_matrix_tree_better <- plot(roc(response = test_stroke_t$stro
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_better)
 
-# __Accuracy :    ##### 
-# __Sensitivity :  #####         
-# __Specificity : #####  
-# __Balanced Accuracy :  #####
-# __F_meas, beta = 1 :  #####
+# __Accuracy :  0.6029  ##### 
+# __Sensitivity : 0.85714 #####         
+# __Specificity : 0.59149 #####  
+# __Balanced Accuracy : 0.72432 #####
+# __F_meas, beta = 1 : 0.1558442 #####
 # __AUC Sens vs Spec :  ######
 
 
 # RPART caret ####
-train_caret_tree_better<- train(stroke ~ ., method = "rpart",
+train_caret_tree_better <- train(stroke ~ ., method = "rpart",
                                data = train_stroke_better, 
                                trControl = ctrl)
 
@@ -3661,12 +4152,12 @@ roc_tp_fp_caret_tree_better <- evalm(list(train_caret_tree_better),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('CARET Tree - better'))
 
-# __Accuracy :    ####
-# __Sensitivity :       ####        
-# __Specificity :   ####
-# __Balanced Accuracy :    ####
-# __F_meas, beta = 1 :   #####
-# __AUC Sens vs Spec :  ######
+# __Accuracy : 0.7169   ####
+# __Sensitivity :  0.83333     ####        
+# __Specificity : 0.71170  ####
+# __Balanced Accuracy : 0.77252   ####
+# __F_meas, beta = 1 : 0.2011494 #####
+# __AUC Sens vs Spec : 0.8219 ######
 
 
 #KNN caret #######
@@ -3751,12 +4242,12 @@ roc_tp_fp_knn_better <- evalm(list(train_knn_better),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('KNN - better'))
 
-# __Accuracy :    ##### 
-# __Sensitivity :   #####         
-# __Specificity :   ##### 
-# __Balanced Accuracy :    #####
-# __F_meas, beta = 1 :  #####
-# __AUC Sens vs Spec :  ######
+# __Accuracy :0.7536  ##### 
+# __Sensitivity : 0.52381  #####         
+# __Specificity : 0.76383   ##### 
+# __Balanced Accuracy : 0.64382   #####
+# __F_meas, beta = 1 : 0.1538462 #####
+# __AUC Sens vs Spec : 0.7605 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -3838,81 +4329,74 @@ roc_tp_fp_rf_better <- evalm(list(train_rf_better),
                            title = "True Positive - False Positive rate ROC",
                            gnames=c('Random Forest - better'))
 
-# __Accuracy :    ##### 
-# __Sensitivity :   #####         
-# __Specificity :    ##### 
-# __Balanced Accuracy :   ##### 
-# __F_meas, beta = 1 :  #####
-# # __AUC Sens vs Spec :   ###### 
+# __Accuracy : 0.7902   ##### 
+# __Sensitivity : 0.57143  #####         
+# __Specificity : 0.80000   ##### 
+# __Balanced Accuracy : 0.68571  ##### 
+# __F_meas, beta = 1 : 0.1889764 #####
+# # __AUC Sens vs Spec : 0.8186  ###### 
 
-# MDA: EVAL ERROR ######
+# MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
-set.seed(1970, sample.kind="Rounding") 
+# set.seed(1970, sample.kind="Rounding") 
 # Results are random variables
 
 train_mda_better <- train(stroke ~ ., method = "mda", 
                         data = train_stroke_better,
                         trControl = ctrl) # Several Warnings
 
-plot(train_mda_better)
-print(train_mda_better)
-summary(train_mda_better)
+# Error: Stopping
+# Además: There were 50 or more warnings (use warnings() to see the first 50)
 
-y_hat_mda_both <- predict(train_mda_both, test_stroke_t)
+# plot(train_mda_better)
+# print(train_mda_better)
+# summary(train_mda_better)
+
+# y_hat_mda_both <- predict(train_mda_both, test_stroke_t)
 
 # Model Evaluation ::::::::
 
-confusionMatrix(y_hat_mda_better,
-                test_stroke_t$stroke)$overall["Accuracy"]
+# confusionMatrix(y_hat_mda_better,
+# test_stroke_t$stroke)$overall["Accuracy"]
 
-confusionMatrix(y_hat_mda_better,
-                test_stroke$stroke)$overall
+# confusionMatrix(y_hat_mda_better,
+# test_stroke$stroke)$overall
 
-confusionMatrix(y_hat_mda_better,
-                test_stroke_t$stroke)$table
+# confusionMatrix(y_hat_mda_better,
+# test_stroke_t$stroke)$table
 
-cm_mda_better <- confusionMatrix(y_hat_mda_both, test_stroke_t$stroke, 
-                              positive = "stroke")
-cm_mda_better
+# cm_mda_better <- confusionMatrix(y_hat_mda_both, test_stroke_t$stroke, 
+# positive = "stroke")
+# cm_mda_better
 
 # F_Meas
 
-F_meas(confusionMatrix(y_hat_mda_better,
-                       test_stroke_t$stroke)$table, beta = 1)
+# F_meas(confusionMatrix(y_hat_mda_better,
+# test_stroke_t$stroke)$table, beta = 1)
 
 # Calc. Probs for every class
-roc_mda_both <- predict(train_mda_better,
-                        test_stroke_t, type = "prob")
+# roc_mda_both <- predict(train_mda_better,
+# test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
-sens_espec_roc_mda_better <-plot(roc(response = test_stroke_t$stroke, 
-                                  predictor = roc_mda_better$stroke, 
-                                  levels = c("stroke", "no_stroke")), 
-                              print.auc = TRUE,
-                              xlim = c(1,0),
-                              ylim = c(0,1),
-                              xlab = "Specificity", 
-                              ylab ="Sensibility", 
-                              main = "MDA - Over")
+# sens_espec_roc_mda_better <-plot(roc(response = test_stroke_t$stroke, 
+# predictor = roc_mda_better$stroke, 
+# levels = c("stroke", "no_stroke")), 
+# print.auc = TRUE,
+# xlim = c(1,0),
+# ylim = c(0,1),
+# xlab = "Specificity", 
+# ylab ="Sensibility", 
+# main = "MDA - Over")
 
 # Sensitivity vs Specificity AUC
-auc(sens_espec_roc_mda_better)
+# auc(sens_espec_roc_mda_better)
 
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
-eval_mda_better <- evalm(list(train_mda_better), 
-                       positive = "stroke",
-                       gnames=c('MDA - better')) 
-
-# ERROR
-# Error in names(x) <- value : 
-# el atributo 'names' [1] debe tener la misma longitud que el vector [0]
-# Además: Warning messages:
-# 1: Removed 7520 row(s) containing missing values (geom_path). 
-# 2: Removed 1 rows containing missing values (geom_segment). 
-# 3: Removed 7520 row(s) containing missing values (geom_path). 
-# 4: Removed 7520 row(s) containing missing values (geom_path). 
-
+# eval_mda_better <- evalm(list(train_mda_better), 
+# positive = "stroke",
+# gnames=c('MDA - better')) 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 # cc_mda_better <- evalm(list(train_mda_better), 
@@ -3941,13 +4425,6 @@ eval_mda_better <- evalm(list(train_mda_better),
 # plots = "r",
 # title = "True Positive - False Positive rate ROC",
 # gnames=c('MDA - better'))
-
-# __Accuracy :    ##### 
-# __Sensitivity :     #####        
-# __Specificity :    ##### 
-# __Balanced Accuracy :      ##### 
-# __F_meas, beta = 1 :   #####
-# __AUC Sens vs Spec :  ###### 
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -4038,12 +4515,12 @@ roc_tp_fp_nnet_better <- evalm(list(train_nnet_better),
                              title = "True Positive - False Positive rate ROC",
                              gnames=c('NNET - better'))
 
-# __Accuracy :  ####
-# __Sensitivity :  ####        
-# __Specificity :   ####
-# __Balanced Accuracy :    ####
-# __F_meas, beta = 1 :  #####
-# __AUC Sens vs Spec  ###### 
+# __Accuracy : 0.7291 ####
+# __Sensitivity : 0.69048 ####        
+# __Specificity : 0.73085  ####
+# __Balanced Accuracy : 0.71066   ####
+# __F_meas, beta = 1 : 0.1790123 #####
+# __AUC Sens vs Spec : 0.804 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -4073,7 +4550,7 @@ F_meas(confusionMatrix(y_hat_fda_better,
 
 
 # Calc. Probs for every class
-roc_fda_both <- predict(train_fda_better,
+roc_fda_better <- predict(train_fda_better,
                         test_stroke_t, type = "prob")
 
 # Curve graph
@@ -4094,7 +4571,7 @@ auc(sens_espec_roc_fda_better)
 # True positive rate vs false positive rate
 eval_fda_better <- evalm(list(train_fda_better), 
                        positive = "stroke",
-                       gnames=c('FDA - both'))
+                       gnames=c('FDA - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
@@ -4125,12 +4602,12 @@ roc_tp_fp_fda_better <- evalm(list(train_fda_better),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('FDA - better'))
 
-# __Accuracy :    ####
-# __Sensitivity :   ####        
-# __Specificity :  ####  
-# __Balanced Accuracy :    ####
+# __Accuracy : 0.7363   ####
+# __Sensitivity : 0.85714  ####        
+# __Specificity : 0.73085 ####  
+# __Balanced Accuracy : 0.79400   ####
 # __F_meas, beta = 1 :  #####
-# # __AUC Sens vs Spec :  ###### 
+#__AUC Sens vs Spec : 0.2175227 ###### 
 
 
 # NAIVE BAYES ######
@@ -4180,27 +4657,27 @@ auc(sens_espec_roc_naiveBayes_better)
 
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
-eval_naiveBayes_better <- evalm(list(train_naiveBayes_both), 
+eval_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
                               positive = "stroke",
                               gnames=c('Naive Bayes - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
-cc_naiveBayes_better <- evalm(list(train_naiveBayes_both), 
+cc_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
                             positive = "stroke",
                             plots = "cc",
                             title = "Calibration Curve",
                             gnames=c('Naive Bayes - better'))
 
 # Precision - Recall Gain
-prg_naiveBayes_better <- evalm(list(train_naiveBayes_both), 
+prg_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
                              positive = "stroke",
                              plots = "prg",
                              title = "Precision - Recall Gain",
                              gnames=c('Naive Bayes - better'))
 
 # Precision - Recall Curve
-pr_naiveBayes_better <- evalm(list(train_naiveBayes_both), 
+pr_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
                             positive = "stroke",
                             plots = "pr",
                             title = "Precision - Recall Curve",
@@ -4213,18 +4690,311 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('Naive Bayes - both'))
 
-# __Accuracy :   ##### 
-# __Sensitivity :   #####         
-# __Specificity :  ##### 
-# __Balanced Accuracy :   ##### 
-# __F_meas, beta = 1 :  #####
-# __AUC :  ######
-
+# __Accuracy : 0.9399  ##### 
+# __Sensitivity : 0.23810   #####         
+# __Specificity : 0.97128  ##### 
+# __Balanced Accuracy : 0.60469  ##### 
+# __F_meas, beta = 1 : 0.2531646 #####
+#__AUC Sens vs Spec : 0.8492 ######
 
 # _______________________########
-# SELECTED MODELS ########
+# SELECTED MODELS A ########
 # F_meas, beta = 1 >= 20  ########
 # _______________________########
+
+# OVER
+# Gini Tree, CP = 0.01 - Over ####
+y_hat_gini_tree_cp0.01_over
+
+# RPART caret - Over ####
+y_hat_caret_tree_over
+
+# MDA - Over: Eval Error ######
+y_hat_mda_over
+
+# Neural Network - Over ####
+y_hat_nnet_over
+
+# BOTH
+# Gini Tree, CP = 0.01 - Both  ####
+y_hat_gini_tree_cp0.01_both 
+
+# RPART caret - Bot ####
+y_hat_caret_tree_both
+
+# FDA - Bot #####
+cm_fda_both
+
+# BETTER
+# RPART caret - Better ####
+y_hat_caret_tree_better
+
+# FDA  - Better #####
+y_hat_fda_better
+
+# NAIVE BAYES  - Better ######
+y_hat_naiveBayes_better
+
+# _______________________########
+# ENSAMBLE Models A ########
+# _______________________########
+
+ensamble_1_a <- data.frame(gini_tree_cp0.01_over = y_hat_gini_tree_cp0.01_over,
+                       caret_tree_over = y_hat_caret_tree_over,
+                       mda_over = y_hat_mda_over,
+                       nnet_over = y_hat_nnet_over,
+                       gini_tree_cp0.01_both = y_hat_gini_tree_cp0.01_both,
+                       caret_tree_both = y_hat_caret_tree_both,
+                       fda_both = y_hat_fda_both,
+                       caret_tree_better = y_hat_caret_tree_better,
+                       fda_better = y_hat_fda_better,
+                       naiveBayes_better = y_hat_naiveBayes_better) 
+
+ensamble_2_a <- ensamble_1_a %>% 
+  mutate(gini_tree_cp0.01_over = ifelse(gini_tree_cp0.01_over == "stroke", 1,0),
+         caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
+         mda_over = ifelse(mda_over == "stroke", 1,0),
+         nnet_over = ifelse(nnet_over == "stroke", 1,0),
+         gini_tree_cp0.01_both = ifelse(gini_tree_cp0.01_both == "stroke", 1,0),
+         caret_tree_both = ifelse(caret_tree_both == "stroke", 1,0),
+         fda_both = ifelse(fda_both == "stroke", 1,0),
+         caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
+         fda_better = ifelse(fda_better == "stroke", 1,0),
+         naiveBayes_better = ifelse(naiveBayes_better == "stroke", 1,0))
+
+
+# Searching Best Cut-Off
+
+cut_off_a <- seq(1:10)
+
+ensamble_acc_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confusionMatrix(y_hat_ensamble,
+                  test_stroke_t$stroke)$overall["Accuracy"]
+})
+
+cut_of_acc_a <- data.frame(cut_off_a, ensamble_acc_a)
+plot(cut_off_a, ensamble_acc_a, main = "Cut_Off vs Accuracy")
+
+ensamble_sens_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Sensitivity"]
+})
+
+cut_of_sens_a <- data.frame(cut_off_a, ensamble_sens)
+plot(cut_off_a, ensamble_sens_a, main = "Cut_Off vs Sensibility")
+
+
+ensamble_spe_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Specificity"]
+})
+
+cut_of_spe_a <- data.frame(cut_off_a, ensamble_spe_a)
+plot(cut_off_a, ensamble_spe_a, main = "Cut_Off vs Specificity")
+
+ensamble_bal_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Balanced Accuracy"]
+})
+
+cut_of_bal_a <- data.frame(cut_off_a, ensamble_bal_a)
+plot(cut_off_a, ensamble_bal_a, main = "Cut_Off vs Balanced Accuracy")
+
+ensamble_F_Meas_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  F_meas(confusionMatrix(y_hat_ensamble,
+                         test_stroke_t$stroke)$table,beta = 1)
+})
+  
+cut_of_fmeas_a <- data.frame(cut_off_a, ensamble_F_Meas_a)
+plot(cut_off_a, ensamble_F_Meas_a, main = "Cut_Off vs F_Meas")
+
+y_hat_ensamble_a <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+  mutate(total = as.factor(ifelse(total >=3, "stroke", "no_stroke"))) %>% 
+  pull(total) %>% relevel(ref = "stroke")
+
+# Model Evaluation ::::::::
+
+confusionMatrix(y_hat_ensamble_a,
+                test_stroke_t$stroke)$overall["Accuracy"]
+
+confusionMatrix(y_hat_ensamble_a,
+                test_stroke_t$stroke)$overall
+
+confusionMatrix(y_hat_ensamble_a,
+                test_stroke_t$stroke)$table
+
+cm_ensamble_a <- confusionMatrix(y_hat_ensamble_a, test_stroke_t$stroke)
+cm_ensamble_a
+
+cm_ensamble_a
+
+F_meas(confusionMatrix(y_hat_ensamble_a,
+                       test_stroke_t$stroke)$table,beta = 1)
+
+
+# _______________________########
+# SELECTED MODELS B ########
+# Balanced Accuracy >= 73  ########
+# _______________________########
+
+# Gini Tree, CP = 0.01 - Over ####
+gini_tree_cp0.01_over
+
+# Cost Matrix - Over ####
+cost_matrix_tree_over
+
+# RPART caret - Over ####
+train_caret_tree_over
+
+# MDA - Over: Eval Error ######
+train_mda_over
+
+# FDA - Over: Eval Error ######
+train_fda_over
+
+# Gini Tree, CP = 0.01 - Both ####
+gini_tree_cp0.01_both
+
+# RPART caret - Both
+train_caret_tree_both  ####
+
+# FDA - Both   ####
+train_fda_both  ####
+
+# Gini Tree, CP = 0.01 - Better  ####
+gini_tree_cp0.01_better
+
+# RPART caret - Better
+train_caret_tree_better
+
+# FDA - Better
+train_fda_better
+
+# _______________________########
+# ENSAMBLE Models B ########
+# _______________________########
+
+ensamble_1_b <- data.frame(gini_tree_cp0.01_over = y_hat_gini_tree_cp0.01_over,
+                           cost_matrix_tree_over = y_hat_cost_matrix_tree_over,
+                           caret_tree_over = y_hat_caret_tree_over,
+                           mda_over = y_hat_mda_over,
+                           fda_over = y_hat_fda_over,
+                           gini_tree_cp0.01_both = y_hat_gini_tree_cp0.01_both,
+                           caret_tree_both = y_hat_caret_tree_both,
+                           fda_both = y_hat_fda_both,
+                           gini_tree_cp0.01_better = y_hat_gini_tree_cp0.01_better,
+                           caret_tree_better = y_hat_caret_tree_better,
+                           fda_better = y_hat_fda_better) 
+
+ensamble_2_b <- ensamble_1_b %>% 
+  mutate(gini_tree_cp0.01_over = ifelse(gini_tree_cp0.01_over == "stroke", 1,0),
+         cost_matrix_tree_over = ifelse(cost_matrix_tree_over == "stroke", 1,0),
+         caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
+         mda_over = ifelse(mda_over == "stroke", 1,0),
+         fda_over = ifelse(fda_over == "stroke", 1,0),
+         gini_tree_cp0.01_both = ifelse(gini_tree_cp0.01_both == "stroke", 1,0),
+         caret_tree_both = ifelse(caret_tree_both == "stroke", 1,0),
+         fda_both = ifelse(fda_both == "stroke", 1,0),
+         gini_tree_cp0.01_better = ifelse(gini_tree_cp0.01_better == "stroke", 1,0),
+         caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
+         fda_better = ifelse(fda_better == "stroke", 1,0))
+
+
+# Searching Best Cut-Off
+
+cut_off_b <- seq(1:11)
+
+ensamble_acc_b <- map_dbl(cut_off_b, function(cut_off_b){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_b, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confusionMatrix(y_hat_ensamble,
+                  test_stroke_t$stroke)$overall["Accuracy"]
+})
+
+cut_of_acc_b <- data.frame(cut_off_b, ensamble_acc_b)
+plot(cut_off_b, ensamble_acc_b, main = "Cut_Off vs Accuracy")
+
+ensamble_sens_b <- map_dbl(cut_off_b, function(cut_off_b){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_b, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Sensitivity"]
+})
+
+cut_of_sens_b <- data.frame(cut_off_b, ensamble_sens_b)
+plot(cut_off_b, ensamble_sens_b, main = "Cut_Off vs Sensibility")
+
+
+ensamble_spe_b <- map_dbl(cut_off_b, function(cut_off_b){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_b, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Specificity"]
+})
+
+cut_of_spe_a <- data.frame(cut_off_a, ensamble_spe_a)
+plot(cut_off_a, ensamble_spe_a, main = "Cut_Off vs Specificity")
+
+ensamble_bal_b <- map_dbl(cut_off_b, function(cut_off_b){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_b, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Balanced Accuracy"]
+})
+
+cut_of_bal_b <- data.frame(cut_off_b, ensamble_bal_b)
+plot(cut_off_b, ensamble_bal_b, main = "Cut_Off vs Balanced Accuracy")
+
+ensamble_F_Meas_a <- map_dbl(cut_off_b, function(cut_off_b){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_b, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  F_meas(confusionMatrix(y_hat_ensamble,
+                         test_stroke_t$stroke)$table,beta = 1)
+})
+
+cut_of_fmeas_b <- data.frame(cut_off_b, ensamble_F_Meas_b)
+plot(cut_off_b, ensamble_F_Meas_b, main = "Cut_Off vs F_Meas")
+
+y_hat_ensamble_b <- data.frame(total = rowSums(ensamble_2_b)) %>% 
+  mutate(total = as.factor(ifelse(total >=3, "stroke", "no_stroke"))) %>% 
+  pull(total) %>% relevel(ref = "stroke")
+
+# Model Evaluation ::::::::
+
+confusionMatrix(y_hat_ensamble_b,
+                test_stroke_t$stroke)$overall["Accuracy"]
+
+confusionMatrix(y_hat_ensamble_b,
+                test_stroke_t$stroke)$overall
+
+confusionMatrix(y_hat_ensamble_b,
+                test_stroke_t$stroke)$table
+
+cm_ensamble_b <- confusionMatrix(y_hat_ensamble_b, test_stroke_t$stroke)
+cm_ensamble_b
+
+F_meas(confusionMatrix(y_hat_ensamble_b,
+                       test_stroke_t$stroke)$table,beta = 1)
 
 
 
@@ -4237,7 +5007,6 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
 # _______________________########
 
 # http://topepo.github.io/caret/model-training-and-tuning.html 
-# https://bookdown.org/content/2274/portada.html
 # https://bookdown.org/content/2274/portada.html
 # https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret#Redes_neuronales_(NNET)
 # https://rpubs.com/rdelgado/397838
@@ -4263,6 +5032,7 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
 # https://machinelearningmastery.com/tune-machine-learning-algorithms-in-r/
 # https://www.iartificial.net/precision-recall-f1-accuracy-en-clasificacion/
 # https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc?hl=en
+# https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
 
 
 # Ver comentarios
