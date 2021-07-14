@@ -128,7 +128,14 @@ library(LiblineaR)
 
 #__MLeval####
 if(!require(MLeval)) install.packages("MLeval", repos = "http://cran.us.r-project.org")
-library(MLeval)
+
+#__Recipes####
+if(!require(recipes)) install.packages("recipes", repos = "http://cran.us.r-project.org")
+library(recipes)
+
+if(!require(rattle)) install.packages("rattle", repos = "http://cran.us.r-project.org")
+library(rattle)
+
 
 # _______________________########
 # DATA DOWNLOAD ########
@@ -162,13 +169,11 @@ stroke_data$stroke <- relevel(stroke_data$stroke, ref = "stroke")
 head(stroke_data)
 str(stroke_data)
 
-
 # _______________________########
 # EXPLORATORY DATA ANALYSIS ########
 # https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
 
 # _______________________########
-
 
 #Number of observations ######
 n <- nrow(stroke_data)
@@ -611,7 +616,6 @@ stroke_data %>%
 
 # __Gender distribution #####
 stroke_data %>% 
-  filter(!gender == "Other") %>% 
   ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
   geom_bar() +
   scale_fill_manual(values = c("gray50", "orangered2")) +
@@ -622,13 +626,14 @@ stroke_data %>%
 # __Summary table by gender #####
 # gender, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
-  filter(!gender == "Other") %>% 
   group_by(gender) %>%
   summarise(total = n(), percent = round(total/n, 3), 
             strokes = sum(stroke == "stroke"), 
             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
   unique() %>%
   knitr::kable()
+
+stroke_data <- stroke_data %>% filter(!gender == "Other") # Filtering gender "Other"
 
 # HYPERTENSION (binary) ######
 
@@ -764,6 +769,7 @@ stroke_data %>%
 
 cor(stroke_data$age, stroke_data$avg_glucose_level)
 cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
+# 0.2359996
 
 # __BMI vs Avg Glucose Level #####
 stroke_data %>% 
@@ -773,6 +779,7 @@ stroke_data %>%
 
 cor(stroke_data$bmi, stroke_data$avg_glucose_level)
 cor.test(stroke_data$bmi, stroke_data$avg_glucose_level, method = "pearson")
+# 0.1756717
 
 # __Age vs BMI #####
 stroke_data %>% 
@@ -781,13 +788,16 @@ stroke_data %>%
   geom_smooth()
 
 cor(stroke_data$age, stroke_data$bmi)
-cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
+cor.test(stroke_data$age, stroke_data$bmi, method = "pearson")
+# 0.3333142
 
-# CATEGORICAL VARIABLES #####
+# There are some correlation between numerical variables, 
+# but it is not really strong
+
+# NUMERICAL AND CATEGORICAL VARIABLES #####
 
 # __Random Forest Method #####
-variables_rf <- stroke_data %>%
-  select(-age, -avg_glucose_level, -bmi)
+variables_rf <- stroke_data
 
 
 randforest_model <- randomForest(formula = stroke ~ . ,
@@ -819,24 +829,21 @@ importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseG
   theme(legend.position = "bottom")
 importance2
 
-# It seems that separate class will not be easy!
-
 # __Contrast of proportions #####
 
-# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+# Continuous and qualitative variables that do not group patients are excluded.
 stroke_categorical <- stroke_data %>% 
-  filter(!gender == "Other") %>% 
   select(gender, hypertension, heart_disease, ever_married, work_type,
          Residence_type, smoking_status, stroke)
 
 stroke_categorical_tidy <- data.frame(stroke_categorical %>%
   gather(key = "variable", value = "group",-stroke))
 
-# Se añade un identificador formado por el nombre de la variable y el grupo 
+# An identifier consisting of the name of the variable and the group is added
 stroke_categorical_tidy <- stroke_categorical_tidy %>%
   mutate(group_variable = paste(variable, group, sep = "_"))
 
-# Función que calcula el test de proporciones para la columna "Stroke" de un df
+# Function that calculates the proportions test for the column "Stroke" of a df
 proportion_test <- function(df){
   n_strokes <- sum(df$stroke == "stroke") 
   n_no_stroke     <- sum(df$stroke == "no_stroke")
@@ -846,8 +853,8 @@ proportion_test <- function(df){
   return(data.frame(p_value = test$p.value, prop_strokes))
 }
 
-# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
-# test_proporcion()
+# The data is grouped by "group_variable" and the test_proportion () function 
+# is applied to each group.
 prop_analisis <- stroke_categorical_tidy %>%
   group_by(group_variable) %>%
   nest() %>%
@@ -860,7 +867,7 @@ prop_analisis <- stroke_categorical_tidy %>%
   kable()
 prop_analisis
 
-# NUM and CAT: Near Zero Variance Analysis #####
+# Near Zero Variance Analysis #####
 stroke_data %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
@@ -1019,6 +1026,151 @@ stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
 table(stroke_data_over$stroke)
 prop.table(table(stroke_data_over$stroke))
 
+# __Statistical Age Data  #####
+
+stroke_data_over %>% 
+  group_by(stroke) %>% 
+  summarise(avg_age = round(mean(age),1),
+            median_age = round(median(age)),
+            min_age = min(age),
+            max_age = max(age)) %>% 
+  kable()
+
+# __Density Plot: Age per Class ####
+
+stroke_data_over %>% ggplot(aes(age, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+stroke_data_over %>% ggplot(aes(age, y = ..count.., fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+# __Box Plot: Age per Class ####
+
+stroke_data_over %>% ggplot(aes(stroke, age, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)
+
+# __Statistical Glucose Data  ####
+
+stroke_data_over %>% 
+  group_by(stroke) %>% 
+  summarise(avg_glucose = round(mean(avg_glucose_level),1),
+            median_glucose = round(median(avg_glucose_level)),
+            min_glucose = min(avg_glucose_level),
+            max_glucose = max(avg_glucose_level)) %>% 
+  kable()
+
+# __Density Plot: Avg Level per Class ####
+
+stroke_data_over %>% ggplot(aes(avg_glucose_level, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 5)
+
+stroke_data_over %>% ggplot(aes(avg_glucose_level, y = ..count.., fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 5)
+
+# __Box Plot: Avg Level per Class ####
+
+stroke_data_over %>% ggplot(aes(stroke, avg_glucose_level, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)
+
+# __Statistical BMI Data  ####
+
+stroke_data_over %>% 
+  group_by(stroke) %>% 
+  summarise(avg_glucose = round(mean(bmi),1),
+            median_glucose = round(median(bmi)),
+            min_glucose = min(bmi),
+            max_glucose = max(bmi)) %>% 
+  kable()
+
+# __Density Plot: Avg Glucose Level per Class ####
+
+stroke_data_over %>% ggplot(aes(bmi, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+stroke_data_over %>% ggplot(aes(bmi, y = ..count.., fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1)
+
+# __Box Plot: Avg Level Glucose  per Class ####
+
+stroke_data_over %>% ggplot(aes(stroke, bmi, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)
+
+# __Gender distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Gender") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# __Hypertension distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = hypertension, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Hypertension") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# __Heart_disease distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = heart_disease, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Heart_disease") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+
+# __Ever_married distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = ever_married, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Ever_married") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# __Work_type distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = work_type, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Work_type") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# __Residence_type distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = Residence_type, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Residence_type") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+rpart.plot(rpart(stroke ~ ., 
+                 data = stroke_data_over)) # Default rpart tree
+
+caret_tree_print_over <- train(stroke ~ ., method = "rpart", 
+                          data = stroke_data_over)
+
+fancyRpartPlot(caret_tree_print_over$finalModel)
+
+# __Smoking_status distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Smoking_status") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
 # COR. OF NUMERICAL VARIABLES #####
 
 # __Age vs Avg Glucose Level #####
@@ -1048,11 +1200,10 @@ stroke_data_over %>%
 cor(stroke_data_over$age, stroke_data_over$bmi)
 cor.test(stroke_data_over$age, stroke_data_over$avg_glucose_level, method = "pearson")
 
-# CATEGORICAL VARIABLES #####
+# NUMERICAL AND CATEGORICAL VARIABLES #####
 
 # __ Random Forest Method #####
-variables_rf_over <- stroke_data_over %>%
-  select(-age, -avg_glucose_level, -bmi)
+variables_rf_over <- stroke_data_over
 
 
 randforest_model_over <- randomForest(formula = stroke ~ . ,
@@ -1086,7 +1237,7 @@ importance2_over
 
 # __Contrast of proportions #####
 
-# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+# Continuous and qualitative variables that do not group patients are excluded.
 stroke_categorical_over <- stroke_data_over %>% 
   filter(!gender == "Other") %>% 
   select(gender, hypertension, heart_disease, ever_married, work_type,
@@ -1095,11 +1246,11 @@ stroke_categorical_over <- stroke_data_over %>%
 stroke_categorical_tidy_over <- data.frame(stroke_categorical_over %>%
                                         gather(key = "variable", value = "group",-stroke))
 
-# Se añade un identificador formado por el nombre de la variable y el grupo 
+# An identifier consisting of the name of the variable and the group is addedo 
 stroke_categorical_tidy_over <- stroke_categorical_tidy_over %>%
   mutate(group_variable = paste(variable, group, sep = "_"))
 
-# Función que calcula el test de proporciones para la columna "Stroke" de un df
+# Function that calculates the proportions test for the column "Stroke" of a df
 proportion_test_over <- function(df){
   n_strokes <- sum(df$stroke == "stroke") 
   n_no_stroke     <- sum(df$stroke == "no_stroke")
@@ -1109,8 +1260,8 @@ proportion_test_over <- function(df){
   return(data.frame(p_value = test$p.value, prop_strokes))
 }
 
-# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
-# test_proporcion()
+# The data is grouped by "group_variable" and the test_proportion () function 
+# is applied to each group.
 prop_analisis_over <- stroke_categorical_tidy_over %>%
   group_by(group_variable) %>%
   nest() %>%
@@ -1122,7 +1273,7 @@ prop_analisis_over <- stroke_categorical_tidy_over %>%
   head(20)
 prop_analisis_over
 
-# NUM and CAT: Near Zero Variance Analysis #####
+# Near Zero Variance Analysis #####
 stroke_data_over %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
@@ -1130,10 +1281,6 @@ stroke_data_over %>%
 # _______________________########
 # Over_Under Sampling: Both ######
 # _______________________########
-
-table(stroke_data$stroke)
-prop.table(table(stroke_data$stroke))
-
 n_both = sum(stroke_data$stroke == "stroke") + sum(stroke_data$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
@@ -1148,7 +1295,20 @@ stroke_data_both$stroke <- relevel(stroke_data_both$stroke, ref = "stroke")
 table(stroke_data_over$stroke)
 prop.table(table(stroke_data_over$stroke))
 
+# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+rpart.plot(rpart(stroke ~ ., 
+                 data = stroke_data_both)) # Default rpart tree
+
+caret_tree_print_both <- train(stroke ~ ., method = "rpart", 
+                               data = stroke_data_both)
+
+fancyRpartPlot(caret_tree_print_both$finalModel)
+
+table(stroke_data$stroke)
+prop.table(table(stroke_data$stroke))
+
 # COR. OF NUMERICAL VARIABLES #####
+
 
 #__ Age vs Avg Glucose Level #####
 stroke_data_both %>% 
@@ -1177,11 +1337,10 @@ stroke_data_both %>%
 cor(stroke_data_both$age, stroke_data_both$bmi)
 cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pearson")
 
-# CATEGORICAL VARIABLES #####
+# NUMERICAL AND CATEGORICAL VARIABLES #####
 
 #__ Random Forest Method #####
-variables_rf_both <- stroke_data_both %>%
-  select(-age, -avg_glucose_level, -bmi)
+variables_rf_both <- stroke_data_both
 
 
 randforest_model_both <- randomForest(formula = stroke ~ . ,
@@ -1215,7 +1374,7 @@ importance2_both
 
 #__Contrast of proportions #####
 
-# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+# Continuous and qualitative variables that do not group patients are excluded.
 stroke_categorical_both <- stroke_data_both %>% 
   filter(!gender == "Other") %>% 
   select(gender, hypertension, heart_disease, ever_married, work_type,
@@ -1224,11 +1383,11 @@ stroke_categorical_both <- stroke_data_both %>%
 stroke_categorical_tidy_both <- data.frame(stroke_categorical_both %>%
                                              gather(key = "variable", value = "group",-stroke))
 
-# Se añade un identificador formado por el nombre de la variable y el grupo 
+# An identifier consisting of the name of the variable and the group is added
 stroke_categorical_tidy_both <- stroke_categorical_tidy_both %>%
   mutate(group_variable = paste(variable, group, sep = "_"))
 
-# Función que calcula el test de proporciones para la columna "Stroke" de un df
+# Function that calculates the proportions test for the column "Stroke" of a df
 proportion_test_both <- function(df){
   n_strokes <- sum(df$stroke == "stroke") 
   n_no_stroke     <- sum(df$stroke == "no_stroke")
@@ -1238,8 +1397,8 @@ proportion_test_both <- function(df){
   return(data.frame(p_value = test$p.value, prop_strokes))
 }
 
-# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
-# test_proporcion()
+# The data is grouped by "group_variable" and the test_proportion () function 
+# is applied to each group.
 prop_analisis_both <- stroke_categorical_tidy_both %>%
   group_by(group_variable) %>%
   nest() %>%
@@ -1275,6 +1434,15 @@ stroke_data_better$stroke <- relevel(stroke_data_better$stroke, ref = "stroke")
 table(stroke_data_better$stroke)
 prop.table(table(stroke_data_better$stroke))
 
+# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+rpart.plot(rpart(stroke ~ ., 
+                 data = stroke_data_better)) # Default rpart tree
+
+caret_tree_print_better <- train(stroke ~ ., method = "rpart", 
+                               data = stroke_data_better)
+
+fancyRpartPlot(caret_tree_print_better$finalModel)
+
 # COR. OF NUMERICAL VARIABLES #####
 
 #__Age vs Avg Glucose Level #####
@@ -1304,11 +1472,10 @@ stroke_data_better %>%
 cor(stroke_data_better$age, stroke_data_better$bmi)
 cor.test(stroke_data_better$age, stroke_data_better$avg_glucose_level, method = "pearson")
 
-# CATEGORICAL VARIABLES #####
+# NUMERICAL AND CATEGORICAL VARIABLES #####
 
 #__Random Forest Method #####
-variables_rf_better <- stroke_data_better %>%
-  select(-age, -avg_glucose_level, -bmi)
+variables_rf_better <- stroke_data_better
 
 
 randforest_model_better <- randomForest(formula = stroke ~ . ,
@@ -1342,7 +1509,7 @@ importance2_better
 
 #__Contrast of proportions #####
 
-# Se excluyen las variables continuas y las cualitativas que no agrupan a los pacientes
+# Continuous and qualitative variables that do not group patients are excluded.
 stroke_categorical_better <- stroke_data_better %>% 
   filter(!gender == "Other") %>% 
   select(gender, hypertension, heart_disease, ever_married, work_type,
@@ -1351,11 +1518,11 @@ stroke_categorical_better <- stroke_data_better %>%
 stroke_categorical_tidy_better <- data.frame(stroke_categorical_better %>%
                                              gather(key = "variable", value = "group",-stroke))
 
-# Se añade un identificador formado por el nombre de la variable y el grupo 
+# An identifier consisting of the name of the variable and the group is added
 stroke_categorical_tidy_better <- stroke_categorical_tidy_better %>%
   mutate(group_variable = paste(variable, group, sep = "_"))
 
-# Función que calcula el test de proporciones para la columna "Stroke" de un df
+# Function that calculates the proportions test for the column "Stroke" of a df
 proportion_test_better <- function(df){
   n_strokes <- sum(df$stroke == "stroke") 
   n_no_stroke     <- sum(df$stroke == "no_stroke")
@@ -1365,8 +1532,8 @@ proportion_test_better <- function(df){
   return(data.frame(p_value = test$p.value, prop_strokes))
 }
 
-# Se agrupan los datos por "variable_grupo" y se aplica a cada grupo la función
-# test_proporcion()
+# The data is grouped by "group_variable" and the test_proportion () function 
+# is applied to each group.
 prop_analisis_better <- stroke_categorical_tidy_better %>%
   group_by(group_variable) %>%
   nest() %>%
@@ -1402,38 +1569,33 @@ str(train_stroke)
 test_stroke <- stroke_data[test_index,]
 str(test_stroke)
 
-# PreProcessing: Centering and Scaling numerical variables ######
-#(t stands for transformed)#####
-
-preProcValues <- preProcess(train_stroke, method = c("center", "scale"))
-
-# __train_stroke_t ####
-train_stroke_t <- predict(preProcValues, train_stroke)
-
-# __test_stroke_t ####
-test_stroke_t <- predict(preProcValues, test_stroke)
-
 # Review #####
 
 # __Percent of strokes = 1 in train set ####
-mean(train_stroke_t$stroke == "stroke") 
-# 0.0425261
+mean(train_stroke$stroke == "stroke") 
+# 0.04253693
 
 # __Percent of strokes = 1 in test set ####
 mean(test_stroke_t$stroke == "stroke") 
 # 0.04257486
 
+test_stroke %>% filter(gender == "Other")
+
 # __Percent of males in train set ####
 mean(train_stroke$gender == "Male")
+# 0.4146714
 
 # __Percent of females in train set ####
 mean(train_stroke$gender == "Female")
+# 0.5853286
 
 # __Percent of males in test set ####
 mean(test_stroke$gender == "Male")
+# 0.3900204
 
 # __Percent of females in test set ####
 mean(test_stroke$gender == "Female")
+# 0.6099796
 
 # __Distribution of observations by age train #####
 train_stroke %>% 
@@ -1617,7 +1779,16 @@ test_stroke %>%
 
 # There are several changes in percentages by avg_glucose level!
 
+# PreProcessing: Centering and Scaling numerical variables ######
+#(t stands for transformed)#####
 
+preProcValues <- preProcess(train_stroke, method = c("center", "scale"))
+
+# __train_stroke_t ####
+train_stroke_t <- predict(preProcValues, train_stroke)
+
+# __test_stroke_t ####
+test_stroke_t <- predict(preProcValues, test_stroke)
 
 
 # _______________________########
@@ -1640,6 +1811,8 @@ ctrl <- trainControl(method="repeatedcv",
 # Recursive Partitioning and Regression Trees ######
 
 # Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+
 gini_tree_cp0.01 <- rpart(stroke ~ ., 
                       data = train_stroke_t) # Default rpart tree
 
@@ -1690,6 +1863,7 @@ auc(sens_espec_roc_roc_gini_tree_cp0.01)
 # __AUC Sens vs Spec : 0.5 #####
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001 <- rpart(stroke ~., 
                            data = train_stroke_t, 
                            parms=list(split=c("gini")),
@@ -1717,13 +1891,6 @@ cm_y_hat_gini_tree_cp0.001
 F_meas(confusionMatrix(y_hat_gini_tree_cp0.001,
                        test_stroke_t$stroke)$table, beta = 1)
 
-# Review F_meas function
-recall <- 3/(3 + 11)
-precision <- 3/(3+39)
-beta <- 1
-
-(1+beta^2) * precision * recall/((beta^2 * precision) + recall) # OK
-
 # Calc. Probs for every class
 roc_gini_tree_cp0.001 <- predict(gini_tree_cp0.001,
                                 test_stroke_t, type = "prob") %>% 
@@ -1742,15 +1909,16 @@ sens_espec_roc_gini_tree_cp0.001 <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001)
 
-# __Accuracy : 0.9491 ####
-# __Sensitivity : 0.071429  ####
-# __Specificity : 0.988298  ####
-# __Balanced Accuracy : 0.529863 ####
-# __F_meas, beta = 1 : 0.1071429 ####
-# __AUC Sens vs Spec : 0.7301 #####
+# __Accuracy : 0.9501  ####
+# __Sensitivity : 0.023810 ####
+# __Specificity : 0.991489 ####
+# __Balanced Accuracy : 0.507649 ####
+# __F_meas, beta = 1 : 0.03921569 ####
+# __AUC Sens vs Spec : 0.7385 #####
 
 # Gini Tree, CP = 0.0024, minslit = 20, minbucket round 20/3, maxdepht = 30 ######
 # Same results Gini CP 0.001
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.0024 <- rpart(stroke ~., 
                             data = train_stroke_t, 
                             parms=list(split=c("gini")),
@@ -1795,14 +1963,15 @@ sens_espec_roc_gini_tree_cp0.0024 <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.0024)
 
-# __Accuracy : 0.9491 ######
-# __Sensitivity : 0.071429 ######
-# __Specificity : 0.988298  ######
-# __Balanced Accuracy : 0.529863 ######
-# __F_meas, beta = 1 : 0.1071429 #######
-# __AUC Sens vs Spec : 0.7301 #####
+# __Accuracy : 0.9501 ######
+# __Sensitivity : 0.023810  ######
+# __Specificity : 0.991489  ######
+# __Balanced Accuracy : 0.507649  ######
+# __F_meas, beta = 1 : 0.03921569 #######
+# __AUC Sens vs Spec : 0.7385 #####
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 5 ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001_max5 <- rpart(stroke ~., 
                                 data = train_stroke_t, 
                                 parms=list(split=c("gini")),
@@ -1853,9 +2022,10 @@ auc(sens_espec_roc_gini_tree_cp0.001_max5)
 # __Specificity : 0.997872 ######
 # __Balanced Accuracy : 0.498936 ######
 # __F_meas, beta = 1 : NaN #####
-# __AUC Sens vs Spec :  0.7385 ??????? #####
+# __AUC Sens vs Spec :  0.7365??????? #####
 
 # Information Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 inf_tree <- (rpart(stroke ~., 
                    data = train_stroke_t, 
                    parms=list(split=c("information"))))
@@ -1907,6 +2077,7 @@ auc(sens_espec_roc_inf_tree)
 # __AUC Sens vs Spec : 0.5 #####
 
 # Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 inf_tree_cp0.001 <- rpart(stroke ~., 
                           data = train_stroke_t, 
                           parms=list(split=c("information")),
@@ -1951,14 +2122,15 @@ sens_espec_roc_inf_tree_cp0.001 <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_inf_tree_cp0.001)
 
-# __Accuracy : 0.945  #####
-# __Sensitivity : 0.071429   #####
-# __Specificity : 0.984043  #####
-# __Balanced Accuracy : 0.527736  #####
-# __F_meas, beta = 1 : 0.1 #####
-# __AUC Sens vs Spec :  0.7719 #####
+# __Accuracy : 0.9481  #####
+# __Sensitivity : 0.023810   #####
+# __Specificity : 0.989362   #####
+# __Balanced Accuracy : 0.506586  #####
+# __F_meas, beta = 1 : 0.03773585 #####
+# __AUC Sens vs Spec :  0.7733 #####
 
 # Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 inf_tree_cp0.0023 <- rpart(stroke ~., 
                            data = train_stroke_t, 
                            parms=list(split=c("information")),
@@ -2003,17 +2175,20 @@ sens_espec_roc_inf_tree_cp0.0023 <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_inf_tree_cp0.0023)
 
-# __Accuracy : 0.9481  #####
-# __Sensitivity : 0.071429   #####        
-# __Specificity : 0.987234 #####
-# __Balanced Accuracy : 0.529331  #####
-# __F_meas, beta = 1 : 0.1052632 #####
-# __AUC Sens vs Spec : 0.7867 #####
+# __Accuracy : 0.9501  #####
+# __Sensitivity : 0.023810   #####        
+# __Specificity : 0.991489 #####
+# __Balanced Accuracy : 0.507649  #####
+# __F_meas, beta = 1 : 0.03921569 #####
+# __AUC Sens vs Spec : 0.7865 #####
 
 
 # RPART caret ######
-train_caret_tree <- train(stroke ~ ., method = "rpart", data = train_stroke_t, 
-                          trControl = ctrl)
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_caret_tree <- train(stroke ~ ., method = "rpart", 
+                          data = train_stroke_t, 
+                          trControl = ctrl, 
+                          metric = "ROC")
 
 y_hat_caret_tree <- predict(train_caret_tree, test_stroke_t)
 
@@ -2023,7 +2198,7 @@ confusionMatrix(y_hat_caret_tree, test_stroke_t$stroke)$overall["Accuracy"]
 
 confusionMatrix(y_hat_caret_tree, test_stroke_t$stroke)$table
 
-cm_caret_tree <- confusionMatrix(y_hat_train_caret_tree, test_stroke_t$stroke)
+cm_caret_tree <- confusionMatrix(y_hat_caret_tree, test_stroke_t$stroke)
 cm_caret_tree
 
 # F_Meas
@@ -2077,24 +2252,26 @@ pr_caret_tree <- evalm(list(train_caret_tree),
                             gnames=c('CARET Tree'))
 
 # True positive vs false positive ROC
-roc_tp_fp_caret_tree <- evalm(list(train_knn_under), 
+roc_tp_fp_caret_tree <- evalm(list(train_caret_tree), 
                                    positive = "stroke",
                                    plots = "r",
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('CARET Tree'))
 
-# __Accuracy : 0.9501  ######
-# __Sensitivity : 0.095238 #####         
-# __Specificity : 0.988298 #####
-# __Balanced Accuracy : 0.541768  #####
-# __F_meas, beta = 0.1403509  #####
-# __AUC Sens vs Spec :  0.7403 #####
+# __Accuracy : 0.9521   ######
+# __Sensitivity : 0.023810  #####         
+# __Specificity : 0.993617 #####
+# __Balanced Accuracy : 0.508713  #####
+# __F_meas, beta = 0.04081633  #####
+# __AUC Sens vs Spec :  0.7394 #####
 
 # KNN ########
 # K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_knn <- train(stroke ~ ., method = "knn", 
                    data = train_stroke_t, 
-                   trControl = ctrl)
+                   trControl = ctrl, 
+                   metric = "ROC")
 
 y_hat_knn <- predict(train_knn, test_stroke_t)
 
@@ -2175,14 +2352,16 @@ roc_knn <- evalm(list(train_knn),
 # __Specificity : 1.00000 ####
 # __Balanced Accuracy : 0.50000  ####
 # __F_meas, beta = 1 : NA #####
-# __AUC Sens vs Spec : 0.6503 #####
+# __AUC Sens vs Spec : 0.6206 #####
 
 
 # RANDOM FOREST ########
 # it takes time! ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_rf <- train(stroke ~ ., method = "rf", 
                   data = train_stroke_t, 
-                  trControl = ctrl)
+                  trControl = ctrl, 
+                  metric = "ROC")
 
 y_hat_rf <- predict(train_rf, test_stroke_t, type = "raw")
 
@@ -2254,18 +2433,21 @@ roc_tp_fp_rf <- evalm(list(train_rf),
 
 
 
-# __Accuracy : 0.9572  ####
-# __Sensitivity : 0.0000     ####     
-# __Specificity : 1.0000   ####
-# __Balanced Accuracy : 0.5000  ####
-# __F_meas, beta = 1 : NA #####
-# __AUC Sens vs Spec :  0.78 ???? #####
+# __Accuracy : 0.9582   ####
+# __Sensitivity : 0.023810      ####     
+# __Specificity : 1.000000   ####
+# __Balanced Accuracy : 0.511905  ####
+# __F_meas, beta = 1 : 0.04651163 #####
+# __AUC Sens vs Spec :  0.7987 ???? #####
 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_fda <- train(stroke ~ ., method = "fda", 
-                        data = train_stroke_t, trControl = ctrl)
+                   data = train_stroke_t, 
+                   trControl = ctrl, 
+                   metric = "ROC")
 
 y_hat_fda <- predict(train_fda, test_stroke_t)
 
@@ -2341,12 +2523,12 @@ roc_tp_fp_fda <- evalm(list(train_fda),
                        title = "Precision - Recall Curve",
                        gnames=c('FDA'))
 
-# __Accuracy : 0.9379  ####
+# __Accuracy : 0.9338  ####
 # __Sensitivity : 0.14286 ####        
-# __Specificity : 0.97340 ####  
-# __Balanced Accuracy : 0.55813   ####
-# __F_meas, beta = 1 : 0.1643836 #####
-# # __AUC Sens vs Spec : 0.8589 ###### 
+# __Specificity : 0.96915   ####  
+# __Balanced Accuracy : 0.55600    ####
+# __F_meas, beta = 1 : 0.1558442 #####
+# # __AUC Sens vs Spec : 0.857 ###### 
 
 # _______________________########
 # BALANCED DATA ########
@@ -2378,6 +2560,7 @@ train_stroke_over$stroke <- relevel(train_stroke_over$stroke, ref = "stroke")
 # Recursive Partitioning and Regression Trees ######
 
 # Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.01_over <- rpart(stroke ~ ., 
                       data = train_stroke_over)
 
@@ -2428,14 +2611,15 @@ sens_roc_gini_tree_cp0.01_over <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_over)
 
-# __Accuracy : 0.7515  ####
+# __Accuracy : 0.7566  ####
 # __Sensitivity : 0.73810   ####         
-# __Specificity : 0.75213 ####
-# __Balanced Accuracy : 0.74511  ####
-# __F_meas, beta = 1 : 0.2026144   ####
-# __AUC Sens vs Spec : 0.7384 ######
+# __Specificity : 0.75745  ####
+# __Balanced Accuracy : 0.74777  ####
+# __F_meas, beta = 1 : 0.2059801   ####
+# __AUC Sens vs Spec : 0.7372 ######
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001_over <- rpart(stroke ~., 
                            data = train_stroke_over, 
                            parms=list(split=c("gini")),
@@ -2485,14 +2669,15 @@ sens_espec_roc_gini_tree_cp0.001_over <- plot(roc(response = test_stroke_t$strok
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_over)
 
-# __Accuracy : 0.8982  ####
-# __Sensitivity : 0.42857 ####       
-# __Specificity : 0.91915 ####
-# __Balanced Accuracy : 0.67386 ####
-# __F_meas, beta = 1 : 0.1960784  ####
-# __AUC Sens vs Spec : 0.3733 ######
+# __Accuracy : 0.8697  ####
+# __Sensitivity : 0.47619 ####       
+# __Specificity : 0.88723 ####
+# __Balanced Accuracy : 0.68171 ####
+# __F_meas, beta = 1 : 0.2380952 ####
+# __AUC Sens vs Spec : 0.3212 ######
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 cost_matrix_tree_over <- rpart(stroke ~ ., 
                                data = train_stroke_over,
                                parms=list(
@@ -2544,18 +2729,20 @@ sens_espec_roc_cost_matrix_tree_over <- plot(roc(response = test_stroke_t$stroke
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_over)
 
-# __Accuracy : 0.6202   ##### 
-# __Sensitivity : 0.92857 !!!! #####         
-# __Specificity : 0.60638#####  
-# __Balanced Accuracy : 0.76748 #####
-# __F_meas, beta = 1 : 0.172949 #####
-# __AUC Sens vs Spec : 0.7584 ######
+# __Accuracy : 0.6426   ##### 
+# __Sensitivity : 0.90476!!!! #####         
+# __Specificity : 0.63085 #####  
+# __Balanced Accuracy : 0.76781 #####
+# __F_meas, beta = 1 : 0.1779859 #####
+# __AUC Sens vs Spec : 0.7525 ######
 
 
 # RPART caret ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_caret_tree_over <- train(stroke ~ ., method = "rpart",
-                               data = train_stroke_over, 
-                               trControl = ctrl)
+                               data = train_stroke_over,
+                               trControl = ctrl,
+                               metric="ROC")
 
 plot(train_caret_tree_over)
 summary(train_caret_tree_over)
@@ -2630,19 +2817,21 @@ roc_tp_fp_caret_tree_over <- evalm(list(train_caret_tree_over),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('CARET Tree - Over'))
 
-# __Accuracy : 0.8045   ####
-# __Sensitivity : 0.71429      ####        
-# __Specificity : 0.80851  ####
-# __Balanced Accuracy : 0.76140   ####
-# __F_meas, beta = 1 : 0.2380952  #####
-# __AUC Sens vs Spec : 0.8067 ######
+# __Accuracy : 0.7739   ####
+# __Sensitivity : 0.73810      ####        
+# __Specificity : 0.77553  ####
+# __Balanced Accuracy : 0.75681   ####
+# __F_meas, beta = 1 : 0.2183099  #####
+# __AUC Sens vs Spec : 0.8042 ######
 
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_knn_over <- train(stroke ~ ., method = "knn", 
                    data = train_stroke_over, 
-                   trControl = ctrl)
+                   trControl = ctrl,
+                   metric="ROC")
 
 plot(train_knn_over)
 summary(train_knn_over)
@@ -2720,22 +2909,25 @@ roc_tp_fp_knn_over <- evalm(list(train_knn_over),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('KNN - Over'))
 
-# __Accuracy : 0.8035   ##### 
+# __Accuracy : 0.7984   ##### 
 # __Sensitivity : 0.38095  #####         
-# __Specificity : 0.82234  ##### 
-# __Balanced Accuracy : 0.60165   #####
-# __F_meas, beta = 1 : 0.1422222 #####
-# __AUC Sens vs Spec : 0.4003 ######
+# __Specificity : 0.81702  ##### 
+# __Balanced Accuracy : 0.59899   #####
+# __F_meas, beta = 1 : 0.1391304 #####
+# __AUC Sens vs Spec : 0.4065 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
-
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_rf_over <- train(stroke ~ ., method = "rf", 
                   data = train_stroke_over, 
-                  trControl = ctrl)
+                  trControl = ctrl,
+                  metric="ROC")
 
 plot(train_rf_over)
-summary(train_knn_over)
+summary(train_rf_over)
+
+ggplot(train_rf_over, highlight = TRUE) 
 
 y_hat_rf_over <- predict(train_rf_over, test_stroke_t, type = "raw")
 
@@ -2806,70 +2998,71 @@ roc_tp_fp_rf_over <- evalm(list(train_rf_over),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('Random Forest - Over'))
 
-# __Accuracy : 0.9501   ##### 
-# __Sensitivity : 0.071429  #####         
-# __Specificity : 0.989362   ##### 
-# __Balanced Accuracy : 0.530395  ##### 
-# __F_meas, beta = 1 : 0.1090909 #####
-# # __AUC Sens vs Spec : 0.7912 ??????? ###### 
+# __Accuracy : 0.946   ##### 
+# __Sensitivity : 0.047619  #####         
+# __Specificity : 0.986170    ##### 
+# __Balanced Accuracy : 0.516895  ##### 
+# __F_meas, beta = 1 : 0.07017544 #####
+# # __AUC Sens vs Spec : 0.7846 ??????? ###### 
 
-# MDA: EVAL ERROR ######
+# MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
-set.seed(1970, sample.kind="Rounding") 
+# set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 # Results are random variables
 
-train_mda_over <- train(stroke ~ ., method = "mda", 
-                        data = train_stroke_over,
-                        trControl = ctrl) # Several Warnings
+# train_mda_over <- train(stroke ~ ., method = "mda", 
+# data = train_stroke_over,
+# trControl = ctrl,
+# metric="ROC") # Several Warnings
 
-plot(train_mda_over)
-print(train_mda_over)
-summary(train_mda_over)
+# plot(train_mda_over)
+# print(train_mda_over)
+# summary(train_mda_over)
 
-y_hat_mda_over <- predict(train_mda_over, test_stroke_t)
+# y_hat_mda_over <- predict(train_mda_over, test_stroke_t)
 
 # Model Evaluation ::::::::
 
-confusionMatrix(y_hat_mda_over,
-                test_stroke_t$stroke)$overall["Accuracy"]
+# confusionMatrix(y_hat_mda_over,
+# test_stroke_t$stroke)$overall["Accuracy"]
 
-confusionMatrix(y_hat_mda_over,
-                test_stroke$stroke)$overall
+# confusionMatrix(y_hat_mda_over,
+# test_stroke$stroke)$overall
 
-confusionMatrix(y_hat_mda_over,
-                test_stroke_t$stroke)$table
+# confusionMatrix(y_hat_mda_over,
+# test_stroke_t$stroke)$table
 
-cm_mda_over <- confusionMatrix(y_hat_mda_over, test_stroke_t$stroke, 
-                                     positive = "stroke")
-cm_mda_over
+# cm_mda_over <- confusionMatrix(y_hat_mda_over, test_stroke_t$stroke, 
+# positive = "stroke")
+# cm_mda_over
 
 # F_Meas
 
-F_meas(confusionMatrix(y_hat_mda_over,
-                       test_stroke_t$stroke)$table, beta = 1)
+# F_meas(confusionMatrix(y_hat_mda_over,
+# test_stroke_t$stroke)$table, beta = 1)
 
 # Calc. Probs for every class
-roc_mda_over <- predict(train_mda_over,
-                             test_stroke_t, type = "prob")
+# roc_mda_over <- predict(train_mda_over,
+# test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
-sens_espec_roc_mda_over <-plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_mda_over $stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "MDA - Over")
+# sens_espec_roc_mda_over <-plot(roc(response = test_stroke_t$stroke, 
+# predictor = roc_mda_over $stroke, levels = c("stroke", "no_stroke")), 
+# print.auc = TRUE,
+#  xlim = c(1,0),
+#  ylim = c(0,1),
+#  xlab = "Specificity", 
+#  ylab ="Sensibility", 
+#  main = "MDA - Over")
 
 # Sensitivity vs Specificity AUC
-auc(sens_espec_roc_mda_over)
+# auc(sens_espec_roc_mda_over)
 
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
-eval_mda_over <- evalm(list(train_mda_over), 
-                              positive = "stroke",
-                              gnames=c('MDA - Over')) 
+# eval_mda_over <- evalm(list(train_mda_over), 
+# positive = "stroke",
+#  gnames=c('MDA - Over')) 
 
 # ERROR
 # Error in names(x) <- value : 
@@ -2909,23 +3102,15 @@ eval_mda_over <- evalm(list(train_mda_over),
 # title = "True Positive - False Positive rate ROC",
 # gnames=c('MDA - Over'))
 
-# __Accuracy : 0.7454   ##### 
-# __Sensitivity : 0.78571    #####        
-# __Specificity : 0.74362    ##### 
-# __Balanced Accuracy : 0.76467     ##### 
-# __F_meas, beta = 1 : 0.2088608  #####
-# __AUC Sens vs Spec : 0.8466 ###### 
-
 # NNET: great variability !!!#####
 # Neural Network ####
 # It takes some time!
 
-set.seed(2, sample.kind="Rounding") 
-# Results are random variables: great variability!!!
-
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_nnet_over <- train(stroke ~ ., method = "nnet",
                          data = train_stroke_over,
-                         trControl = ctrl)
+                         trControl = ctrl,
+                         metric="ROC")
 
 plot(train_nnet_over)
 print(train_nnet_over)
@@ -3004,17 +3189,20 @@ roc_tp_fp_nnet_over <- evalm(list(train_nnet_over),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('NNET - Over'))
 
-# __Accuracy : 0.7892 ####
-# __Sensitivity : 0.61905 ####        
-# __Specificity : 0.79681  ####
-# __Balanced Accuracy : 0.70793   ####
-# __F_meas, beta = 1 : 0.2007722 #####
-# __AUC Sens vs Spec 0.7989 ###### 
+# __Accuracy : 0.8432  ####
+# __Sensitivity : 0.40476 ####        
+# __Specificity : 0.86277  ####
+# __Balanced Accuracy : 0.63376   ####
+# __F_meas, beta = 1 : 0.1808511 #####
+# __AUC Sens vs Spec 0.7714 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_fda_over <- train(stroke ~ ., method = "fda", 
-                        data = train_stroke_over, trControl = ctrl)
+                        data = train_stroke_over, 
+                        trControl = ctrl,
+                        metric="ROC")
 
 y_hat_fda_over <- predict(train_fda_over, test_stroke_t)
 
@@ -3090,18 +3278,20 @@ roc_tp_fp_fda_over <- evalm(list(train_fda_over),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('FDA - OVER'))
 
-# __Accuracy : 0.7342   ####
-# __Sensitivity : 0.73810  ####        
-# __Specificity : 0.73404 ####  
-# __Balanced Accuracy : 0.73607   ####
-# __F_meas, beta = 1 : 0.1919505 #####
-# # __AUC Sens vs Spec : 0.8122 ###### 
+# __Accuracy : 0.7454 ####
+# __Sensitivity : 0.73810 ####        
+# __Specificity : 0.74574 ####  
+# __Balanced Accuracy : 0.74192 ####
+# __F_meas, beta = 1 : 0.1987179 #####
+# __AUC Sens vs Spec : 0.8163 ###### 
 
 
 # NAIVE BAYES ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_naiveBayes_over <- train(stroke ~ ., method = "naive_bayes", 
                                data = train_stroke_over, 
-                               trControl = ctrl)
+                               trControl = ctrl,
+                               metric="ROC")
 
 y_hat_naiveBayes_over <- predict(train_naiveBayes_over, test_stroke_t)
 
@@ -3180,12 +3370,12 @@ roc_tp_fp_naiveBayes_over <- evalm(list(train_naiveBayes_over),
                                    gnames=c('Naive Bayes - Over'))
 
 
-# __Accuracy : 0.9582  ##### 
-# __Sensitivity : 0.047619  #####         
-# __Specificity : 0.998936 ##### 
-# __Balanced Accuracy : 0.523278  ##### 
-# __F_meas, beta = 1 : 0.08888889 #####
-# __AUC : 0.8485 ???? ######
+# __Accuracy : 0.9348  ##### 
+# __Sensitivity : 0.26190   #####         
+# __Specificity : 0.96489 ##### 
+# __Balanced Accuracy : 0.61340   ##### 
+# __F_meas, beta = 1 : 0.255814 #####
+# __AUC : 0.8489 ???? ######
 
 # _______________________######## 
 # Oversamplig and Undersampling: both #####
@@ -3212,6 +3402,7 @@ train_stroke_both$stroke <- relevel(train_stroke_both$stroke, ref = "stroke")
 # Recursive Partitioning and Regression Trees ######
 
 # Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.01_both <- rpart(stroke ~ ., 
                                data = train_stroke_both)
 
@@ -3261,14 +3452,15 @@ sens_roc_gini_tree_cp0.01_both <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_both)
 
-# __Accuracy :  0.7556 ####
-# __Sensitivity :   0.73810 ####         
-# __Specificity : 0.75638 ####
-# __Balanced Accuracy : 0.74724  ####
-# __F_meas, beta = 1 :  0.205298  ####
-# __AUC Sens vs Spec : 0.7518 ######
+# __Accuracy :  0.7953  ####
+# __Sensitivity :   0.71429  ####         
+# __Specificity : 0.79894 ####
+# __Balanced Accuracy : 0.75661   ####
+# __F_meas, beta = 1 :  0.2298851  ####
+# __AUC Sens vs Spec : 0.7352 ######
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001_both <- rpart(stroke ~., 
                                 data = train_stroke_both, 
                                 parms=list(split=c("gini")),
@@ -3319,14 +3511,15 @@ sens_espec_roc_gini_tree_cp0.001_both <- plot(roc(response = test_stroke_t$strok
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_both)
 
-# __Accuracy : 0.836  ####
-# __Sensitivity : 0.40476 ####       
-# __Specificity : 0.85532 ####
-# __Balanced Accuracy : 0.63004  ####
-# __F_meas, beta = 1 : 0.174359   ####
-# __AUC Sens vs Spec : 0.3567 ######
+# __Accuracy : 0.8269   ####
+# __Sensitivity : 0.38095 ####       
+# __Specificity : 0.84681 ####
+# __Balanced Accuracy : 0.61388  ####
+# __F_meas, beta = 1 : 0.1584158   ####
+# __AUC Sens vs Spec : 0.3724 ######
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 cost_matrix_tree_both <- rpart(stroke ~ ., 
                                data = train_stroke_both,
                                parms=list(
@@ -3337,7 +3530,7 @@ cost_matrix_tree_both <- rpart(stroke ~ .,
 plotcp(cost_matrix_tree_both)
 summary(cost_matrix_tree_both)
 
-y_hat_cost_matrix_tree_over <- predict(cost_matrix_tree_both, test_stroke_t, 
+y_hat_cost_matrix_tree_both <- predict(cost_matrix_tree_both, test_stroke_t, 
                                        type = "class")
 
 # Model Evaluation ::::::::
@@ -3379,18 +3572,20 @@ sens_espec_roc_cost_matrix_tree_both <- plot(roc(response = test_stroke_t$stroke
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_both)
 
-# __Accuracy : 0.6029   ##### 
+# __Accuracy : 0.6069   ##### 
 # __Sensitivity : 0.85714  #####         
-# __Specificity : 0.59149 #####  
-# __Balanced Accuracy : 0.72432  #####
-# __F_meas, beta = 1 : 0.1558442  #####
-# __AUC Sens vs Spec : 0.7704 ######
+# __Specificity : 0.59574  #####  
+# __Balanced Accuracy : 0.72644  #####
+# __F_meas, beta = 1 : 0.15720522  #####
+# __AUC Sens vs Spec : 0.7368 ######
 
 
 # RPART caret ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_caret_tree_both <- train(stroke ~ ., method = "rpart",
                                data = train_stroke_both, 
-                               trControl = ctrl)
+                               trControl = ctrl,
+                               metric="ROC")
 
 plot(train_caret_tree_both)
 summary(train_caret_tree_both)
@@ -3466,24 +3661,26 @@ roc_tp_fp_caret_tree_both <- evalm(list(train_caret_tree_both),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('CARET Tree - both'))
 
-# __Accuracy :  0.8177   ####
+# __Accuracy :  0.7953   ####
 # __Sensitivity : 0.71429      ####        
-# __Specificity : 0.82234  ####
-# __Balanced Accuracy : 0.76831   ####
-# __F_meas, beta = 1 : 0.251046  #####
-# __AUC Sens vs Spec : 0.808 ######
+# __Specificity : 0.79894  ####
+# __Balanced Accuracy : 0.75661   ####
+# __F_meas, beta = 1 : 0.2298851  #####
+# __AUC Sens vs Spec : 0.7352 ######
 
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_knn_both <- train(stroke ~ ., method = "knn", 
                         data = train_stroke_both, 
-                        trControl = ctrl)
+                        trControl = ctrl,
+                        metric="ROC")
 
 plot(train_knn_both)
 summary(train_knn_both)
 
-y_hat_knn_over <- predict(train_knn_both, test_stroke_t)
+y_hat_knn_both <- predict(train_knn_both, test_stroke_t)
 
 # Model Evaluation ::::::::
 
@@ -3556,19 +3753,20 @@ roc_tp_fp_knn_both <- evalm(list(train_knn_both),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('KNN - both'))
 
-# __Accuracy : 0.7699  ##### 
-# __Sensitivity : 0.52381  #####         
-# __Specificity : 0.78085  ##### 
-# __Balanced Accuracy : 0.65233  #####
-# __F_meas, beta = 1 : 0.162963 #####
-# __AUC Sens vs Spec : 0.6498 ######
+# __Accuracy : 0.7648 ##### 
+# __Sensitivity : 0.57143  #####         
+# __Specificity : 0.77340  ##### 
+# __Balanced Accuracy : 0.67242  #####
+# __F_meas, beta = 1 : 0.172043 #####
+# __AUC Sens vs Spec : 0.6639 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
-
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_rf_both <- train(stroke ~ ., method = "rf", 
                        data = train_stroke_both, 
-                       trControl = ctrl)
+                       trControl = ctrl,
+                       metric="ROC")
 
 plot(train_rf_both)
 summary(train_knn_both)
@@ -3642,21 +3840,22 @@ roc_tp_fp_rf_both <- evalm(list(train_rf_both),
                            title = "True Positive - False Positive rate ROC",
                            gnames=c('Random Forest - both'))
 
-# __Accuracy : 0.9134   ##### 
+# __Accuracy : 0.9267    ##### 
 # __Sensitivity : 0.119048  #####         
-# __Specificity : 0.948936   ##### 
-# __Balanced Accuracy : 0.533992  ##### 
-# __F_meas, beta = 1 : 0.1052632 #####
-# # __AUC Sens vs Spec : 0.7989  ###### 
+# __Specificity : 0.962766   ##### 
+# __Balanced Accuracy : 0.540907  ##### 
+# __F_meas, beta = 1 : 0.1219512 #####
+# # __AUC Sens vs Spec : 0.8042  ###### 
 
 # MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
-# set.seed(1970, sample.kind="Rounding") 
+# set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 # Results are random variables
 
 # train_mda_both <- train(stroke ~ ., method = "mda", 
 # data = train_stroke_both,
-# trControl = ctrl) # Several Warnings
+# trControl = ctrl,
+# metric="ROC") # Several Warnings
 
 # Error: Stopping
 # Además: There were 50 or more warnings (use warnings() to see the first 50)
@@ -3741,13 +3940,13 @@ roc_tp_fp_rf_both <- evalm(list(train_rf_both),
 # NNET: great variability !!!#####
 # Neural Network ####
 # It takes some time!
-
-set.seed(2, sample.kind="Rounding") 
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 # Results are random variables: great variability!!!
 
 train_nnet_both <- train(stroke ~ ., method = "nnet",
                          data = train_stroke_both,
-                         trControl = ctrl)
+                         trControl = ctrl,
+                         metric="ROC")
 
 plot(train_nnet_both)
 print(train_nnet_both)
@@ -3827,17 +4026,20 @@ roc_tp_fp_nnet_both <- evalm(list(train_nnet_both),
                              title = "True Positive - False Positive rate ROC",
                              gnames=c('NNET - both'))
 
-# __Accuracy : 0.7729 ####
-# __Sensitivity : 0.57143 ####        
-# __Specificity : 0.78191  ####
-# __Balanced Accuracy : 0.67667   ####
-# __F_meas, beta = 1 : 0.1771218 #####
-# __AUC Sens vs Spec : 0.7862 ###### 
+# __Accuracy : 0.668 ####
+# __Sensitivity : 0.78571 ####        
+# __Specificity : 0.66277   ####
+# __Balanced Accuracy : 0.72424    ####
+# __F_meas, beta = 1 : 0.1683673 #####
+# __AUC Sens vs Spec : 0.8138  ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_fda_both <- train(stroke ~ ., method = "fda", 
-                        data = train_stroke_both, trControl = ctrl)
+                        data = train_stroke_both, 
+                        trControl = ctrl,
+                        metric="ROC")
 
 y_hat_fda_both <- predict(train_fda_both, test_stroke_t)
 
@@ -3914,20 +4116,22 @@ roc_tp_fp_fda_both <- evalm(list(train_fda_both),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('FDA - both'))
 
-# __Accuracy : 0.7403   ####
+# __Accuracy : 0.7485    ####
 # __Sensitivity : 0.85714  ####        
-# __Specificity : 0.73511 ####  
-# __Balanced Accuracy :  0.79612  ####
-# __F_meas, beta = 1 : 0.2201835 #####
-# __AUC Sens vs Spec : 0.8465 ###### 
+# __Specificity : 0.74149 ####  
+# __Balanced Accuracy :  0.80038   ####
+# __F_meas, beta = 1 : 0.2257053 #####
+# __AUC Sens vs Spec : 0.8471 ###### 
 
 
 # NAIVE BAYES ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_naiveBayes_both <- train(stroke ~ ., method = "naive_bayes", 
                                data = train_stroke_both, 
-                               trControl = ctrl)
+                               trControl = ctrl,
+                               metric="ROC")
 
-y_hat_naiveBayes_over <- predict(train_naiveBayes_both, test_stroke_t)
+y_hat_naiveBayes_both <- predict(train_naiveBayes_both, test_stroke_t)
 
 # Model Evaluation ::::::::
 
@@ -4002,12 +4206,12 @@ roc_tp_fp_naiveBayes_both <- evalm(list(train_naiveBayes_both),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('Naive Bayes - both'))
 
-# __Accuracy : 0.4338  ##### 
-# __Sensitivity : 0.97619  #####         
-# __Specificity : 0.40957 ##### 
-# __Balanced Accuracy : 0.69288  ##### 
-# __F_meas, beta = 1 : 0.1285266 #####
-# __AUC Sens vs Spec : 0.8472 ######
+# __Accuracy : 0.9328  ##### 
+# __Sensitivity : 0.28571  #####         
+# __Specificity : 0.96170 ##### 
+# __Balanced Accuracy : 0.62371  ##### 
+# __F_meas, beta = 1 : 0.2666667 #####
+# __AUC Sens vs Spec : 0.8484 ######
 
 # _______________________######## 
 # Better estimates ######
@@ -4028,6 +4232,7 @@ train_stroke_better$stroke <- relevel(train_stroke_better$stroke, ref = "stroke"
 # Recursive Partitioning and Regression Trees ######
 
 # Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.01_better <- rpart(stroke ~ ., 
                                data = train_stroke_better)
 
@@ -4077,14 +4282,15 @@ sens_roc_gini_tree_cp0.01_better <- plot(roc(response = test_stroke_t$stroke,
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_better)
 
-# __Accuracy : 0.6253  ####
-# __Sensitivity : 0.92857   ####         
-# __Specificity : 0.61170  ####
-# __Balanced Accuracy : 0.77014  ####
-# __F_meas, beta = 1 :  0.1748879  ####
-# __AUC Sens vs Spec : 0.7701 ######
+# __Accuracy : 0.8096  ####
+# __Sensitivity : 0.73810  ####         
+# __Specificity : 0.81277  ####
+# __Balanced Accuracy : 0.77543  ####
+# __F_meas, beta = 1 :  0.248996  ####
+# __AUC Sens vs Spec : 0.8338 ######
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001_better <- rpart(stroke ~., 
                                 data = train_stroke_better, 
                                 parms=list(split=c("gini")),
@@ -4135,14 +4341,15 @@ sens_espec_roc_gini_tree_cp0.001_better <- plot(roc(response = test_stroke_t$str
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_better)
 
-# __Accuracy : 0.836   ####
-# __Sensitivity : 0.40476 ####       
-# __Specificity : 0.85532  ####
-# __Balanced Accuracy : 0.63004  ####
-# __F_meas, beta = 1 : 0.174359  ####
-# __AUC Sens vs Spec : 0.8041 ######
+# __Accuracy : 0.8269   ####
+# __Sensitivity : 0.38095 ####       
+# __Specificity : 0.84681  ####
+# __Balanced Accuracy : 0.61388   ####
+# __F_meas, beta = 1 : 0.1584158  ####
+# __AUC Sens vs Spec : 0.8052 ######
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 cost_matrix_tree_better <- rpart(stroke ~ ., 
                                data = train_stroke_better,
                                parms=list(
@@ -4195,18 +4402,20 @@ sens_espec_roc_cost_matrix_tree_better <- plot(roc(response = test_stroke_t$stro
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_better)
 
-# __Accuracy :  0.6029  ##### 
+# __Accuracy :  0.6069 ##### 
 # __Sensitivity : 0.85714 #####         
-# __Specificity : 0.59149 #####  
-# __Balanced Accuracy : 0.72432 #####
-# __F_meas, beta = 1 : 0.1558442 #####
-# __AUC Sens vs Spec :  ######
+# __Specificity : 0.59574 #####  
+# __Balanced Accuracy : 0.72644  #####
+# __F_meas, beta = 1 : 0.1572052 #####
+# __AUC Sens vs Spec :  0.2991
 
 
 # RPART caret ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_caret_tree_better <- train(stroke ~ ., method = "rpart",
                                data = train_stroke_better, 
-                               trControl = ctrl)
+                               trControl = ctrl,
+                               metric="ROC")
 
 plot(train_caret_tree_better)
 summary(train_caret_tree_better)
@@ -4282,19 +4491,21 @@ roc_tp_fp_caret_tree_better <- evalm(list(train_caret_tree_better),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('CARET Tree - better'))
 
-# __Accuracy : 0.7169   ####
-# __Sensitivity :  0.83333     ####        
-# __Specificity : 0.71170  ####
-# __Balanced Accuracy : 0.77252   ####
-# __F_meas, beta = 1 : 0.2011494 #####
-# __AUC Sens vs Spec : 0.8219 ######
+# __Accuracy : 0.8096    ####
+# __Sensitivity :  0.73810     ####        
+# __Specificity : 0.81277  ####
+# __Balanced Accuracy : 0.77543   ####
+# __F_meas, beta = 1 : 0.248996 #####
+# __AUC Sens vs Spec : 0.8338######
 
 
 #KNN caret #######
 # K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_knn_better <- train(stroke ~ ., method = "knn", 
                         data = train_stroke_better, 
-                        trControl = ctrl)
+                        trControl = ctrl,
+                        metric="ROC")
 
 plot(train_knn_better)
 summary(train_knn_better)
@@ -4372,19 +4583,20 @@ roc_tp_fp_knn_better <- evalm(list(train_knn_better),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('KNN - better'))
 
-# __Accuracy :0.7536  ##### 
-# __Sensitivity : 0.52381  #####         
-# __Specificity : 0.76383   ##### 
-# __Balanced Accuracy : 0.64382   #####
-# __F_meas, beta = 1 : 0.1538462 #####
-# __AUC Sens vs Spec : 0.7605 ######
+# __Accuracy : 0.7637   ##### 
+# __Sensitivity : 0.61905   #####         
+# __Specificity : 0.77021   ##### 
+# __Balanced Accuracy : 0.69463   #####
+# __F_meas, beta = 1 : 0.1830986 #####
+# __AUC Sens vs Spec : 0.7685 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
-
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_rf_better <- train(stroke ~ ., method = "rf", 
                        data = train_stroke_better, 
-                       trControl = ctrl)
+                       trControl = ctrl,
+                       metric="ROC")
 
 plot(train_rf_better)
 summary(train_knn_better)
@@ -4459,21 +4671,22 @@ roc_tp_fp_rf_better <- evalm(list(train_rf_better),
                            title = "True Positive - False Positive rate ROC",
                            gnames=c('Random Forest - better'))
 
-# __Accuracy : 0.7902   ##### 
-# __Sensitivity : 0.57143  #####         
-# __Specificity : 0.80000   ##### 
-# __Balanced Accuracy : 0.68571  ##### 
-# __F_meas, beta = 1 : 0.1889764 #####
-# # __AUC Sens vs Spec : 0.8186  ###### 
+# __Accuracy : 0.7862    ##### 
+# __Sensitivity : 0.59524  #####         
+# __Specificity : 0.79468   ##### 
+# __Balanced Accuracy : 0.69496 ##### 
+# __F_meas, beta = 1 : 0.1923077 #####
+# # __AUC Sens vs Spec : 0.8196  ###### 
 
 # MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
-# set.seed(1970, sample.kind="Rounding") 
+# set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 # Results are random variables
 
-train_mda_better <- train(stroke ~ ., method = "mda", 
-                        data = train_stroke_better,
-                        trControl = ctrl) # Several Warnings
+# train_mda_better <- train(stroke ~ ., method = "mda", 
+# data = train_stroke_better,
+# trControl = ctrl,
+# metric="ROC") # Several Warnings
 
 # Error: Stopping
 # Además: There were 50 or more warnings (use warnings() to see the first 50)
@@ -4565,7 +4778,8 @@ set.seed(2, sample.kind="Rounding")
 
 train_nnet_better <- train(stroke ~ ., method = "nnet",
                          data = train_stroke_better,
-                         trControl = ctrl)
+                         trControl = ctrl,
+                         metric="ROC")
 
 plot(train_nnet_better)
 print(train_nnet_better)
@@ -4645,17 +4859,20 @@ roc_tp_fp_nnet_better <- evalm(list(train_nnet_better),
                              title = "True Positive - False Positive rate ROC",
                              gnames=c('NNET - better'))
 
-# __Accuracy : 0.7291 ####
-# __Sensitivity : 0.69048 ####        
-# __Specificity : 0.73085  ####
-# __Balanced Accuracy : 0.71066   ####
-# __F_meas, beta = 1 : 0.1790123 #####
-# __AUC Sens vs Spec : 0.804 ###### 
+# __Accuracy :  0.7668 ####
+# __Sensitivity : 0.66667 ####        
+# __Specificity : 0.77128  ####
+# __Balanced Accuracy : 0.71897   ####
+# __F_meas, beta = 1 : 0.1964912 #####
+# __AUC Sens vs Spec : 0.8125 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_fda_better <- train(stroke ~ ., method = "fda", 
-                        data = train_stroke_better, trControl = ctrl)
+                        data = train_stroke_better, 
+                        trControl = ctrl,
+                        metric="ROC")
 
 y_hat_fda_better <- predict(train_fda_better, test_stroke_t)
 
@@ -4732,18 +4949,20 @@ roc_tp_fp_fda_better <- evalm(list(train_fda_better),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('FDA - better'))
 
-# __Accuracy : 0.7363   ####
+# __Accuracy : 0.7587   ####
 # __Sensitivity : 0.85714  ####        
-# __Specificity : 0.73085 ####  
-# __Balanced Accuracy : 0.79400   ####
-# __F_meas, beta = 1 :  #####
-#__AUC Sens vs Spec : 0.2175227 ###### 
+# __Specificity : 0.75426 ####  
+# __Balanced Accuracy : 0.80570   ####
+# __F_meas, beta = 1 :  0.2330097 ####
+#__AUC Sens vs Spec : 0.8588 ###### 
 
 
 # NAIVE BAYES ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_naiveBayes_better <- train(stroke ~ ., method = "naive_bayes", 
                                data = train_stroke_better, 
-                               trControl = ctrl)
+                               trControl = ctrl,
+                               metric="ROC")
 
 y_hat_naiveBayes_better <- predict(train_naiveBayes_better, test_stroke_t)
 
@@ -4820,12 +5039,12 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('Naive Bayes - both'))
 
-# __Accuracy : 0.9399  ##### 
-# __Sensitivity : 0.23810   #####         
-# __Specificity : 0.97128  ##### 
-# __Balanced Accuracy : 0.60469  ##### 
-# __F_meas, beta = 1 : 0.2531646 #####
-#__AUC Sens vs Spec : 0.8492 ######
+# __Accuracy : 0.9379  ##### 
+# __Sensitivity : 0.14286    #####         
+# __Specificity : 0.97340  ##### 
+# __Balanced Accuracy : 0.55813  ##### 
+# __F_meas, beta = 1 : 0.1643836 #####
+#__AUC Sens vs Spec : 0.8503 ######
 
 # _______________________########
 # SELECTED MODELS A ########
@@ -5125,12 +5344,6 @@ cm_ensamble_b
 
 F_meas(confusionMatrix(y_hat_ensamble_b,
                        test_stroke_t$stroke)$table,beta = 1)
-
-
-
-
-
-
 
 # _______________________########
 # Resources ########
