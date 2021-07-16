@@ -129,13 +129,17 @@ library(LiblineaR)
 #__MLeval####
 if(!require(MLeval)) install.packages("MLeval", repos = "http://cran.us.r-project.org")
 
+#__Naives Bayes####
+if(!require(naivebayes)) install.packages("naivebayes", repos = "http://cran.us.r-project.org")
+library(naivebayes) #cambio
+
 #__Recipes####
 if(!require(recipes)) install.packages("recipes", repos = "http://cran.us.r-project.org")
 library(recipes)
 
+#__Rattle####
 if(!require(rattle)) install.packages("rattle", repos = "http://cran.us.r-project.org")
 library(rattle)
-
 
 # _______________________########
 # DATA DOWNLOAD ########
@@ -164,6 +168,8 @@ stroke_data <- stroke_data %>%
   select(!id) # Removing "id" variable
 
 # Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
+# It makes "stroke" the positive class, in order to facilitate interpretations
+
 stroke_data$stroke <- relevel(stroke_data$stroke, ref = "stroke")
 
 head(stroke_data)
@@ -180,7 +186,7 @@ n <- nrow(stroke_data)
 n
 # 4909
 
-# Number of strokes = 1 in data set ####
+# Number of strokes in data set ####
 n_strokes <-  sum(stroke_data$stroke == "stroke") 
 # 209
 
@@ -196,15 +202,11 @@ n_males <- sum(stroke_data$gender == "Male")
 n_females <- sum(stroke_data$gender == "Female") 
 # 2897
 
-# Number of gender = Other in data set ####
-sum(stroke_data$gender == "Other") 
-# 1
-
 # Percent of strokes = 1 in data set ####
 mean(stroke_data$stroke == "stroke") 
 # 0.04257486
 
-# Percent of strokes = 0 in data set ####
+# Percent of no_strokes in data set ####
 mean(stroke_data$stroke == "no_stroke") 
 # 0.9574251
 
@@ -215,10 +217,6 @@ mean(stroke_data$gender == "Male")
 # Percent of gender = Female in data set ####
 mean(stroke_data$gender == "Female") 
 # 0.5901406
-
-# Percent of gender = Other in data set ####
-mean(stroke_data$gender == "Other") 
-# 0.0002037075
 
 #Percent of strokes: gender Male ####
 stroke_data %>% 
@@ -536,7 +534,6 @@ stroke_data %>% ggplot(aes(stroke, bmi, color = stroke)) +
 # __Summary table by bmi (round to nearest ten) #####
 # bmi, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
-  filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
   group_by(round(bmi,-1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -546,7 +543,6 @@ stroke_data %>%
 
 # __Distribution of observations by rounded bmi  #####
 stroke_data %>% 
-  filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
   group_by(bmi = round(bmi, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -568,7 +564,6 @@ stroke_data %>%
 
 # __Number of strokes by rounded bmi  #####
 stroke_data %>% 
-  filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
   group_by(bmi = round(bmi, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -590,7 +585,6 @@ stroke_data %>%
 
 # __Percent of strokes by rounded bmi ####  
 stroke_data %>% 
-  filter(!bmi == "N/A") %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
   group_by(bmi = round(bmi, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
@@ -801,17 +795,17 @@ variables_rf <- stroke_data
 
 
 randforest_model <- randomForest(formula = stroke ~ . ,
-                                  data = variables_rf,
-                                  mtry = 5,
-                                  importance = TRUE, 
-                                  ntree = 1000) 
+                                 data = variables_rf,
+                                 mtry = 5,
+                                 importance = TRUE, 
+                                 ntree = 1000) 
 
 importance <- as.data.frame(randforest_model$importance)
 importance <- rownames_to_column(importance,var = "variable")
 
 importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                     y = MeanDecreaseAccuracy,
-                                     fill = MeanDecreaseAccuracy)) +
+                                             y = MeanDecreaseAccuracy,
+                                             fill = MeanDecreaseAccuracy)) +
   labs(x = "variable", title = "Accuracy reduction") +
   geom_col() +
   coord_flip() +
@@ -820,8 +814,8 @@ importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseA
 importance1
 
 importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseGini),
-                                     y = MeanDecreaseGini,
-                                     fill = MeanDecreaseGini)) +
+                                             y = MeanDecreaseGini,
+                                             fill = MeanDecreaseGini)) +
   labs(x = "variable", title = "Gini Reduction") +
   geom_col() +
   coord_flip() +
@@ -837,7 +831,7 @@ stroke_categorical <- stroke_data %>%
          Residence_type, smoking_status, stroke)
 
 stroke_categorical_tidy <- data.frame(stroke_categorical %>%
-  gather(key = "variable", value = "group",-stroke))
+                                        gather(key = "variable", value = "group",-stroke))
 
 # An identifier consisting of the name of the variable and the group is added
 stroke_categorical_tidy <- stroke_categorical_tidy %>%
@@ -1026,6 +1020,9 @@ stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
 table(stroke_data_over$stroke)
 prop.table(table(stroke_data_over$stroke))
 
+# As expected, the process of balancing (over, both or better method) doesn't change the distributions of 
+# variables. We will see ths next:
+
 # __Statistical Age Data  #####
 
 stroke_data_over %>% 
@@ -1158,7 +1155,7 @@ rpart.plot(rpart(stroke ~ .,
                  data = stroke_data_over)) # Default rpart tree
 
 caret_tree_print_over <- train(stroke ~ ., method = "rpart", 
-                          data = stroke_data_over)
+                               data = stroke_data_over)
 
 fancyRpartPlot(caret_tree_print_over$finalModel)
 
@@ -1207,17 +1204,17 @@ variables_rf_over <- stroke_data_over
 
 
 randforest_model_over <- randomForest(formula = stroke ~ . ,
-                                 data = variables_rf_over,
-                                 mtry = 5,
-                                 importance = TRUE, 
-                                 ntree = 1000) 
+                                      data = variables_rf_over,
+                                      mtry = 5,
+                                      importance = TRUE, 
+                                      ntree = 1000) 
 
 importance_over <- as.data.frame(randforest_model_over$importance)
 importance_over <- rownames_to_column(importance_over,var = "variable")
 
 importance1_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                             y = MeanDecreaseAccuracy,
-                                             fill = MeanDecreaseAccuracy)) +
+                                                       y = MeanDecreaseAccuracy,
+                                                       fill = MeanDecreaseAccuracy)) +
   labs(x = "variable", title = "Accuracy reduction - Over") +
   geom_col() +
   coord_flip() +
@@ -1226,8 +1223,8 @@ importance1_over <- ggplot(data = importance_over, aes(x = reorder(variable, Mea
 importance1_over
 
 importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseGini),
-                                             y = MeanDecreaseGini,
-                                             fill = MeanDecreaseGini)) +
+                                                       y = MeanDecreaseGini,
+                                                       fill = MeanDecreaseGini)) +
   labs(x = "variable", title = "Gini Reduction - Over") +
   geom_col() +
   coord_flip() +
@@ -1244,7 +1241,7 @@ stroke_categorical_over <- stroke_data_over %>%
          Residence_type, smoking_status, stroke)
 
 stroke_categorical_tidy_over <- data.frame(stroke_categorical_over %>%
-                                        gather(key = "variable", value = "group",-stroke))
+                                             gather(key = "variable", value = "group",-stroke))
 
 # An identifier consisting of the name of the variable and the group is addedo 
 stroke_categorical_tidy_over <- stroke_categorical_tidy_over %>%
@@ -1439,7 +1436,7 @@ rpart.plot(rpart(stroke ~ .,
                  data = stroke_data_better)) # Default rpart tree
 
 caret_tree_print_better <- train(stroke ~ ., method = "rpart", 
-                               data = stroke_data_better)
+                                 data = stroke_data_better)
 
 fancyRpartPlot(caret_tree_print_better$finalModel)
 
@@ -1479,17 +1476,17 @@ variables_rf_better <- stroke_data_better
 
 
 randforest_model_better <- randomForest(formula = stroke ~ . ,
-                                      data = variables_rf_better,
-                                      mtry = 5,
-                                      importance = TRUE, 
-                                      ntree = 1000) 
+                                        data = variables_rf_better,
+                                        mtry = 5,
+                                        importance = TRUE, 
+                                        ntree = 1000) 
 
 importance_better <- as.data.frame(randforest_model_better$importance)
 importance_better<- rownames_to_column(importance_better,var = "variable")
 
 importance1_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                                       y = MeanDecreaseAccuracy,
-                                                       fill = MeanDecreaseAccuracy)) +
+                                                           y = MeanDecreaseAccuracy,
+                                                           fill = MeanDecreaseAccuracy)) +
   labs(x = "variable", title = "Accuracy reduction - Better") +
   geom_col() +
   coord_flip() +
@@ -1498,8 +1495,8 @@ importance1_better <- ggplot(data = importance_better, aes(x = reorder(variable,
 importance1_better
 
 importance2_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseGini),
-                                                       y = MeanDecreaseGini,
-                                                       fill = MeanDecreaseGini)) +
+                                                           y = MeanDecreaseGini,
+                                                           fill = MeanDecreaseGini)) +
   labs(x = "variable", title = "Gini Reduction - better") +
   geom_col() +
   coord_flip() +
@@ -1516,7 +1513,7 @@ stroke_categorical_better <- stroke_data_better %>%
          Residence_type, smoking_status, stroke)
 
 stroke_categorical_tidy_better <- data.frame(stroke_categorical_better %>%
-                                             gather(key = "variable", value = "group",-stroke))
+                                               gather(key = "variable", value = "group",-stroke))
 
 # An identifier consisting of the name of the variable and the group is added
 stroke_categorical_tidy_better <- stroke_categorical_tidy_better %>%
@@ -1570,13 +1567,14 @@ test_stroke <- stroke_data[test_index,]
 str(test_stroke)
 
 # Review #####
+# Comparing test and train set to be sure that proportions are similar
 
 # __Percent of strokes = 1 in train set ####
 mean(train_stroke$stroke == "stroke") 
 # 0.04253693
 
 # __Percent of strokes = 1 in test set ####
-mean(test_stroke_t$stroke == "stroke") 
+mean(test_stroke$stroke == "stroke") 
 # 0.04257486
 
 test_stroke %>% filter(gender == "Other")
@@ -1799,7 +1797,7 @@ test_stroke_t <- predict(preProcValues, test_stroke)
 ctrl <- trainControl(method="repeatedcv", 
                      number = 10,
                      repeats = 5, summaryFunction=twoClassSummary, classProbs=T,
-                     savePredictions = T)
+                     savePredictions = T) # Parameters ClassProbs and SavePred: needed to plot ROC Curves.
 
 
 # _______________________########
@@ -1814,7 +1812,11 @@ ctrl <- trainControl(method="repeatedcv",
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 
 gini_tree_cp0.01 <- rpart(stroke ~ ., 
-                      data = train_stroke_t) # Default rpart tree
+                          data = train_stroke_t) # Default rpart tree
+
+plotcp(gini_tree_cp0.01)
+print(gini_tree_cp0.01)
+summary(gini_tree_cp0.01)
 
 y_hat_gini_tree_cp0.01 <- predict(gini_tree_cp0.01, test_stroke_t, type = "class")
 
@@ -1839,18 +1841,18 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.01,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.01 <- predict(gini_tree_cp0.01,
-                              test_stroke_t, type = "prob") %>% 
+                                test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_roc_gini_tree_cp0.01 <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_gini_tree_cp0.01$stroke, levels = c("no_stroke", "stroke")), 
-         print.auc = TRUE,
-         col = "#377eb8", 
-         lwd = 2,
-         xlim = c(1,0),
-         ylim = c(0,1),
-         main = "Gini, CP : 0.01")
+                                                predictor = roc_gini_tree_cp0.01$stroke, levels = c("no_stroke", "stroke")), 
+                                            print.auc = TRUE,
+                                            col = "#377eb8", 
+                                            lwd = 2,
+                                            xlim = c(1,0),
+                                            ylim = c(0,1),
+                                            main = "Gini, CP : 0.01")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_roc_gini_tree_cp0.01)
@@ -1868,6 +1870,10 @@ gini_tree_cp0.001 <- rpart(stroke ~.,
                            data = train_stroke_t, 
                            parms=list(split=c("gini")),
                            cp = 0.001)
+
+plotcp(gini_tree_cp0.001)
+print(gini_tree_cp0.001)
+summary(gini_tree_cp0.001)
 
 y_hat_gini_tree_cp0.001 <- predict(gini_tree_cp0.001, test_stroke_t, type = "class")
 
@@ -1893,18 +1899,18 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.001,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.001 <- predict(gini_tree_cp0.001,
-                                test_stroke_t, type = "prob") %>% 
+                                 test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_gini_tree_cp0.001 <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_gini_tree_cp0.001$stroke, levels = c("no_stroke", "stroke")), 
-         print.auc = TRUE,
-         col = "#377eb8", 
-         lwd = 2,
-         xlim = c(1,0),
-         ylim = c(0,1),
-         main = "Gini Tree, CP: 0.001")
+                                             predictor = roc_gini_tree_cp0.001$stroke, levels = c("no_stroke", "stroke")), 
+                                         print.auc = TRUE,
+                                         col = "#377eb8", 
+                                         lwd = 2,
+                                         xlim = c(1,0),
+                                         ylim = c(0,1),
+                                         main = "Gini Tree, CP: 0.001")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001)
@@ -1923,6 +1929,10 @@ gini_tree_cp0.0024 <- rpart(stroke ~.,
                             data = train_stroke_t, 
                             parms=list(split=c("gini")),
                             cp = 0.0024)
+
+plotcp(gini_tree_cp0.0024)
+print(gini_tree_cp0.0024)
+summary(gini_tree_cp0.0024)
 
 y_hat_gini_tree_cp0.0024 <- predict(gini_tree_cp0.0024, test_stroke_t, type = "class")
 
@@ -1947,18 +1957,18 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.0024,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.0024 <- predict(gini_tree_cp0.0024,
-                                 test_stroke_t, type = "prob") %>% 
+                                  test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_gini_tree_cp0.0024 <- plot(roc(response = test_stroke_t$stroke, 
-                                             predictor = roc_gini_tree_cp0.0024$stroke, levels = c("no_stroke", "stroke")), 
-                                         print.auc = TRUE,
-                                         col = "#377eb8", 
-                                         lwd = 2,
-                                         xlim = c(1,0),
-                                         ylim = c(0,1),
-                                         main = "Gini Tree, CP: 0.0024")
+                                              predictor = roc_gini_tree_cp0.0024$stroke, levels = c("no_stroke", "stroke")), 
+                                          print.auc = TRUE,
+                                          col = "#377eb8", 
+                                          lwd = 2,
+                                          xlim = c(1,0),
+                                          ylim = c(0,1),
+                                          main = "Gini Tree, CP: 0.0024")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.0024)
@@ -1977,6 +1987,10 @@ gini_tree_cp0.001_max5 <- rpart(stroke ~.,
                                 parms=list(split=c("gini")),
                                 cp = 0.001,
                                 maxdepth = 5)
+
+plotcp(gini_tree_cp0.001_max5)
+print(gini_tree_cp0.001_max5)
+summary(gini_tree_cp0.001_max5)
 
 y_hat_gini_tree_cp0.001_max5 <- predict(gini_tree_cp0.001_max5, test_stroke_t, type = "class")
 
@@ -2001,18 +2015,18 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_max5,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.001_max5 <- predict(gini_tree_cp0.001_max5,
-                                 test_stroke_t, type = "prob") %>% 
+                                      test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_gini_tree_cp0.001_max5 <- plot(roc(response = test_stroke_t$stroke, 
-                                             predictor = roc_gini_tree_cp0.001_max5$stroke, levels = c("no_stroke", "stroke")), 
-                                         print.auc = TRUE,
-                                         col = "#377eb8", 
-                                         lwd = 2,
-                                         xlim = c(1,0),
-                                         ylim = c(0,1),
-                                         main = "Gini Tree, CP: 0.001 max5")
+                                                  predictor = roc_gini_tree_cp0.001_max5$stroke, levels = c("no_stroke", "stroke")), 
+                                              print.auc = TRUE,
+                                              col = "#377eb8", 
+                                              lwd = 2,
+                                              xlim = c(1,0),
+                                              ylim = c(0,1),
+                                              main = "Gini Tree, CP: 0.001 max5")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_max5)
@@ -2029,6 +2043,10 @@ set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1
 inf_tree <- (rpart(stroke ~., 
                    data = train_stroke_t, 
                    parms=list(split=c("information"))))
+
+plotcp(inf_tree)
+print(inf_tree)
+summary(inf_tree)
 
 y_hat_inf_tree <- predict(inf_tree, test_stroke_t, type = "class")
 
@@ -2058,13 +2076,13 @@ roc_inf_tree <- predict(inf_tree,
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_inf_tree <- plot(roc(response = test_stroke_t$stroke, 
-                                                  predictor = roc_inf_tree$stroke, levels = c("no_stroke", "stroke")), 
-                                              print.auc = TRUE,
-                                              col = "#377eb8", 
-                                              lwd = 2,
-                                              xlim = c(1,0),
-                                              ylim = c(0,1),
-                                              main = "Information Tree, CP: 0.01")
+                                    predictor = roc_inf_tree$stroke, levels = c("no_stroke", "stroke")), 
+                                print.auc = TRUE,
+                                col = "#377eb8", 
+                                lwd = 2,
+                                xlim = c(1,0),
+                                ylim = c(0,1),
+                                main = "Information Tree, CP: 0.01")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_inf_tree)
@@ -2082,6 +2100,10 @@ inf_tree_cp0.001 <- rpart(stroke ~.,
                           data = train_stroke_t, 
                           parms=list(split=c("information")),
                           cp = 0.001)
+
+plotcp(inf_tree_cp0.001)
+print(inf_tree_cp0.001)
+summary(inf_tree_cp0.001)
 
 y_hat_inf_tree_cp0.001 <- predict(inf_tree_cp0.001, test_stroke_t, type = "class")
 
@@ -2106,18 +2128,18 @@ F_meas(confusionMatrix(y_hat_inf_tree_cp0.001,
 
 # Calc. Probs for every class
 roc_inf_tree_cp0.001 <- predict(inf_tree_cp0.001,
-                        test_stroke_t, type = "prob") %>% 
+                                test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_inf_tree_cp0.001 <- plot(roc(response = test_stroke_t$stroke, 
-                                    predictor = roc_inf_tree_cp0.001$stroke, levels = c("no_stroke", "stroke")), 
-                                print.auc = TRUE,
-                                col = "#377eb8", 
-                                lwd = 2,
-                                xlim = c(1,0),
-                                ylim = c(0,1),
-                                main = "Information Tree, CP: 0.001")
+                                            predictor = roc_inf_tree_cp0.001$stroke, levels = c("no_stroke", "stroke")), 
+                                        print.auc = TRUE,
+                                        col = "#377eb8", 
+                                        lwd = 2,
+                                        xlim = c(1,0),
+                                        ylim = c(0,1),
+                                        main = "Information Tree, CP: 0.001")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_inf_tree_cp0.001)
@@ -2135,6 +2157,10 @@ inf_tree_cp0.0023 <- rpart(stroke ~.,
                            data = train_stroke_t, 
                            parms=list(split=c("information")),
                            cp = 0.0023)
+
+plotcp(inf_tree_cp0.0023)
+print(inf_tree_cp0.0023)
+summary(inf_tree_cp0.0023)
 
 y_hat_inf_tree_cp0.0023 <- predict(inf_tree_cp0.0023, test_stroke_t, type = "class")
 
@@ -2159,18 +2185,18 @@ F_meas(confusionMatrix(y_hat_inf_tree_cp0.0023,
 
 # Calc. Probs for every class
 roc_inf_tree_cp0.0023 <- predict(inf_tree_cp0.0023,
-                                test_stroke_t, type = "prob") %>% 
+                                 test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_inf_tree_cp0.0023 <- plot(roc(response = test_stroke_t$stroke, 
-                                            predictor = roc_inf_tree_cp0.0023$stroke, levels = c("no_stroke", "stroke")), 
-                                        print.auc = TRUE,
-                                        col = "#377eb8", 
-                                        lwd = 2,
-                                        xlim = c(1,0),
-                                        ylim = c(0,1),
-                                        main = "Information Tree, CP: 0.001")
+                                             predictor = roc_inf_tree_cp0.0023$stroke, levels = c("no_stroke", "stroke")), 
+                                         print.auc = TRUE,
+                                         col = "#377eb8", 
+                                         lwd = 2,
+                                         xlim = c(1,0),
+                                         ylim = c(0,1),
+                                         main = "Information Tree, CP: 0.001")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_inf_tree_cp0.0023)
@@ -2190,6 +2216,10 @@ train_caret_tree <- train(stroke ~ ., method = "rpart",
                           trControl = ctrl, 
                           metric = "ROC")
 
+plot(train_caret_tree)
+print(train_caret_tree)
+summary(train_caret_tree)
+
 y_hat_caret_tree <- predict(train_caret_tree, test_stroke_t)
 
 # Model Evaluation ::::::::
@@ -2208,17 +2238,17 @@ F_meas(confusionMatrix(y_hat_caret_tree,
 
 # Calc. Probs for every class
 roc_caret_tree <- predict(train_caret_tree,
-                               test_stroke_t, type = "prob")
+                          test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_caret_tree <- plot(roc(response = test_stroke_t$stroke, 
-                                           predictor = roc_caret_tree$stroke, levels = c("no_stroke", "stroke")), 
-                                       print.auc = TRUE,
-                                       col = "#377eb8", 
-                                       lwd = 2,
-                                       xlim = c(1,0),
-                                       ylim = c(0,1),
-                                       main = "CARET Tree")
+                                      predictor = roc_caret_tree$stroke, levels = c("no_stroke", "stroke")), 
+                                  print.auc = TRUE,
+                                  col = "#377eb8", 
+                                  lwd = 2,
+                                  xlim = c(1,0),
+                                  ylim = c(0,1),
+                                  main = "CARET Tree")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_caret_tree)
@@ -2226,43 +2256,43 @@ auc(sens_espec_roc_caret_tree)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_caret_tree <- evalm(list(train_caret_tree), 
-                              positive = "stroke",
-                              gnames=c('CARET Tree'))
+                         positive = "stroke",
+                         gnames=c('CARET Tree'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_caret_tree <- evalm(list(train_caret_tree), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('CARET Tree'))
+                       positive = "stroke",
+                       plots = "cc",
+                       title = "Calibration Curve",
+                       gnames=c('CARET Tree'))
 
 # Precision - Recall Gain
 prg_caret_tree <- evalm(list(train_caret_tree), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('CARET Tree'))
+                        positive = "stroke",
+                        plots = "prg",
+                        title = "Precision - Recall Gain",
+                        gnames=c('CARET Tree'))
 
 # Precision - Recall Curve
 pr_caret_tree <- evalm(list(train_caret_tree), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('CARET Tree'))
+                       positive = "stroke",
+                       plots = "pr",
+                       title = "Precision - Recall Curve",
+                       gnames=c('CARET Tree'))
 
 # True positive vs false positive ROC
 roc_tp_fp_caret_tree <- evalm(list(train_caret_tree), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('CARET Tree'))
+                              positive = "stroke",
+                              plots = "r",
+                              title = "True Positive - False Positive rate ROC",
+                              gnames=c('CARET Tree'))
 
 # __Accuracy : 0.9521   ######
 # __Sensitivity : 0.023810  #####         
 # __Specificity : 0.993617 #####
 # __Balanced Accuracy : 0.508713  #####
-# __F_meas, beta = 0.04081633  #####
+# __F_meas, beta : 0.04081633  #####
 # __AUC Sens vs Spec :  0.7394 #####
 
 # KNN ########
@@ -2272,6 +2302,10 @@ train_knn <- train(stroke ~ ., method = "knn",
                    data = train_stroke_t, 
                    trControl = ctrl, 
                    metric = "ROC")
+
+plot(train_knn)
+print(train_knn)
+summary(train_knn)
 
 y_hat_knn <- predict(train_knn, test_stroke_t)
 
@@ -2300,13 +2334,13 @@ roc_knn <- predict(train_knn,
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_knn <- plot(roc(response = test_stroke_t$stroke, 
-                                           predictor = roc_knn$stroke, levels = c("no_stroke", "stroke")), 
-                                       print.auc = TRUE,
-                                       col = "#377eb8", 
-                                       lwd = 2,
-                                       xlim = c(1,0),
-                                       ylim = c(0,1),
-                                       main = "KNN")
+                               predictor = roc_knn$stroke, levels = c("no_stroke", "stroke")), 
+                           print.auc = TRUE,
+                           col = "#377eb8", 
+                           lwd = 2,
+                           xlim = c(1,0),
+                           ylim = c(0,1),
+                           main = "KNN")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_knn)
@@ -2314,37 +2348,37 @@ auc(sens_espec_roc_knn)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_knn <- evalm(list(train_knn), 
-                              positive = "stroke",
-                              gnames=c('KNN'))
+                  positive = "stroke",
+                  gnames=c('KNN'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_knn <- evalm(list(train_knn), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('KNN'))
+                positive = "stroke",
+                plots = "cc",
+                title = "Calibration Curve",
+                gnames=c('KNN'))
 
 # Precision - Recall Gain
 prg_knn <- evalm(list(train_knn), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('KNN'))
+                 positive = "stroke",
+                 plots = "prg",
+                 title = "Precision - Recall Gain",
+                 gnames=c('KNN'))
 
 # Precision - Recall Curve
 pr_knn <- evalm(list(train_knn), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('KNN'))
+                positive = "stroke",
+                plots = "pr",
+                title = "Precision - Recall Curve",
+                gnames=c('KNN'))
 
 # True positive vs false positive ROC
 roc_knn <- evalm(list(train_knn), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('KNN'))
+                 positive = "stroke",
+                 plots = "r",
+                 title = "True Positive - False Positive rate ROC",
+                 gnames=c('KNN'))
 
 
 # __Accuracy : 0.9572  ####
@@ -2362,6 +2396,10 @@ train_rf <- train(stroke ~ ., method = "rf",
                   data = train_stroke_t, 
                   trControl = ctrl, 
                   metric = "ROC")
+
+plot(train_rf)
+print(train_rf)
+summary(train_rf)
 
 y_hat_rf <- predict(train_rf, test_stroke_t, type = "raw")
 
@@ -2385,13 +2423,13 @@ roc_rf <- predict(train_rf,
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_rf <- plot(roc(response = test_stroke_t$stroke, 
-                                           predictor = roc_rf$stroke, levels = c("no_stroke", "stroke")), 
-                                       print.auc = TRUE,
-                                       col = "#377eb8", 
-                                       lwd = 2,
-                                       xlim = c(1,0),
-                                       ylim = c(0,1),
-                                       main = "Random Forest")
+                              predictor = roc_rf$stroke, levels = c("no_stroke", "stroke")), 
+                          print.auc = TRUE,
+                          col = "#377eb8", 
+                          lwd = 2,
+                          xlim = c(1,0),
+                          ylim = c(0,1),
+                          main = "Random Forest")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_rf)
@@ -2399,37 +2437,37 @@ auc(sens_espec_roc_rf)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_rf <- evalm(list(train_rf), 
-                              positive = "stroke",
-                              gnames=c('Random Forest'))
+                 positive = "stroke",
+                 gnames=c('Random Forest'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_rfr <- evalm(list(train_rf), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('Random Forest'))
+                positive = "stroke",
+                plots = "cc",
+                title = "Calibration Curve",
+                gnames=c('Random Forest'))
 
 # Precision - Recall Gain
 prg_train_rf <- evalm(list(train_rf), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('Random Forest'))
+                      positive = "stroke",
+                      plots = "prg",
+                      title = "Precision - Recall Gain",
+                      gnames=c('Random Forest'))
 
 # Precision - Recall Curve
 pr_rf <- evalm(list(train_rf), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('Random Forest'))
+               positive = "stroke",
+               plots = "pr",
+               title = "Precision - Recall Curve",
+               gnames=c('Random Forest'))
 
 # True positive vs false positive ROC
 roc_tp_fp_rf <- evalm(list(train_rf), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('Random Forest'))
+                      positive = "stroke",
+                      plots = "r",
+                      title = "True Positive - False Positive rate ROC",
+                      gnames=c('Random Forest'))
 
 
 
@@ -2448,6 +2486,10 @@ train_fda <- train(stroke ~ ., method = "fda",
                    data = train_stroke_t, 
                    trControl = ctrl, 
                    metric = "ROC")
+
+plot(train_fda)
+print(train_fda)
+summary(train_fda)
 
 y_hat_fda <- predict(train_fda, test_stroke_t)
 
@@ -2473,17 +2515,17 @@ F_meas(confusionMatrix(y_hat_fda,
 
 # Calc. Probs for every class
 roc_fda <- predict(train_fda,
-                        test_stroke_t, type = "prob")
+                   test_stroke_t, type = "prob")
 
 # Curve graph
 sens_espec_roc_fda <- plot(roc(response = test_stroke_t$stroke, 
-                                    predictor = roc_fda$stroke, levels = c("no_stroke", "stroke")), 
-                                print.auc = TRUE,
-                                xlim = c(1,0),
-                                ylim = c(0,1),
-                                xlab = "Specificity", 
-                                ylab ="Sensibility", 
-                                main = "FDA")
+                               predictor = roc_fda$stroke, levels = c("no_stroke", "stroke")), 
+                           print.auc = TRUE,
+                           xlim = c(1,0),
+                           ylim = c(0,1),
+                           xlab = "Specificity", 
+                           ylab ="Sensibility", 
+                           main = "FDA")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_fda)
@@ -2491,30 +2533,30 @@ auc(sens_espec_roc_fda)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_fda <- evalm(list(train_fda), 
-                       positive = "stroke",
-                       gnames=c('FDA'))
+                  positive = "stroke",
+                  gnames=c('FDA'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_fda <- evalm(list(train_fda), 
-                     positive = "stroke",
-                     plots = "cc",
-                     title = "Calibration Curve",
-                     gnames=c('FDA'))
+                positive = "stroke",
+                plots = "cc",
+                title = "Calibration Curve",
+                gnames=c('FDA'))
 
 # Precision - Recall Gain
 prg_fda <- evalm(list(train_fda), 
-                      positive = "stroke",
-                      plots = "prg",
-                      title = "Precision - Recall Gain",
-                      gnames=c('FDA'))
+                 positive = "stroke",
+                 plots = "prg",
+                 title = "Precision - Recall Gain",
+                 gnames=c('FDA'))
 
 # Precision - Recall Curve
 pr_fda <- evalm(list(train_fda), 
-                     positive = "stroke",
-                     plots = "pr",
-                     title = "Precision - Recall Curve",
-                     gnames=c('FDA'))
+                positive = "stroke",
+                plots = "pr",
+                title = "Precision - Recall Curve",
+                gnames=c('FDA'))
 
 # True positive vs false positive ROC
 roc_tp_fp_fda <- evalm(list(train_fda), 
@@ -2562,12 +2604,10 @@ train_stroke_over$stroke <- relevel(train_stroke_over$stroke, ref = "stroke")
 # Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.01_over <- rpart(stroke ~ ., 
-                      data = train_stroke_over)
+                               data = train_stroke_over)
+
 
 plotcp(gini_tree_cp0.01_over)
-summary(gini_tree_cp0.01_over)
-
-rpart.plot(gini_tree_cp0.01_over)
 print(gini_tree_cp0.01_over)
 summary(gini_tree_cp0.01_over)
 
@@ -2595,18 +2635,18 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.01_over,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.01_over <- predict(gini_tree_cp0.01_over,
-                               test_stroke_t, type = "prob") %>% 
+                                     test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_roc_gini_tree_cp0.01_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_gini_tree_cp0.01_over$stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "Gini Tree, CP: 0.01 - Over")
+                                           predictor = roc_gini_tree_cp0.01_over$stroke, levels = c("stroke", "no_stroke")), 
+                                       print.auc = TRUE,
+                                       xlim = c(1,0),
+                                       ylim = c(0,1),
+                                       xlab = "Specificity", 
+                                       ylab ="Sensibility", 
+                                       main = "Gini Tree, CP: 0.01 - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_over)
@@ -2621,11 +2661,12 @@ auc(sens_roc_gini_tree_cp0.01_over)
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001_over <- rpart(stroke ~., 
-                           data = train_stroke_over, 
-                           parms=list(split=c("gini")),
-                           cp = 0.001)
+                                data = train_stroke_over, 
+                                parms=list(split=c("gini")),
+                                cp = 0.001)
 
 plotcp(gini_tree_cp0.001_over)
+print(gini_tree_cp0.001_over)
 summary(gini_tree_cp0.001_over)
 
 y_hat_gini_tree_cp0.001_over <- predict(gini_tree_cp0.001_over, test_stroke_t, 
@@ -2653,18 +2694,18 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_over,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.001_over <- predict(gini_tree_cp0.001_over,
-                                     test_stroke_t, type = "prob") %>% 
+                                      test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_gini_tree_cp0.001_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_gini_tree_cp0.001_over$stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "Gini Tree, CP:001 - Over")
+                                                  predictor = roc_gini_tree_cp0.001_over$stroke, levels = c("stroke", "no_stroke")), 
+                                              print.auc = TRUE,
+                                              xlim = c(1,0),
+                                              ylim = c(0,1),
+                                              xlab = "Specificity", 
+                                              ylab ="Sensibility", 
+                                              main = "Gini Tree, CP:001 - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_over)
@@ -2686,6 +2727,7 @@ cost_matrix_tree_over <- rpart(stroke ~ .,
                                              nrow=2)))
 
 plotcp(cost_matrix_tree_over)
+print(cost_matrix_tree_over)
 summary(cost_matrix_tree_over)
 
 y_hat_cost_matrix_tree_over <- predict(cost_matrix_tree_over, test_stroke_t, 
@@ -2713,18 +2755,18 @@ F_meas(confusionMatrix(y_hat_cost_matrix_tree_over,
 
 # Calc. Probs for every class
 roc_cost_matrix_tree_over <- predict(cost_matrix_tree_over,
-                                      test_stroke_t, type = "prob") %>% 
+                                     test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_cost_matrix_tree_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_cost_matrix_tree_over$stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "Default Gini Tree & Cost Matrix 3 to 1 - Over")
+                                                 predictor = roc_cost_matrix_tree_over$stroke, levels = c("stroke", "no_stroke")), 
+                                             print.auc = TRUE,
+                                             xlim = c(1,0),
+                                             ylim = c(0,1),
+                                             xlab = "Specificity", 
+                                             ylab ="Sensibility", 
+                                             main = "Default Gini Tree & Cost Matrix 3 to 1 - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_over)
@@ -2745,6 +2787,7 @@ train_caret_tree_over <- train(stroke ~ ., method = "rpart",
                                metric="ROC")
 
 plot(train_caret_tree_over)
+print(train_caret_tree_over)
 summary(train_caret_tree_over)
 
 y_hat_caret_tree_over <- predict(train_caret_tree_over, test_stroke_t)
@@ -2767,17 +2810,17 @@ F_meas(confusionMatrix(y_hat_caret_tree_over,
 
 # Calc. Probs for every class
 roc_caret_tree_over <- predict(train_caret_tree_over,
-                        test_stroke_t, type = "prob")
+                               test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_caret_tree_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_caret_tree_over$stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "RPART caret - Over")
+                                           predictor = roc_caret_tree_over$stroke, levels = c("stroke", "no_stroke")), 
+                                       print.auc = TRUE,
+                                       xlim = c(1,0),
+                                       ylim = c(0,1),
+                                       xlab = "Specificity", 
+                                       ylab ="Sensibility", 
+                                       main = "RPART caret - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_caret_tree_over)
@@ -2829,11 +2872,12 @@ roc_tp_fp_caret_tree_over <- evalm(list(train_caret_tree_over),
 # K-Nearest-Neighbor #######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_knn_over <- train(stroke ~ ., method = "knn", 
-                   data = train_stroke_over, 
-                   trControl = ctrl,
-                   metric="ROC")
+                        data = train_stroke_over, 
+                        trControl = ctrl,
+                        metric="ROC")
 
 plot(train_knn_over)
+print(train_knn_over)
 summary(train_knn_over)
 
 y_hat_knn_over <- predict(train_knn_over, test_stroke_t)
@@ -2859,17 +2903,17 @@ F_meas(confusionMatrix(y_hat_knn_over,
 
 # Calc. Probs for every class
 roc_knn_over <- predict(train_knn_over,
-                               test_stroke_t, type = "prob")
+                        test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_knn_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_knn_over$stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "KNN - Over")
+                                    predictor = roc_knn_over$stroke, levels = c("stroke", "no_stroke")), 
+                                print.auc = TRUE,
+                                xlim = c(1,0),
+                                ylim = c(0,1),
+                                xlab = "Specificity", 
+                                ylab ="Sensibility", 
+                                main = "KNN - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_knn_over)
@@ -2877,30 +2921,30 @@ auc(sens_espec_roc_knn_over)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate ?????? Very strange results!
 eval_knn_over <- evalm(list(train_knn_over), 
-                            positive = "stroke",
-                            gnames=c('KNN - Over'))
+                       positive = "stroke",
+                       gnames=c('KNN - Over'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_knn_over <- evalm(list(train_knn_over), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('KNN - Over'))
+                     positive = "stroke",
+                     plots = "cc",
+                     title = "Calibration Curve",
+                     gnames=c('KNN - Over'))
 
 # Precision - Recall Gain
 prg_knn_over <- evalm(list(train_knn_over), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('KNN - Over'))
+                      positive = "stroke",
+                      plots = "prg",
+                      title = "Precision - Recall Gain",
+                      gnames=c('KNN - Over'))
 
 # Precision - Recall Curve
 pr_knn_over <- evalm(list(train_knn_over), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('KNN - Over'))
+                     positive = "stroke",
+                     plots = "pr",
+                     title = "Precision - Recall Curve",
+                     gnames=c('KNN - Over'))
 
 # True positive vs false positive ROC
 roc_tp_fp_knn_over <- evalm(list(train_knn_over), 
@@ -2909,22 +2953,23 @@ roc_tp_fp_knn_over <- evalm(list(train_knn_over),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('KNN - Over'))
 
-# __Accuracy : 0.7984   ##### 
-# __Sensitivity : 0.38095  #####         
-# __Specificity : 0.81702  ##### 
-# __Balanced Accuracy : 0.59899   #####
-# __F_meas, beta = 1 : 0.1391304 #####
-# __AUC Sens vs Spec : 0.4065 ######
+# __Accuracy : 0.7607   ##### 
+# __Sensitivity : 0.42857  #####         
+# __Specificity : 0.77553  ##### 
+# __Balanced Accuracy : 0.60205   #####
+# __F_meas, beta = 1 : 0.1328413 #####
+# __AUC Sens vs Spec : 0.4015 ######
 
 # RANDOM FOREST ########
 # it takes time! ######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_rf_over <- train(stroke ~ ., method = "rf", 
-                  data = train_stroke_over, 
-                  trControl = ctrl,
-                  metric="ROC")
+                       data = train_stroke_over, 
+                       trControl = ctrl,
+                       metric="ROC")
 
 plot(train_rf_over)
+print(train_rf_over)
 summary(train_rf_over)
 
 ggplot(train_rf_over, highlight = TRUE) 
@@ -2948,17 +2993,17 @@ F_meas(confusionMatrix(y_hat_rf_over, test_stroke_t$stroke)$table,
 
 # Calc. Probs for every class
 roc_rf_over <- predict(train_rf_over,
-                               test_stroke_t, type = "prob")
+                       test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_rf_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_rf_over$stroke, levels = c("stroke", "no_stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "Random Forest - Over")
+                                   predictor = roc_rf_over$stroke, levels = c("stroke", "no_stroke")), 
+                               print.auc = TRUE,
+                               xlim = c(1,0),
+                               ylim = c(0,1),
+                               xlab = "Specificity", 
+                               ylab ="Sensibility", 
+                               main = "Random Forest - Over")
 
 # Sensitivity vs Specificity ROC CURVE
 auc(sens_espec_roc_rf_over)
@@ -2986,24 +3031,24 @@ prg_rf_over <- evalm(list(train_rf_over),
 
 # Precision - Recall Curve
 pr_rf_over <- evalm(list(train_rf_over), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('Random Forest - Over'))
+                    positive = "stroke",
+                    plots = "pr",
+                    title = "Precision - Recall Curve",
+                    gnames=c('Random Forest - Over'))
 
 # True positive vs false positive ROC
 roc_tp_fp_rf_over <- evalm(list(train_rf_over), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('Random Forest - Over'))
+                           positive = "stroke",
+                           plots = "r",
+                           title = "True Positive - False Positive rate ROC",
+                           gnames=c('Random Forest - Over'))
 
-# __Accuracy : 0.946   ##### 
-# __Sensitivity : 0.047619  #####         
+# __Accuracy : 0.947   ##### 
+# __Sensitivity : 0.071429  #####         
 # __Specificity : 0.986170    ##### 
-# __Balanced Accuracy : 0.516895  ##### 
-# __F_meas, beta = 1 : 0.07017544 #####
-# # __AUC Sens vs Spec : 0.7846 ??????? ###### 
+# __Balanced Accuracy : 0.528799  ##### 
+# __F_meas, beta = 1 : 0.1034483 #####
+# # __AUC Sens vs Spec : 0.7827 ??????? ###### 
 
 # MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
@@ -3066,7 +3111,7 @@ roc_tp_fp_rf_over <- evalm(list(train_rf_over),
 
 # ERROR
 # Error in names(x) <- value : 
-  # el atributo 'names' [1] debe tener la misma longitud que el vector [0]
+# el atributo 'names' [1] debe tener la misma longitud que el vector [0]
 # Además: Warning messages:
 # 1: Removed 7520 row(s) containing missing values (geom_path). 
 # 2: Removed 1 rows containing missing values (geom_segment). 
@@ -3139,17 +3184,17 @@ F_meas(confusionMatrix(as.factor(y_hat_nnet_over),
 
 # Calc. Probs for every class
 roc_nnet_over <- predict(train_nnet_over,
-                              test_stroke_t, type = "prob")
+                         test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_nnet_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_nnet_over$stroke, levels = c("no_stroke", "stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "NNET - Over")
+                                     predictor = roc_nnet_over$stroke, levels = c("no_stroke", "stroke")), 
+                                 print.auc = TRUE,
+                                 xlim = c(1,0),
+                                 ylim = c(0,1),
+                                 xlab = "Specificity", 
+                                 ylab ="Sensibility", 
+                                 main = "NNET - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_nnet_over)
@@ -3157,44 +3202,44 @@ auc(sens_espec_roc_nnet_over)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_nnet_over <- evalm(list(train_nnet_over), 
-                              positive = "stroke",
-                              gnames=c('NNET - Over'))
+                        positive = "stroke",
+                        gnames=c('NNET - Over'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_nnet_over <- evalm(list(train_nnet_over), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('NNET - Over'))
+                      positive = "stroke",
+                      plots = "cc",
+                      title = "Calibration Curve",
+                      gnames=c('NNET - Over'))
 
 # Precision - Recall Gain
 prg_nnet_over <- evalm(list(train_nnet_over), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('NNET - Over'))
+                       positive = "stroke",
+                       plots = "prg",
+                       title = "Precision - Recall Gain",
+                       gnames=c('NNET - Over'))
 
 # Precision - Recall Curve
 pr_nnet_over <- evalm(list(train_nnet_over), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('NNET - Over'))
+                      positive = "stroke",
+                      plots = "pr",
+                      title = "Precision - Recall Curve",
+                      gnames=c('NNET - Over'))
 
 # True positive vs false positive ROC
 roc_tp_fp_nnet_over <- evalm(list(train_nnet_over), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('NNET - Over'))
+                             positive = "stroke",
+                             plots = "r",
+                             title = "True Positive - False Positive rate ROC",
+                             gnames=c('NNET - Over'))
 
-# __Accuracy : 0.8432  ####
-# __Sensitivity : 0.40476 ####        
-# __Specificity : 0.86277  ####
-# __Balanced Accuracy : 0.63376   ####
-# __F_meas, beta = 1 : 0.1808511 #####
-# __AUC Sens vs Spec 0.7714 ###### 
+# __Accuracy : 0.777  ####
+# __Sensitivity : 0.76190 ####        
+# __Specificity : 0.77766  ####
+# __Balanced Accuracy : 0.76978   ####
+# __F_meas, beta = 1 : 0.2261484 #####
+# __AUC Sens vs Spec 0.8095 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -3203,6 +3248,10 @@ train_fda_over <- train(stroke ~ ., method = "fda",
                         data = train_stroke_over, 
                         trControl = ctrl,
                         metric="ROC")
+
+plot(train_fda_over)
+print(train_fda_over)
+summary(train_fda_over)
 
 y_hat_fda_over <- predict(train_fda_over, test_stroke_t)
 
@@ -3228,17 +3277,17 @@ F_meas(confusionMatrix(y_hat_fda_over,
 
 # Calc. Probs for every class
 roc_fda_over <- predict(train_fda_over,
-                               test_stroke_t, type = "prob")
+                        test_stroke_t, type = "prob")
 
 # Curve graph
 sens_espec_roc_fda_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_fda_over$stroke, levels = c("no_stroke", "stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "Flexible Discriminant Analysis - Over")
+                                    predictor = roc_fda_over$stroke, levels = c("no_stroke", "stroke")), 
+                                print.auc = TRUE,
+                                xlim = c(1,0),
+                                ylim = c(0,1),
+                                xlab = "Specificity", 
+                                ylab ="Sensibility", 
+                                main = "Flexible Discriminant Analysis - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_fda_over)
@@ -3246,37 +3295,37 @@ auc(sens_espec_roc_fda_over)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_fda_over <- evalm(list(train_fda_over), 
-                              positive = "stroke",
-                              gnames=c('FDA - OVER'))
+                       positive = "stroke",
+                       gnames=c('FDA - OVER'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_fda_over <- evalm(list(train_fda_over), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('FDA - OVER'))
+                     positive = "stroke",
+                     plots = "cc",
+                     title = "Calibration Curve",
+                     gnames=c('FDA - OVER'))
 
 # Precision - Recall Gain
 prg_fda_over <- evalm(list(train_fda_over), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('FDA - OVER'))
+                      positive = "stroke",
+                      plots = "prg",
+                      title = "Precision - Recall Gain",
+                      gnames=c('FDA - OVER'))
 
 # Precision - Recall Curve
 pr_fda_over <- evalm(list(train_fda_over), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('FDA - OVER'))
+                     positive = "stroke",
+                     plots = "pr",
+                     title = "Precision - Recall Curve",
+                     gnames=c('FDA - OVER'))
 
 # True positive vs false positive ROC
 roc_tp_fp_fda_over <- evalm(list(train_fda_over), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('FDA - OVER'))
+                            positive = "stroke",
+                            plots = "r",
+                            title = "True Positive - False Positive rate ROC",
+                            gnames=c('FDA - OVER'))
 
 # __Accuracy : 0.7454 ####
 # __Sensitivity : 0.73810 ####        
@@ -3293,7 +3342,12 @@ train_naiveBayes_over <- train(stroke ~ ., method = "naive_bayes",
                                trControl = ctrl,
                                metric="ROC")
 
+plot(train_naiveBayes_over)
+print(train_naiveBayes_over)
+summary(train_naiveBayes_over)
+
 y_hat_naiveBayes_over <- predict(train_naiveBayes_over, test_stroke_t)
+
 
 # Model Evaluation ::::::::
 
@@ -3319,17 +3373,17 @@ F_meas(confusionMatrix(y_hat_naiveBayes_over,
 
 # Calc. Probs for every class
 roc_naiveBayes_over <- predict(train_naiveBayes_over,
-                              test_stroke_t, type = "prob")
+                               test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_naiveBayes_over <- plot(roc(response = test_stroke_t$stroke, 
-         predictor = roc_naiveBayes_over$stroke, levels = c("no_stroke", "stroke")), 
-     print.auc = TRUE,
-     xlim = c(1,0),
-     ylim = c(0,1),
-     xlab = "Specificity", 
-     ylab ="Sensibility", 
-     main = "Naive Bayes - Over")
+                                           predictor = roc_naiveBayes_over$stroke, levels = c("no_stroke", "stroke")), 
+                                       print.auc = TRUE,
+                                       xlim = c(1,0),
+                                       ylim = c(0,1),
+                                       xlab = "Specificity", 
+                                       ylab ="Sensibility", 
+                                       main = "Naive Bayes - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_naiveBayes_over)
@@ -3407,12 +3461,12 @@ gini_tree_cp0.01_both <- rpart(stroke ~ .,
                                data = train_stroke_both)
 
 plotcp(gini_tree_cp0.01_both)
+print(gini_tree_cp0.01_both)
 summary(gini_tree_cp0.01_both)
-
-rpart.plot(gini_tree_cp0.01_both)
 
 y_hat_gini_tree_cp0.01_both <- predict(gini_tree_cp0.01_both, test_stroke_t, 
                                        type = "class")
+
 # Model Evaluation ::::::::
 
 confusionMatrix(y_hat_gini_tree_cp0.01_both,
@@ -3467,6 +3521,7 @@ gini_tree_cp0.001_both <- rpart(stroke ~.,
                                 cp = 0.001)
 
 plotcp(gini_tree_cp0.001_both)
+print(gini_tree_cp0.001_both)
 summary(gini_tree_cp0.001_both)
 
 y_hat_gini_tree_cp0.001_both <- predict(gini_tree_cp0.001_both, test_stroke_t, 
@@ -3528,6 +3583,7 @@ cost_matrix_tree_both <- rpart(stroke ~ .,
                                              nrow=2)))
 
 plotcp(cost_matrix_tree_both)
+print(cost_matrix_tree_both)
 summary(cost_matrix_tree_both)
 
 y_hat_cost_matrix_tree_both <- predict(cost_matrix_tree_both, test_stroke_t, 
@@ -3588,6 +3644,7 @@ train_caret_tree_both <- train(stroke ~ ., method = "rpart",
                                metric="ROC")
 
 plot(train_caret_tree_both)
+print(train_caret_tree_both)
 summary(train_caret_tree_both)
 
 y_hat_caret_tree_both <- predict(train_caret_tree_both, test_stroke_t)
@@ -3678,6 +3735,7 @@ train_knn_both <- train(stroke ~ ., method = "knn",
                         metric="ROC")
 
 plot(train_knn_both)
+print(train_knn_both)
 summary(train_knn_both)
 
 y_hat_knn_both <- predict(train_knn_both, test_stroke_t)
@@ -3769,7 +3827,8 @@ train_rf_both <- train(stroke ~ ., method = "rf",
                        metric="ROC")
 
 plot(train_rf_both)
-summary(train_knn_both)
+print(train_rf_both)
+summary(train_rf_both)
 
 y_hat_rf_both <- predict(train_rf_both, test_stroke_t, type = "raw")
 
@@ -3840,12 +3899,12 @@ roc_tp_fp_rf_both <- evalm(list(train_rf_both),
                            title = "True Positive - False Positive rate ROC",
                            gnames=c('Random Forest - both'))
 
-# __Accuracy : 0.9267    ##### 
+# __Accuracy : 0.9277    ##### 
 # __Sensitivity : 0.119048  #####         
-# __Specificity : 0.962766   ##### 
-# __Balanced Accuracy : 0.540907  ##### 
-# __F_meas, beta = 1 : 0.1219512 #####
-# # __AUC Sens vs Spec : 0.8042  ###### 
+# __Specificity : 0.963830   ##### 
+# __Balanced Accuracy : 0.541439  ##### 
+# __F_meas, beta = 1 : 0.1234568 #####
+# # __AUC Sens vs Spec : 0.805  ###### 
 
 # MDA: TRAIN ERROR ######
 # Mixture Discriminant Analysis ####
@@ -4026,11 +4085,11 @@ roc_tp_fp_nnet_both <- evalm(list(train_nnet_both),
                              title = "True Positive - False Positive rate ROC",
                              gnames=c('NNET - both'))
 
-# __Accuracy : 0.668 ####
-# __Sensitivity : 0.78571 ####        
-# __Specificity : 0.66277   ####
-# __Balanced Accuracy : 0.72424    ####
-# __F_meas, beta = 1 : 0.1683673 #####
+# __Accuracy : 0.78 ####
+# __Sensitivity : 0.76190 ####        
+# __Specificity : 0.78085   ####
+# __Balanced Accuracy : 0.77138    ####
+# __F_meas, beta = 1 : 0.2285714 #####
 # __AUC Sens vs Spec : 0.8138  ###### 
 
 # FDA #####
@@ -4040,6 +4099,10 @@ train_fda_both <- train(stroke ~ ., method = "fda",
                         data = train_stroke_both, 
                         trControl = ctrl,
                         metric="ROC")
+
+plot(train_fda_both)
+print(train_fda_both)
+summary(train_fda_both)
 
 y_hat_fda_both <- predict(train_fda_both, test_stroke_t)
 
@@ -4121,7 +4184,7 @@ roc_tp_fp_fda_both <- evalm(list(train_fda_both),
 # __Specificity : 0.74149 ####  
 # __Balanced Accuracy :  0.80038   ####
 # __F_meas, beta = 1 : 0.2257053 #####
-# __AUC Sens vs Spec : 0.8471 ###### 
+# __AUC Sens vs Spec : 0.8275 ###### 
 
 
 # NAIVE BAYES ######
@@ -4130,6 +4193,10 @@ train_naiveBayes_both <- train(stroke ~ ., method = "naive_bayes",
                                data = train_stroke_both, 
                                trControl = ctrl,
                                metric="ROC")
+
+plot(train_naiveBayes_both)
+print(train_naiveBayes_both)
+summary(train_naiveBayes_both)
 
 y_hat_naiveBayes_both <- predict(train_naiveBayes_both, test_stroke_t)
 
@@ -4159,14 +4226,14 @@ roc_naiveBayes_both <- predict(train_naiveBayes_both,
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_naiveBayes_both<- plot(roc(response = test_stroke_t$stroke, 
-                                           predictor = roc_naiveBayes_both$stroke, 
-                                           levels = c("no_stroke", "stroke")), 
-                                       print.auc = TRUE,
-                                       xlim = c(1,0),
-                                       ylim = c(0,1),
-                                       xlab = "Specificity", 
-                                       ylab ="Sensibility", 
-                                       main = "Naive Bayes - both")
+                                          predictor = roc_naiveBayes_both$stroke, 
+                                          levels = c("no_stroke", "stroke")), 
+                                      print.auc = TRUE,
+                                      xlim = c(1,0),
+                                      ylim = c(0,1),
+                                      xlab = "Specificity", 
+                                      ylab ="Sensibility", 
+                                      main = "Naive Bayes - both")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_naiveBayes_both)
@@ -4206,12 +4273,12 @@ roc_tp_fp_naiveBayes_both <- evalm(list(train_naiveBayes_both),
                                    title = "True Positive - False Positive rate ROC",
                                    gnames=c('Naive Bayes - both'))
 
-# __Accuracy : 0.9328  ##### 
-# __Sensitivity : 0.28571  #####         
-# __Specificity : 0.96170 ##### 
-# __Balanced Accuracy : 0.62371  ##### 
-# __F_meas, beta = 1 : 0.2666667 #####
-# __AUC Sens vs Spec : 0.8484 ######
+# __Accuracy : 0.9358  ##### 
+# __Sensitivity : 0.26190  #####         
+# __Specificity : 0.96596 ##### 
+# __Balanced Accuracy : 0.61393  ##### 
+# __F_meas, beta = 1 : 0.2588235 #####
+# __AUC Sens vs Spec : 0.8505 ######
 
 # _______________________######## 
 # Better estimates ######
@@ -4234,15 +4301,16 @@ train_stroke_better$stroke <- relevel(train_stroke_better$stroke, ref = "stroke"
 # Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.01_better <- rpart(stroke ~ ., 
-                               data = train_stroke_better)
+                                 data = train_stroke_better)
 
 plotcp(gini_tree_cp0.01_better)
+print(gini_tree_cp0.01_better)
 summary(gini_tree_cp0.01_better)
 
 rpart.plot(gini_tree_cp0.01_better)
 
 y_hat_gini_tree_cp0.01_better <- predict(gini_tree_cp0.01_better, test_stroke_t, 
-                                       type = "class")
+                                         type = "class")
 # Model Evaluation ::::::::
 
 confusionMatrix(y_hat_gini_tree_cp0.01_better,
@@ -4255,7 +4323,7 @@ confusionMatrix(y_hat_gini_tree_cp0.01_better,
                 test_stroke_t$stroke)$table
 
 cm_gini_tree_cp0.01_better <- confusionMatrix(y_hat_gini_tree_cp0.01_better, 
-                                            test_stroke_t$stroke)
+                                              test_stroke_t$stroke)
 cm_gini_tree_cp0.01_better
 
 # F_Meas   
@@ -4265,19 +4333,19 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.01_better,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.01_better <- predict(gini_tree_cp0.01_better,
-                                     test_stroke_t, type = "prob") %>% 
+                                       test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_roc_gini_tree_cp0.01_better <- plot(roc(response = test_stroke_t$stroke, 
-                                           predictor = roc_gini_tree_cp0.01_better$stroke, 
-                                           levels = c("stroke", "no_stroke")), 
-                                       print.auc = TRUE,
-                                       xlim = c(1,0),
-                                       ylim = c(0,1),
-                                       xlab = "Specificity", 
-                                       ylab ="Sensibility", 
-                                       main = "Gini Tree, CP: 0.01 - better")
+                                             predictor = roc_gini_tree_cp0.01_better$stroke, 
+                                             levels = c("stroke", "no_stroke")), 
+                                         print.auc = TRUE,
+                                         xlim = c(1,0),
+                                         ylim = c(0,1),
+                                         xlab = "Specificity", 
+                                         ylab ="Sensibility", 
+                                         main = "Gini Tree, CP: 0.01 - better")
 
 # Sensitivity vs Specificity AUC
 auc(sens_roc_gini_tree_cp0.01_better)
@@ -4292,15 +4360,16 @@ auc(sens_roc_gini_tree_cp0.01_better)
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 gini_tree_cp0.001_better <- rpart(stroke ~., 
-                                data = train_stroke_better, 
-                                parms=list(split=c("gini")),
-                                cp = 0.001)
+                                  data = train_stroke_better, 
+                                  parms=list(split=c("gini")),
+                                  cp = 0.001)
 
 plotcp(gini_tree_cp0.001_better)
+print(gini_tree_cp0.001_better)
 summary(gini_tree_cp0.001_better)
 
 y_hat_gini_tree_cp0.001_better <- predict(gini_tree_cp0.001_both, test_stroke_t, 
-                                        type = "class")
+                                          type = "class")
 
 # Model Evaluation ::::::::
 
@@ -4314,7 +4383,7 @@ confusionMatrix(y_hat_gini_tree_cp0.001_better,
                 test_stroke_t$stroke)$table
 
 cm_gini_tree_cp0.001_better <- confusionMatrix(y_hat_gini_tree_cp0.001_better, 
-                                             test_stroke_t$stroke)
+                                               test_stroke_t$stroke)
 cm_gini_tree_cp0.001_better
 
 # F_Meas
@@ -4324,19 +4393,19 @@ F_meas(confusionMatrix(y_hat_gini_tree_cp0.001_better,
 
 # Calc. Probs for every class
 roc_gini_tree_cp0.001_better <- predict(gini_tree_cp0.001_better,
-                                      test_stroke_t, type = "prob") %>% 
+                                        test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_gini_tree_cp0.001_better <- plot(roc(response = test_stroke_t$stroke, 
-                                                  predictor = roc_gini_tree_cp0.001_better$stroke, 
-                                                  levels = c("stroke", "no_stroke")), 
-                                              print.auc = TRUE,
-                                              xlim = c(1,0),
-                                              ylim = c(0,1),
-                                              xlab = "Specificity", 
-                                              ylab ="Sensibility", 
-                                              main = "Gini Tree, CP:001 - both")
+                                                    predictor = roc_gini_tree_cp0.001_better$stroke, 
+                                                    levels = c("stroke", "no_stroke")), 
+                                                print.auc = TRUE,
+                                                xlim = c(1,0),
+                                                ylim = c(0,1),
+                                                xlab = "Specificity", 
+                                                ylab ="Sensibility", 
+                                                main = "Gini Tree, CP:001 - both")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_better)
@@ -4351,17 +4420,18 @@ auc(sens_espec_roc_gini_tree_cp0.001_better)
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 cost_matrix_tree_better <- rpart(stroke ~ ., 
-                               data = train_stroke_better,
-                               parms=list(
-                                 loss=matrix(c(0,3,1,0), # A false negative is 3 times worse than a false positive
-                                             byrow=TRUE,
-                                             nrow=2)))
+                                 data = train_stroke_better,
+                                 parms=list(
+                                   loss=matrix(c(0,3,1,0), # A false negative is 3 times worse than a false positive
+                                               byrow=TRUE,
+                                               nrow=2)))
 
 plotcp(cost_matrix_tree_better)
+print(cost_matrix_tree_better)
 summary(cost_matrix_tree_better)
 
 y_hat_cost_matrix_tree_better <- predict(cost_matrix_tree_both, test_stroke_t, 
-                                       type = "class")
+                                         type = "class")
 
 # Model Evaluation ::::::::
 
@@ -4375,7 +4445,7 @@ confusionMatrix(y_hat_cost_matrix_tree_better,
                 test_stroke_t$stroke)$table
 
 cm_cost_matrix_tree_better <- confusionMatrix(y_hat_cost_matrix_tree_better, 
-                                            test_stroke_t$stroke)
+                                              test_stroke_t$stroke)
 cm_cost_matrix_tree_better
 
 # F_Meas
@@ -4385,19 +4455,19 @@ F_meas(confusionMatrix(y_hat_cost_matrix_tree_better,
 
 # Calc. Probs for every class
 roc_cost_matrix_tree_better <- predict(cost_matrix_tree_better,
-                                     test_stroke_t, type = "prob") %>% 
+                                       test_stroke_t, type = "prob") %>% 
   data.frame()
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_cost_matrix_tree_better <- plot(roc(response = test_stroke_t$stroke, 
-                                                 predictor = roc_cost_matrix_tree_better$stroke, 
-                                                 levels = c("stroke", "no_stroke")), 
-                                             print.auc = TRUE,
-                                             xlim = c(1,0),
-                                             ylim = c(0,1),
-                                             xlab = "Specificity", 
-                                             ylab ="Sensibility", 
-                                             main = "Default Gini Tree & Cost Matrix 3 to 1 - both")
+                                                   predictor = roc_cost_matrix_tree_better$stroke, 
+                                                   levels = c("stroke", "no_stroke")), 
+                                               print.auc = TRUE,
+                                               xlim = c(1,0),
+                                               ylim = c(0,1),
+                                               xlab = "Specificity", 
+                                               ylab ="Sensibility", 
+                                               main = "Default Gini Tree & Cost Matrix 3 to 1 - both")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_cost_matrix_tree_better)
@@ -4413,11 +4483,12 @@ auc(sens_espec_roc_cost_matrix_tree_better)
 # RPART caret ####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_caret_tree_better <- train(stroke ~ ., method = "rpart",
-                               data = train_stroke_better, 
-                               trControl = ctrl,
-                               metric="ROC")
+                                 data = train_stroke_better, 
+                                 trControl = ctrl,
+                                 metric="ROC")
 
 plot(train_caret_tree_better)
+print(train_caret_tree_better)
 summary(train_caret_tree_better)
 
 y_hat_caret_tree_better <- predict(train_caret_tree_better, test_stroke_t)
@@ -4440,18 +4511,18 @@ F_meas(confusionMatrix(y_hat_caret_tree_better,
 
 # Calc. Probs for every class
 roc_caret_tree_better <- predict(train_caret_tree_better,
-                               test_stroke_t, type = "prob")
+                                 test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_caret_tree_better <- plot(roc(response = test_stroke_t$stroke, 
-                                           predictor = roc_caret_tree_better$stroke, 
-                                           levels = c("stroke", "no_stroke")), 
-                                       print.auc = TRUE,
-                                       xlim = c(1,0),
-                                       ylim = c(0,1),
-                                       xlab = "Specificity", 
-                                       ylab ="Sensibility", 
-                                       main = "RPART caret - better")
+                                             predictor = roc_caret_tree_better$stroke, 
+                                             levels = c("stroke", "no_stroke")), 
+                                         print.auc = TRUE,
+                                         xlim = c(1,0),
+                                         ylim = c(0,1),
+                                         xlab = "Specificity", 
+                                         ylab ="Sensibility", 
+                                         main = "RPART caret - better")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_caret_tree_better)
@@ -4459,37 +4530,37 @@ auc(sens_espec_roc_caret_tree_better)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_caret_tree_better <- evalm(list(train_caret_tree_better), 
-                              positive = "stroke",
-                              gnames=c('CARET Tree - better'))
+                                positive = "stroke",
+                                gnames=c('CARET Tree - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_caret_tree_better <- evalm(list(train_caret_tree_better), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('CARET Tree - better'))
+                              positive = "stroke",
+                              plots = "cc",
+                              title = "Calibration Curve",
+                              gnames=c('CARET Tree - better'))
 
 # Precision - Recall Gain
 prg_caret_tree_better <- evalm(list(train_caret_tree_better), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('CARET Tree - better'))
+                               positive = "stroke",
+                               plots = "prg",
+                               title = "Precision - Recall Gain",
+                               gnames=c('CARET Tree - better'))
 
 # Precision - Recall Curve
 pr_caret_tree_better <- evalm(list(train_caret_tree_better), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('CARET Tree - better'))
+                              positive = "stroke",
+                              plots = "pr",
+                              title = "Precision - Recall Curve",
+                              gnames=c('CARET Tree - better'))
 
 # True positive vs false positive ROC
 roc_tp_fp_caret_tree_better <- evalm(list(train_caret_tree_better), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('CARET Tree - better'))
+                                     positive = "stroke",
+                                     plots = "r",
+                                     title = "True Positive - False Positive rate ROC",
+                                     gnames=c('CARET Tree - better'))
 
 # __Accuracy : 0.8096    ####
 # __Sensitivity :  0.73810     ####        
@@ -4503,11 +4574,12 @@ roc_tp_fp_caret_tree_better <- evalm(list(train_caret_tree_better),
 # K-Nearest-Neighbor #######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_knn_better <- train(stroke ~ ., method = "knn", 
-                        data = train_stroke_better, 
-                        trControl = ctrl,
-                        metric="ROC")
+                          data = train_stroke_better, 
+                          trControl = ctrl,
+                          metric="ROC")
 
 plot(train_knn_better)
+print(train_knn_better)
 summary(train_knn_better)
 
 y_hat_knn_better <- predict(train_knn_better, test_stroke_t)
@@ -4533,17 +4605,17 @@ F_meas(confusionMatrix(y_hat_knn_better,
 
 # Calc. Probs for every class
 roc_knn_better <- predict(train_knn_better,
-                        test_stroke_t, type = "prob")
+                          test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_knn_better <- plot(roc(response = test_stroke_t$stroke, 
-                                    predictor = roc_knn_better$stroke, levels = c("stroke", "no_stroke")), 
-                                print.auc = TRUE,
-                                xlim = c(1,0),
-                                ylim = c(0,1),
-                                xlab = "Specificity", 
-                                ylab ="Sensibility", 
-                                main = "KNN - better")
+                                      predictor = roc_knn_better$stroke, levels = c("stroke", "no_stroke")), 
+                                  print.auc = TRUE,
+                                  xlim = c(1,0),
+                                  ylim = c(0,1),
+                                  xlab = "Specificity", 
+                                  ylab ="Sensibility", 
+                                  main = "KNN - better")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_knn_better)
@@ -4551,37 +4623,37 @@ auc(sens_espec_roc_knn_better)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate ?????? Very strange results!
 eval_knn_better <- evalm(list(train_knn_better), 
-                       positive = "stroke",
-                       gnames=c('KNN - better'))
+                         positive = "stroke",
+                         gnames=c('KNN - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_knn_better <- evalm(list(train_knn_better), 
-                     positive = "stroke",
-                     plots = "cc",
-                     title = "Calibration Curve",
-                     gnames=c('KNN - better'))
+                       positive = "stroke",
+                       plots = "cc",
+                       title = "Calibration Curve",
+                       gnames=c('KNN - better'))
 
 # Precision - Recall Gain
 prg_knn_better <- evalm(list(train_knn_better), 
-                      positive = "stroke",
-                      plots = "prg",
-                      title = "Precision - Recall Gain",
-                      gnames=c('KNN - better'))
+                        positive = "stroke",
+                        plots = "prg",
+                        title = "Precision - Recall Gain",
+                        gnames=c('KNN - better'))
 
 # Precision - Recall Curve
 pr_knn_better <- evalm(list(train_knn_better), 
-                     positive = "stroke",
-                     plots = "pr",
-                     title = "Precision - Recall Curve",
-                     gnames=c('KNN - better'))
+                       positive = "stroke",
+                       plots = "pr",
+                       title = "Precision - Recall Curve",
+                       gnames=c('KNN - better'))
 
 # True positive vs false positive ROC
 roc_tp_fp_knn_better <- evalm(list(train_knn_better), 
-                            positive = "stroke",
-                            plots = "r",
-                            title = "True Positive - False Positive rate ROC",
-                            gnames=c('KNN - better'))
+                              positive = "stroke",
+                              plots = "r",
+                              title = "True Positive - False Positive rate ROC",
+                              gnames=c('KNN - better'))
 
 # __Accuracy : 0.7637   ##### 
 # __Sensitivity : 0.61905   #####         
@@ -4594,12 +4666,13 @@ roc_tp_fp_knn_better <- evalm(list(train_knn_better),
 # it takes time! ######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_rf_better <- train(stroke ~ ., method = "rf", 
-                       data = train_stroke_better, 
-                       trControl = ctrl,
-                       metric="ROC")
+                         data = train_stroke_better, 
+                         trControl = ctrl,
+                         metric="ROC")
 
 plot(train_rf_better)
-summary(train_knn_better)
+print(train_rf_better)
+summary(train_rf_better)
 
 y_hat_rf_better <- predict(train_rf_better, test_stroke_t, type = "raw")
 
@@ -4620,18 +4693,18 @@ F_meas(confusionMatrix(y_hat_rf_better, test_stroke_t$stroke)$table,
 
 # Calc. Probs for every class
 roc_rf_better <- predict(train_rf_better,
-                       test_stroke_t, type = "prob")
+                         test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_rf_better <- plot(roc(response = test_stroke_t$stroke, 
-                                   predictor = roc_rf_better$stroke, 
-                                   levels = c("stroke", "no_stroke")), 
-                               print.auc = TRUE,
-                               xlim = c(1,0),
-                               ylim = c(0,1),
-                               xlab = "Specificity", 
-                               ylab ="Sensibility", 
-                               main = "Random Forest - better")
+                                     predictor = roc_rf_better$stroke, 
+                                     levels = c("stroke", "no_stroke")), 
+                                 print.auc = TRUE,
+                                 xlim = c(1,0),
+                                 ylim = c(0,1),
+                                 xlab = "Specificity", 
+                                 ylab ="Sensibility", 
+                                 main = "Random Forest - better")
 
 # Sensitivity vs Specificity ROC CURVE
 auc(sens_espec_roc_rf_better)
@@ -4639,37 +4712,37 @@ auc(sens_espec_roc_rf_better)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate ?????? Very strange results!
 eval_rf_better <- evalm(list(train_rf_better), 
-                      positive = "stroke",
-                      gnames=c('Random Forest - better'))
+                        positive = "stroke",
+                        gnames=c('Random Forest - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_rf_better <- evalm(list(train_rf_better), 
-                    positive = "stroke",
-                    plots = "cc",
-                    title = "Calibration Curve",
-                    gnames=c('Random Forest - better'))
+                      positive = "stroke",
+                      plots = "cc",
+                      title = "Calibration Curve",
+                      gnames=c('Random Forest - better'))
 
 # Precision - Recall Gain
 prg_rf_better <- evalm(list(train_rf_better), 
-                     positive = "stroke",
-                     plots = "prg",
-                     title = "Precision - Recall Gain",
-                     gnames=c('Random Forest - better'))
+                       positive = "stroke",
+                       plots = "prg",
+                       title = "Precision - Recall Gain",
+                       gnames=c('Random Forest - better'))
 
 # Precision - Recall Curve
 pr_rf_better <- evalm(list(train_rf_better), 
-                    positive = "stroke",
-                    plots = "pr",
-                    title = "Precision - Recall Curve",
-                    gnames=c('Random Forest - better'))
+                      positive = "stroke",
+                      plots = "pr",
+                      title = "Precision - Recall Curve",
+                      gnames=c('Random Forest - better'))
 
 # True positive vs false positive ROC
 roc_tp_fp_rf_better <- evalm(list(train_rf_better), 
-                           positive = "stroke",
-                           plots = "r",
-                           title = "True Positive - False Positive rate ROC",
-                           gnames=c('Random Forest - better'))
+                             positive = "stroke",
+                             plots = "r",
+                             title = "True Positive - False Positive rate ROC",
+                             gnames=c('Random Forest - better'))
 
 # __Accuracy : 0.7862    ##### 
 # __Sensitivity : 0.59524  #####         
@@ -4772,14 +4845,12 @@ roc_tp_fp_rf_better <- evalm(list(train_rf_better),
 # NNET: great variability !!!#####
 # Neural Network ####
 # It takes some time!
-
-set.seed(2, sample.kind="Rounding") 
-# Results are random variables: great variability!!!
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 
 train_nnet_better <- train(stroke ~ ., method = "nnet",
-                         data = train_stroke_better,
-                         trControl = ctrl,
-                         metric="ROC")
+                           data = train_stroke_better,
+                           trControl = ctrl,
+                           metric="ROC")
 
 plot(train_nnet_better)
 print(train_nnet_better)
@@ -4808,18 +4879,18 @@ F_meas(confusionMatrix(as.factor(y_hat_nnet_better),
 
 # Calc. Probs for every class
 roc_nnet_better <- predict(train_nnet_better,
-                         test_stroke_t, type = "prob")
+                           test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_nnet_better <- plot(roc(response = test_stroke_t$stroke, 
-                                     predictor = roc_nnet_better$stroke, 
-                                     levels = c("no_stroke", "stroke")), 
-                                 print.auc = TRUE,
-                                 xlim = c(1,0),
-                                 ylim = c(0,1),
-                                 xlab = "Specificity", 
-                                 ylab ="Sensibility", 
-                                 main = "NNET - Over")
+                                       predictor = roc_nnet_better$stroke, 
+                                       levels = c("no_stroke", "stroke")), 
+                                   print.auc = TRUE,
+                                   xlim = c(1,0),
+                                   ylim = c(0,1),
+                                   xlab = "Specificity", 
+                                   ylab ="Sensibility", 
+                                   main = "NNET - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_nnet_better)
@@ -4827,52 +4898,56 @@ auc(sens_espec_roc_nnet_better)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_nnet_better <- evalm(list(train_nnet_better), 
-                        positive = "stroke",
-                        gnames=c('NNET - better'))
+                          positive = "stroke",
+                          gnames=c('NNET - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_nnet_better <- evalm(list(train_nnet_better), 
-                      positive = "stroke",
-                      plots = "cc",
-                      title = "Calibration Curve",
-                      gnames=c('NNET - better'))
+                        positive = "stroke",
+                        plots = "cc",
+                        title = "Calibration Curve",
+                        gnames=c('NNET - better'))
 
 # Precision - Recall Gain
 prg_nnet_better <- evalm(list(train_nnet_better), 
-                       positive = "stroke",
-                       plots = "prg",
-                       title = "Precision - Recall Gain",
-                       gnames=c('NNET - better'))
+                         positive = "stroke",
+                         plots = "prg",
+                         title = "Precision - Recall Gain",
+                         gnames=c('NNET - better'))
 
 # Precision - Recall Curve
 pr_nnet_better <- evalm(list(train_nnet_better), 
-                      positive = "stroke",
-                      plots = "pr",
-                      title = "Precision - Recall Curve",
-                      gnames=c('NNET - better'))
+                        positive = "stroke",
+                        plots = "pr",
+                        title = "Precision - Recall Curve",
+                        gnames=c('NNET - better'))
 
 # True positive vs false positive ROC
 roc_tp_fp_nnet_better <- evalm(list(train_nnet_better), 
-                             positive = "stroke",
-                             plots = "r",
-                             title = "True Positive - False Positive rate ROC",
-                             gnames=c('NNET - better'))
+                               positive = "stroke",
+                               plots = "r",
+                               title = "True Positive - False Positive rate ROC",
+                               gnames=c('NNET - better'))
 
-# __Accuracy :  0.7668 ####
-# __Sensitivity : 0.66667 ####        
-# __Specificity : 0.77128  ####
-# __Balanced Accuracy : 0.71897   ####
-# __F_meas, beta = 1 : 0.1964912 #####
-# __AUC Sens vs Spec : 0.8125 ###### 
+# __Accuracy :  0.7587 ####
+# __Sensitivity : 0.71429 ####        
+# __Specificity : 0.76064  ####
+# __Balanced Accuracy : 0.73746   ####
+# __F_meas, beta = 1 : 0.2020202 #####
+# __AUC Sens vs Spec : 0.8 ###### 
 
 # FDA #####
 # Flexible Discriminant Analysis #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_fda_better <- train(stroke ~ ., method = "fda", 
-                        data = train_stroke_better, 
-                        trControl = ctrl,
-                        metric="ROC")
+                          data = train_stroke_better, 
+                          trControl = ctrl,
+                          metric="ROC")
+
+plot(train_fda_better)
+print(train_fda_better)
+summary(train_fda_better)
 
 y_hat_fda_better <- predict(train_fda_better, test_stroke_t)
 
@@ -4898,18 +4973,18 @@ F_meas(confusionMatrix(y_hat_fda_better,
 
 # Calc. Probs for every class
 roc_fda_better <- predict(train_fda_better,
-                        test_stroke_t, type = "prob")
+                          test_stroke_t, type = "prob")
 
 # Curve graph
 sens_espec_roc_fda_better <- plot(roc(response = test_stroke_t$stroke, 
-                                    predictor = roc_fda_better$stroke, 
-                                    levels = c("no_stroke", "stroke")), 
-                                print.auc = TRUE,
-                                xlim = c(1,0),
-                                ylim = c(0,1),
-                                xlab = "Specificity", 
-                                ylab ="Sensibility", 
-                                main = "Flexible Discriminant Analysis - Over")
+                                      predictor = roc_fda_better$stroke, 
+                                      levels = c("no_stroke", "stroke")), 
+                                  print.auc = TRUE,
+                                  xlim = c(1,0),
+                                  ylim = c(0,1),
+                                  xlab = "Specificity", 
+                                  ylab ="Sensibility", 
+                                  main = "Flexible Discriminant Analysis - Over")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_fda_better)
@@ -4917,37 +4992,37 @@ auc(sens_espec_roc_fda_better)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_fda_better <- evalm(list(train_fda_better), 
-                       positive = "stroke",
-                       gnames=c('FDA - better'))
+                         positive = "stroke",
+                         gnames=c('FDA - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_fda_better <- evalm(list(train_fda_better), 
-                     positive = "stroke",
-                     plots = "cc",
-                     title = "Calibration Curve",
-                     gnames=c('FDA - better'))
+                       positive = "stroke",
+                       plots = "cc",
+                       title = "Calibration Curve",
+                       gnames=c('FDA - better'))
 
 # Precision - Recall Gain
 prg_fda_better <- evalm(list(train_fda_better), 
-                      positive = "stroke",
-                      plots = "prg",
-                      title = "Precision - Recall Gain",
-                      gnames=c('FDA - better'))
+                        positive = "stroke",
+                        plots = "prg",
+                        title = "Precision - Recall Gain",
+                        gnames=c('FDA - better'))
 
 # Precision - Recall Curve
 pr_fda_better <- evalm(list(train_fda_better), 
-                     positive = "stroke",
-                     plots = "pr",
-                     title = "Precision - Recall Curve",
-                     gnames=c('FDA - better'))
+                       positive = "stroke",
+                       plots = "pr",
+                       title = "Precision - Recall Curve",
+                       gnames=c('FDA - better'))
 
 # True positive vs false positive ROC
 roc_tp_fp_fda_better <- evalm(list(train_fda_better), 
-                            positive = "stroke",
-                            plots = "r",
-                            title = "True Positive - False Positive rate ROC",
-                            gnames=c('FDA - better'))
+                              positive = "stroke",
+                              plots = "r",
+                              title = "True Positive - False Positive rate ROC",
+                              gnames=c('FDA - better'))
 
 # __Accuracy : 0.7587   ####
 # __Sensitivity : 0.85714  ####        
@@ -4960,9 +5035,13 @@ roc_tp_fp_fda_better <- evalm(list(train_fda_better),
 # NAIVE BAYES ######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_naiveBayes_better <- train(stroke ~ ., method = "naive_bayes", 
-                               data = train_stroke_better, 
-                               trControl = ctrl,
-                               metric="ROC")
+                                 data = train_stroke_better, 
+                                 trControl = ctrl,
+                                 metric="ROC")
+
+plot(train_naiveBayes_better)
+print(train_naiveBayes_better)
+summary(train_naiveBayes_better)
 
 y_hat_naiveBayes_better <- predict(train_naiveBayes_better, test_stroke_t)
 
@@ -4988,18 +5067,18 @@ F_meas(confusionMatrix(y_hat_naiveBayes_better,
 
 # Calc. Probs for every class
 roc_naiveBayes_better <- predict(train_naiveBayes_better,
-                               test_stroke_t, type = "prob")
+                                 test_stroke_t, type = "prob")
 
 # Sensitivity vs Specificity ROC CURVE
 sens_espec_roc_naiveBayes_better<- plot(roc(response = test_stroke_t$stroke, 
-                                          predictor = roc_naiveBayes_better$stroke, 
-                                          levels = c("no_stroke", "stroke")), 
-                                      print.auc = TRUE,
-                                      xlim = c(1,0),
-                                      ylim = c(0,1),
-                                      xlab = "Specificity", 
-                                      ylab ="Sensibility", 
-                                      main = "Naive Bayes - both")
+                                            predictor = roc_naiveBayes_better$stroke, 
+                                            levels = c("no_stroke", "stroke")), 
+                                        print.auc = TRUE,
+                                        xlim = c(1,0),
+                                        ylim = c(0,1),
+                                        xlab = "Specificity", 
+                                        ylab ="Sensibility", 
+                                        main = "Naive Bayes - both")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_naiveBayes_better)
@@ -5007,37 +5086,37 @@ auc(sens_espec_roc_naiveBayes_better)
 # Calibration curve, Precision Recall, Precision vs Recall gain,
 # True positive rate vs false positive rate
 eval_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
-                              positive = "stroke",
-                              gnames=c('Naive Bayes - better'))
+                                positive = "stroke",
+                                gnames=c('Naive Bayes - better'))
 
 
 # Calibration Curve (True prob. vs Predicted prob.)
 cc_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
-                            positive = "stroke",
-                            plots = "cc",
-                            title = "Calibration Curve",
-                            gnames=c('Naive Bayes - better'))
+                              positive = "stroke",
+                              plots = "cc",
+                              title = "Calibration Curve",
+                              gnames=c('Naive Bayes - better'))
 
 # Precision - Recall Gain
 prg_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
-                             positive = "stroke",
-                             plots = "prg",
-                             title = "Precision - Recall Gain",
-                             gnames=c('Naive Bayes - better'))
+                               positive = "stroke",
+                               plots = "prg",
+                               title = "Precision - Recall Gain",
+                               gnames=c('Naive Bayes - better'))
 
 # Precision - Recall Curve
 pr_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
-                            positive = "stroke",
-                            plots = "pr",
-                            title = "Precision - Recall Curve",
-                            gnames=c('Naive Bayes - better'))
+                              positive = "stroke",
+                              plots = "pr",
+                              title = "Precision - Recall Curve",
+                              gnames=c('Naive Bayes - better'))
 
 # True positive vs false positive ROC
 roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
-                                   positive = "stroke",
-                                   plots = "r",
-                                   title = "True Positive - False Positive rate ROC",
-                                   gnames=c('Naive Bayes - both'))
+                                     positive = "stroke",
+                                     plots = "r",
+                                     title = "True Positive - False Positive rate ROC",
+                                     gnames=c('Naive Bayes - both'))
 
 # __Accuracy : 0.9379  ##### 
 # __Sensitivity : 0.14286    #####         
@@ -5048,73 +5127,90 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
 
 # _______________________########
 # SELECTED MODELS A ########
-# F_meas, beta = 1 >= 20  ########
+# AUC Sens vs Spec >= 0.8  ########
 # _______________________########
 
 # OVER
-# Gini Tree, CP = 0.01 - Over ####
-y_hat_gini_tree_cp0.01_over
-
-# RPART caret - Over ####
+# 1.caret_tree_over ####
 y_hat_caret_tree_over
 
-# MDA - Over: Eval Error ######
-y_hat_mda_over
-
-# Neural Network - Over ####
+# 2.nnet_over ####
 y_hat_nnet_over
 
-# BOTH
-# Gini Tree, CP = 0.01 - Both  ####
-y_hat_gini_tree_cp0.01_both 
+# 3.fda_over ####
+y_hat_fda_over
 
-# RPART caret - Bot ####
-y_hat_caret_tree_both
+# 4.naiveBayes_over  ####
+y_hat_naiveBayes_over
 
-# FDA - Bot #####
-cm_fda_both
+# 5.rf_both  ####
+y_hat_rf_both
 
-# BETTER
-# RPART caret - Better ####
+# 6.fda_both   ####
+y_hat_fda_both
+
+# 7.nnet_both   ####
+y_hat_nnet_both 
+
+# 8.naiveBayes_both   ####
+y_hat_naiveBayes_both
+
+#  9.gini_tree_cp0.001_better
+y_hat_gini_tree_cp0.001_better
+
+#  10.caret_tree_better   ####
 y_hat_caret_tree_better
 
-# FDA  - Better #####
+# 11.rf_better   ####
+y_hat_rf_better
+
+#  12.nnet_better   ####
+y_hat_nnet_better
+
+#  13.fda_better   ####
 y_hat_fda_better
 
-# NAIVE BAYES  - Better ######
+#  14.naiveBayes_better   ####
 y_hat_naiveBayes_better
 
 # _______________________########
 # ENSAMBLE Models A ########
 # _______________________########
 
-ensamble_1_a <- data.frame(gini_tree_cp0.01_over = y_hat_gini_tree_cp0.01_over,
-                       caret_tree_over = y_hat_caret_tree_over,
-                       mda_over = y_hat_mda_over,
-                       nnet_over = y_hat_nnet_over,
-                       gini_tree_cp0.01_both = y_hat_gini_tree_cp0.01_both,
-                       caret_tree_both = y_hat_caret_tree_both,
-                       fda_both = y_hat_fda_both,
-                       caret_tree_better = y_hat_caret_tree_better,
-                       fda_better = y_hat_fda_better,
-                       naiveBayes_better = y_hat_naiveBayes_better) 
+ensamble_1_a <- data.frame(caret_tree_over = y_hat_caret_tree_over,
+                           nnet_over = y_hat_nnet_over,
+                           fda_over = y_hat_fda_over,
+                           naiveBayes_over = y_hat_naiveBayes_over,
+                           rf_both = y_hat_rf_both,
+                           fda_both = y_hat_fda_both,
+                           nnet_both = y_hat_nnet_both,
+                           naiveBayes_both = y_hat_naiveBayes_both,
+                           gini_tree_cp0.001_better = y_hat_gini_tree_cp0.001_better,
+                           caret_tree_better = y_hat_caret_tree_better,
+                           rf_better = y_hat_rf_better,
+                           nnet_better = y_hat_nnet_better,
+                           fda_better = y_hat_fda_better,
+                           naiveBayes_better = y_hat_naiveBayes_better) 
 
 ensamble_2_a <- ensamble_1_a %>% 
-  mutate(gini_tree_cp0.01_over = ifelse(gini_tree_cp0.01_over == "stroke", 1,0),
-         caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
-         mda_over = ifelse(mda_over == "stroke", 1,0),
+  mutate(caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
          nnet_over = ifelse(nnet_over == "stroke", 1,0),
-         gini_tree_cp0.01_both = ifelse(gini_tree_cp0.01_both == "stroke", 1,0),
-         caret_tree_both = ifelse(caret_tree_both == "stroke", 1,0),
+         fda_over = ifelse(fda_over == "stroke", 1,0),
+         naiveBayes_over = ifelse(naiveBayes_over == "stroke", 1,0),
+         rf_both = ifelse(rf_both == "stroke", 1,0),
          fda_both = ifelse(fda_both == "stroke", 1,0),
+         nnet_both = ifelse(nnet_both == "stroke", 1,0),
+         naiveBayes_both = ifelse(naiveBayes_both == "stroke", 1,0),
+         gini_tree_cp0.001_better = ifelse(gini_tree_cp0.001_better == "stroke", 1,0),
          caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
+         rf_better = ifelse(rf_better == "stroke", 1,0),
+         nnet_better = ifelse(nnet_better == "stroke", 1,0),
          fda_better = ifelse(fda_better == "stroke", 1,0),
          naiveBayes_better = ifelse(naiveBayes_better == "stroke", 1,0))
 
-
 # Searching Best Cut-Off
 
-cut_off_a <- seq(1:10)
+cut_off_a <- seq(1:14)
 
 ensamble_acc_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5135,9 +5231,8 @@ ensamble_sens_a <- map_dbl(cut_off_a, function(cut_off_a){
   confmat$byClass["Sensitivity"]
 })
 
-cut_of_sens_a <- data.frame(cut_off_a, ensamble_sens)
+cut_of_sens_a <- data.frame(cut_off_a, ensamble_sens_a)
 plot(cut_off_a, ensamble_sens_a, main = "Cut_Off vs Sensibility")
-
 
 ensamble_spe_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5168,12 +5263,12 @@ ensamble_F_Meas_a <- map_dbl(cut_off_a, function(cut_off_a){
   F_meas(confusionMatrix(y_hat_ensamble,
                          test_stroke_t$stroke)$table,beta = 1)
 })
-  
+
 cut_of_fmeas_a <- data.frame(cut_off_a, ensamble_F_Meas_a)
 plot(cut_off_a, ensamble_F_Meas_a, main = "Cut_Off vs F_Meas")
 
 y_hat_ensamble_a <- data.frame(total = rowSums(ensamble_2_a)) %>% 
-  mutate(total = as.factor(ifelse(total >=3, "stroke", "no_stroke"))) %>% 
+  mutate(total = as.factor(ifelse(total >=4, "stroke", "no_stroke"))) %>% 
   pull(total) %>% relevel(ref = "stroke")
 
 # Model Evaluation ::::::::
@@ -5190,49 +5285,32 @@ confusionMatrix(y_hat_ensamble_a,
 cm_ensamble_a <- confusionMatrix(y_hat_ensamble_a, test_stroke_t$stroke)
 cm_ensamble_a
 
-cm_ensamble_a
-
 F_meas(confusionMatrix(y_hat_ensamble_a,
                        test_stroke_t$stroke)$table,beta = 1)
+
+# __Accuracy : 0.7525   ##### 
+# __Sensitivity : 0.88095    #####         
+# __Specificity : 0.74681  ##### 
+# __Balanced Accuracy : 0.81388  ##### 
+# __F_meas, beta = 1 : 0.2334385 #####
 
 
 # _______________________########
 # SELECTED MODELS B ########
-# Balanced Accuracy >= 73  ########
+# Balanced Accuracy >= 0.75  ########
 # _______________________########
 
-# Gini Tree, CP = 0.01 - Over ####
-gini_tree_cp0.01_over
-
-# Cost Matrix - Over ####
-cost_matrix_tree_over
-
-# RPART caret - Over ####
-train_caret_tree_over
-
-# MDA - Over: Eval Error ######
-train_mda_over
-
-# FDA - Over: Eval Error ######
-train_fda_over
-
-# Gini Tree, CP = 0.01 - Both ####
-gini_tree_cp0.01_both
-
-# RPART caret - Both
-train_caret_tree_both  ####
-
-# FDA - Both   ####
-train_fda_both  ####
-
-# Gini Tree, CP = 0.01 - Better  ####
-gini_tree_cp0.01_better
-
-# RPART caret - Better
-train_caret_tree_better
-
-# FDA - Better
-train_fda_better
+# 1.gini_tree_cp0.01_over ######
+# 2.cost_matrix_tree_over ######
+# 3.caret_tree_over ######
+# 4.nnet_over ######
+# 5.gini_tree_cp0.01_both ######
+# 6.caret_tree_both  ###### 
+# 7.nnet_both ######
+# 8.fda_both ######
+# 9.gini_tree_cp0.01_better ######
+# 10.caret_tree_better  ######
+# 11.fda_better ######
 
 # _______________________########
 # ENSAMBLE Models B ########
@@ -5241,10 +5319,10 @@ train_fda_better
 ensamble_1_b <- data.frame(gini_tree_cp0.01_over = y_hat_gini_tree_cp0.01_over,
                            cost_matrix_tree_over = y_hat_cost_matrix_tree_over,
                            caret_tree_over = y_hat_caret_tree_over,
-                           mda_over = y_hat_mda_over,
-                           fda_over = y_hat_fda_over,
+                           nnet_over = y_hat_nnet_over,
                            gini_tree_cp0.01_both = y_hat_gini_tree_cp0.01_both,
                            caret_tree_both = y_hat_caret_tree_both,
+                           nnet_both = y_hat_nnet_both,
                            fda_both = y_hat_fda_both,
                            gini_tree_cp0.01_better = y_hat_gini_tree_cp0.01_better,
                            caret_tree_better = y_hat_caret_tree_better,
@@ -5254,10 +5332,10 @@ ensamble_2_b <- ensamble_1_b %>%
   mutate(gini_tree_cp0.01_over = ifelse(gini_tree_cp0.01_over == "stroke", 1,0),
          cost_matrix_tree_over = ifelse(cost_matrix_tree_over == "stroke", 1,0),
          caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
-         mda_over = ifelse(mda_over == "stroke", 1,0),
-         fda_over = ifelse(fda_over == "stroke", 1,0),
+         nnet_over = ifelse(nnet_over == "stroke", 1,0),
          gini_tree_cp0.01_both = ifelse(gini_tree_cp0.01_both == "stroke", 1,0),
          caret_tree_both = ifelse(caret_tree_both == "stroke", 1,0),
+         nnet_both = ifelse(nnet_both == "stroke", 1,0),
          fda_both = ifelse(fda_both == "stroke", 1,0),
          gini_tree_cp0.01_better = ifelse(gini_tree_cp0.01_better == "stroke", 1,0),
          caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
@@ -5288,8 +5366,7 @@ ensamble_sens_b <- map_dbl(cut_off_b, function(cut_off_b){
 })
 
 cut_of_sens_b <- data.frame(cut_off_b, ensamble_sens_b)
-plot(cut_off_b, ensamble_sens_b, main = "Cut_Off vs Sensibility")
-
+plot(cut_off_b, ensamble_sens_b, main = "Cut_Off vs Sensitivity")
 
 ensamble_spe_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5299,8 +5376,8 @@ ensamble_spe_b <- map_dbl(cut_off_b, function(cut_off_b){
   confmat$byClass["Specificity"]
 })
 
-cut_of_spe_a <- data.frame(cut_off_a, ensamble_spe_a)
-plot(cut_off_a, ensamble_spe_a, main = "Cut_Off vs Specificity")
+cut_of_spe_b <- data.frame(cut_off_b, ensamble_spe_b)
+plot(cut_off_b, ensamble_spe_b, main = "Cut_Off vs Specificity")
 
 ensamble_bal_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5313,7 +5390,7 @@ ensamble_bal_b <- map_dbl(cut_off_b, function(cut_off_b){
 cut_of_bal_b <- data.frame(cut_off_b, ensamble_bal_b)
 plot(cut_off_b, ensamble_bal_b, main = "Cut_Off vs Balanced Accuracy")
 
-ensamble_F_Meas_a <- map_dbl(cut_off_b, function(cut_off_b){
+ensamble_F_Meas_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
     mutate(total = as.factor(ifelse(total >= cut_off_b, "stroke", "no_stroke"))) %>% 
     pull(total) %>% relevel(ref = "stroke")
@@ -5344,6 +5421,12 @@ cm_ensamble_b
 
 F_meas(confusionMatrix(y_hat_ensamble_b,
                        test_stroke_t$stroke)$table,beta = 1)
+
+# __Accuracy : 0.7149    ##### 
+# __Sensitivity : 0.90476    #####         
+# __Specificity : 0.70638  ##### 
+# __Balanced Accuracy : 0.80557  ##### 
+# __F_meas, beta = 1 : 0.2134831 #####
 
 # _______________________########
 # Resources ########
@@ -5387,7 +5470,7 @@ F_meas(confusionMatrix(y_hat_ensamble_b,
 # Type: Classification
 
 # Tuning parameters:
-  
+
 # cp (Complexity Parameter)
 # Cost (Cost)
 # Required packages: rpart, plyr
