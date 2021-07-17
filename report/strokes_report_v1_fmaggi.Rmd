@@ -2,29 +2,1289 @@
 title: "Strokes"
 author: "Felipe Maggi"
 date: "16/7/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r packages, message=FALSE, include=FALSE}
+
+# _______________________########
+# PACKAGES AND LIBRARIES ########
+# _______________________########
+
+#__reader #####
+if(!require(readr)) install.packages("readr", repos = "http://cran.us.r-project.org")
+library(readr)
+
+#__tidyverse #####
+if(!require(tidyverse)) install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+library(tidyverse)
+
+#__caret #####
+if(!require(caret)) install.packages("caret", repos = "http://cran.us.r-project.org")
+library(caret)
+
+#__igraph ####
+if(!require(igraph)) install.packages("igraph", repos = "http://cran.us.r-project.org")
+library(igraph)
+
+#__rattle ####
+if(!require(rattle)) install.packages("rattle", repos = "http://cran.us.r-project.org")
+library(rattle)
+
+#__randomForest ####
+if(!require(randomForest)) install.packages("randomForest", repos = "http://cran.us.r-project.org")
+library(randomForest)
+
+#__fastAdaboost ####
+if(!require(fastAdaboost)) install.packages("fastAdaboost", repos = "http://cran.us.r-project.org")
+library(fastAdaboost)
+
+#__ROSE ####
+if(!require(ROSE)) install.packages("ROSE", repos = "http://cran.us.r-project.org")
+library(ROSE)
+
+#__mda ####
+if(!require(mda)) install.packages("mda", repos = "http://cran.us.r-project.org")
+library(mda)
+
+#__klaR ####
+if(!require(klaR)) install.packages("klaR", repos = "http://cran.us.r-project.org")
+library(klaR)
+
+#__nnet ####
+if(!require(nnet)) install.packages("nnet", repos = "http://cran.us.r-project.org")
+library(nnet)
+
+#__kernlab ####
+if(!require(kernlab)) install.packages("kernlab", repos = "http://cran.us.r-project.org")
+library(kernlab)
+
+#__e1071 ####
+if(!require(e1071)) install.packages("e1071", repos = "http://cran.us.r-project.org")
+library(e1071)
+
+#__viridis ####
+if(!require(viridis)) install.packages("viridis", repos = "http://cran.us.r-project.org")
+library(viridis)
+
+#__patchwork####
+if(!require(patchwork)) install.packages("patchwork", repos = "http://cran.us.r-project.org")
+library(patchwork)
+
+#__hrbrthemes####
+if(!require(hrbrthemes)) install.packages("hrbrthemes", repos = "http://cran.us.r-project.org")
+library(hrbrthemes)
+
+#__ggraph####
+if(!require(ggraph)) install.packages("ggraph", repos = "http://cran.us.r-project.org")
+library(ggraph)
+
+#__readxl####
+if(!require(readxl)) install.packages("readxl", repos = "http://cran.us.r-project.org")
+library(readxl)
+
+#__knitr####
+if(!require(knitr)) install.packages("knitr", repos = "http://cran.us.r-project.org")
+library(knitr)
+
+#__tidyr####
+if(!require(tidyr)) install.packages("tidyr", repos = "http://cran.us.r-project.org")
+library(tidyr)
+
+#__dplyr####
+if(!require(dplyr)) install.packages("dplyr", repos = "http://cran.us.r-project.org")
+library(dplyr)
+
+#__plotly####
+if(!require(plotly)) install.packages("plotly", repos = "http://cran.us.r-project.org")
+library(plotly)
+
+#__magrittr####
+if(!require(magrittr)) install.packages("plotly", repos = "http://cran.us.r-project.org")
+library(magrittr)
+
+#__lubridate####
+if(!require(lubridate)) install.packages("lubridate", repos = "http://cran.us.r-project.org")
+library(lubridate)
+
+#__rvest####
+if(!require(rvest)) install.packages("rvest", repos = "http://cran.us.r-project.org")
+library(rvest)
+
+#__rpart####
+if(!require(rpart)) install.packages("rpart", repos = "http://cran.us.r-project.org")
+library(rpart)
+
+#__rpart.plot####
+if(!require(rpart.plot)) install.packages("rpart.plot", repos = "http://cran.us.r-project.org")
+library(rpart.plot)
+
+#__pROC####
+if(!require(pROC)) install.packages("pROC", repos = "http://cran.us.r-project.org")
+library(pROC)
+
+#__nnet####
+if(!require(nnet)) install.packages("nnet", repos = "http://cran.us.r-project.org")
+library(nnet)
+
+#__earth####
+if(!require(earth)) install.packages("earth", repos = "http://cran.us.r-project.org")
+library(earth)
+
+#__LiblineaR####
+if(!require(LiblineaR)) install.packages("LiblineaR", repos = "http://cran.us.r-project.org")
+library(LiblineaR)
+
+#__MLeval####
+if(!require(MLeval)) install.packages("MLeval", repos = "http://cran.us.r-project.org")
+
+#__Naives Bayes####
+if(!require(naivebayes)) install.packages("naivebayes", repos = "http://cran.us.r-project.org")
+library(naivebayes) #cambio
+
+#__Recipes####
+if(!require(recipes)) install.packages("recipes", repos = "http://cran.us.r-project.org")
+library(recipes)
+
+#__Rattle####
+if(!require(rattle)) install.packages("rattle", repos = "http://cran.us.r-project.org")
+library(rattle)
+
 ```
 
-## R Markdown
+***
+### Abstract
+***
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+# 1. Introduction
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## 1.1 Dataset description
+The objective of this project is to develop a model capable of predicting whether a patient has a tendency to suffer a stroke, based on the following variables:
 
-```{r cars}
-summary(cars)
+1. Gender (binary)
+2. Age (numerical)
+3. Hypertension (binary)
+4. Heart disease (binary)
+5. Ever married (binary)
+6. Type of residence (binary)
+7. Average glucose level (numerical)
+8. Body mass index (numerical)
+9. Smoking status (categorical)
+
+The dataset used (Stroke Prediction Data Data Set) contains 5,110 observations. It is available in Kaggle [^1], and was uploaded to the platform by Federico Soriano (fedesorian) [^2]. 
+
+Originally, the variables and their respective classes are as follows:
+
+```{r data_download, echo=FALSE, message=FALSE}
+
+# _______________________########
+# DATA DOWNLOAD ########
+# _______________________########
+
+# stroke_data from github #####
+
+stroke_data_orig <- 
+  read.csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
+
+stroke_data <- 
+  read_csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
+
+str(stroke_data_orig)
+
 ```
 
-## Including Plots
+In the following sections we will explain the changes that were made to the original dataset, in order to apply the selected models.
 
-You can also embed plots, for example:
+To train the models, the final dataset was divided into a training set and a test set, in a ratio of 80-20. We decided to reserve at least 20% of the observations for the test set because the dataset is not excessively large and, as we will see, it is highly unbalanced. With a lower percentage of observations, we ran the risk of not having enough stroke cases in the test set, or that certain variables would see their proportions significantly affected.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+Unfortunately, we think we don't have enough observations to reserve a part of the dataset and use it as a validation set. Because of this, we have only worked with the training and test sets, and we have relied on cross-validation.
+
+## 1.2 Goals and key steps
+As we have already mentioned, the objective of this project is to train a model capable of predicting whether a patient has a high probability of suffering a stroke, taking into account the mentioned predictors.
+
+The key steps in the development of this project were:
+
+1. Treat the original dataset, cleaning data and eliminating superfluous variables like "id".
+2. Carry out an exploratory analysis of the data
+3. Determine the importance of the selected variables
+4. Center and scale the numeric variables
+5. Test provisional results, training and visualizing various models with the original unbalanced dataset.
+6. Balance the training set using various techniques.
+7. Train the classification models with the different training sets obtained with the modes used in the previous point.
+8. Create ensembles of the best performing models for each balancing technique, and select a stroke prediction criterion based on the balanced accuracy metric.
+
+# 2. Methods and Analysis
+
+## 2.1 Data wrangling
+During the development of this project, the data cleansing was carried out in several phases. In the first place, the variable "id" was eliminated, for not providing relevant information. At the same time, observations containing N/A (a problem affecting the BMI variable) were filtered, and categorical variables were factored (0 and 1 were converted to "No" or "Yes", respectively). 
+
+After eliminating the N/As the BMI variable was transformed into numeric (in the original data set it had been considered as a character by coercion).
+
+Finally, the stroke variable was factored ("no_stroke", "stroke"), and the levels were reordered so that "stroke" became the positive class. 
+
+The resulting dataset now contains 4,909 observations. The 201 deleted observations correspond to those in which BMI was reported as N/A:
+
+```{r data_wrangling, echo=FALSE, message=FALSE}
+
+# _______________________########
+# DATA WRANGLING ########
+# _______________________########
+
+# Categorical and binary data as.factors #####
+
+stroke_data <- stroke_data %>% 
+  filter(!bmi == "N/A")  %>% # filtering bmi = N/A
+  mutate(gender = as.factor(gender),
+         hypertension = as.factor(ifelse(hypertension == 0, "No", "Yes")),
+         heart_disease = as.factor(ifelse(heart_disease == 0, "No", "Yes")),
+         ever_married = as.factor(ever_married),
+         work_type = as.factor(work_type),
+         Residence_type = as.factor(Residence_type),
+         bmi = as.numeric(bmi),
+         smoking_status = as.factor(smoking_status),
+         stroke = as.factor(ifelse(stroke == 1, "stroke", "no_stroke"))) %>% 
+  select(!id) # Removing "id" variable
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
+# It makes "stroke" the positive class, in order to facilitate interpretations
+
+stroke_data$stroke <- relevel(stroke_data$stroke, ref = "stroke")
+
+str(stroke_data)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Then, during data exploration, it was discovered that there was an observation whose variable "gender" was reported as "Other". This observation was also removed. The hypothesis here is that this observation would add noise if gender was an important variable. We do not want this to be misunderstood. Filtering this class is for training purposes only. A single observation can generate significant changes in the output of the models (something we check). The author unconditionally respects any sexual preference.
+
+Before starting to train models, the numerical variables were scaled and centralized.
+
+The last modifications made to the dataset was to balance the "stroke" and "no_stroke" classes, with different methods. We will see the details later.
+
+## 2.2 Data exploration
+
+For certain parts of this exploratory analysis we have followed the recommendations of Joaquín Amat Rodrigo, exposed on the site *Machine Learning with R and caret*[^3]. Specifically, with regard to: 
+
+1. The statistical data of the numerical variables
+2. The Density and box plots
+3. The distribution of the qualitative variables
+4. The correlation between numerical variables
+5. The contrast of proportions for categorical variables
+6. The random forest method
+7. The Near Zero Variance Analysis
+
+### 2.2.1 Viariable distributions
+
+ The first thing that stands out during the exploration of the data, is the clear imbalance between the classes "stroke" and "no_stroke". To maintain the clarity of the exposition, and the correspondence with the code, we show the data before filtering the observation with gender "Other".
+
+```{r stroke_porportions, echo=FALSE}
+
+n <- nrow(stroke_data)
+
+# Strokes proportion #####
+table(stroke_data$stroke) %>% 
+  kable()
+
+prop.table(table(stroke_data$stroke)) %>% 
+  kable()
+
+```
+
+Only 4% of the observations are labeled "stroke", so the prevalence of the "no_stroke" class is staggering (close to 96%).
+
+This represents the first hurdle to overcome. With such a prevalence of the negative class, training any model keeping the proportions of the original dataset will not give good results.
+
+Obviously, the "accuracy" metric loses all sense. A model that predicts "no_stroke" in all cases will have an accuracy close to 96%. The important thing here is the sensitivity of the model (remember that "stroke" is the positive class). But, at the same time, we want to obtain a model that has a correct specificity. Predicting "stroke" in all cases would raise the sensitivity to 100%, but would leave us with another useless model unable to correctly classify any negative cases.
+
+Anyway, we will analyze the distribution of the variables in this dataset, and then we will apply various methods to balance the training set. This step is necessary to check if the changes made to the training set do not alter the statistical data of the predictor variables.
+
+#### 2.2.1.1 Age
+
+The age statistics, depending on the response variables, are the following:
+
+```{r age_statistics, echo=FALSE, message=FALSE}
+
+# __Statistical Age Data  ####
+stroke_data %>% 
+  group_by(stroke) %>% 
+  summarise(avg_age = round(mean(age),1),
+            median_age = round(median(age)),
+            min_age = min(age),
+            max_age = max(age)) %>% 
+  kable()
+
+```
+
+It is not surprising that age, as we shall see, is the most important variable when classifying subjects according to "stroke" and "no_stroke". However, the overlap in the age range already indicates another obstacle that affect the models obtained from the selected dataset. This overlap is clearly observed in the following density graph:
+
+```{r age_density_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Density Plot: Avg Level per Class ####
+stroke_data %>% ggplot(aes(age, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "Age density plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+It is clear that age is an important factor, but as a variable it is far from dividing the observations clearly between one class and another.
+
+The same is observed by means of box plots. As we are working with the original dataset, the prevalence of the "no_stroke" class represented by the point density is also clearly visible.
+
+```{r age_boox_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Box Plot: Avg Level per Class ####
+stroke_data %>% ggplot(aes(stroke, age, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15) +
+  labs(title = "Age box plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+Regarding the number of observations according to age, we see that for very short ages (up to approximately 2 years old) there are few data. From two years old onwards we have, with few exceptions, over 35 observations. The models were trained without grouping ages, and this tactic could be one of the changes to be tested to improve the results obtained.
+
+```{r dist_obs_age, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Distribution of observations by age #####
+stroke_data %>% 
+  group_by(age) %>%
+  summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
+            stroke_ratio = mean(stroke == "stroke")) %>% 
+  #filter(!stroke_ratio == 0) %>% 
+  unique() %>%
+  ggplot(aes(x=age, y=total)) +
+  geom_segment(aes(x=age, xend=age, y=0, yend=total), color="skyblue") +
+  geom_point( color="blue", size=2, alpha=0.6) +
+  theme_light() +
+  #coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  labs(title = "Number of Observations by Age") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+The percentage of strokes by age shows some correlation between this variable and the tendency to suffer from this disease:
+
+```{r percent_strokes_by_age, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Percent of strokes by age ####
+stroke_data %>% 
+  group_by(age) %>%
+  summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
+            stroke_percent = mean(stroke == "stroke")) %>% 
+  filter(!stroke_percent == 0) %>% 
+  unique() %>%
+  ggplot(aes(x=age, y=stroke_percent)) +
+  geom_segment(aes(x=age, xend=age, y=0, yend=stroke_percent), color="skyblue") +
+  geom_point(color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  # coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  labs(title = "Percent of Strokes by Age") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+As we have said, the models were trained with the ungrouped age data. If we group the ages to the nearest ten, the information acquires much more meaning and representativeness.
+
+```{r summary_table_by_age, echo=FALSE, message=FALSE}
+
+# __Summary table by age (rounded nearest 10) #####
+# age, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(round_age = round(age, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke =="stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+```
+
+The correlation between age and incidence of strokes now looks much better:
+
+```{r percent_strokes_by_rounded_age, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Percent of strokes by rounded age  ####  
+stroke_data %>% 
+  group_by(age = round(age, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  ggplot(aes(x=age, y=stroke_percent)) +
+  geom_segment(aes(x=age, xend=age, y=0, yend=stroke_percent), color="skyblue") +
+  geom_point(color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  # coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  labs(title = "Percent of Strokes by Age") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+Why, if knowing this, were the models trained the ungrouped age? First, to determine to what extent the models are able to deal with the original data and, second, to have improvement options.
+
+#### 2.2.1.2 Average Glucose Level
+
+Some of the problems detected in the case of age are even more serious in the case of the average glucose level. There are some differences in mean and median, but the ranges between minimum and maximum clearly overlap:
+
+```{r avg_glucose_statistics, echo=FALSE, message=FALSE}
+
+# __Statistical Avg Glucose Level Data  ####
+stroke_data %>% 
+  group_by(stroke) %>% 
+  summarise(avg_glucose = round(mean(avg_glucose_level),1),
+            median_glucose = round(median(avg_glucose_level)),
+            min_glucose = min(avg_glucose_level),
+            max_glucose = max(avg_glucose_level)) %>% 
+  kable()
+```
+
+```{r glucose_density_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Density Plot: Avg Level per Class ####
+stroke_data %>% ggplot(aes(avg_glucose_level, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 5) +
+  labs(title = "Avg Glucose Level density plot") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+In addition, we are facing a clear bimodal case, which affects both classes.
+
+The box plot shows that the medians do not differ that much, and that the interquartile ranges overlap, despite having different sizes:
+
+```{r glucose_box_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Box Plot: Avg Level per Class ####
+stroke_data %>% ggplot(aes(stroke, avg_glucose_level, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15) +
+  labs(title = "Avg Glucose Level box plot") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+It is also important to highlight that with so few observations belonging to the "stroke" class, their variability is much greater, and it is perfectly possible that the data are not representative of the population. The latter is something that affects all variables, and balancing techniques do not solve. It is true that they increase the number of observations of the "stroke" class, but they do so by randomly repeating (or according to best estimate criteria) the available observations. Representativeness, or its lack of it, we understand that it is maintained.
+
+In this case we have rounded to the nearest ten directly, although the models have been trained with the ungrouped data:
+
+```{r summary_table_by_avg_glucose_level, echo=FALSE, message=FALSE}
+
+# __Summary table by avg_glucose_level (round to nearest ten) #####
+# avg_glucose_level, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(round_avg_glucose_level = round(avg_glucose_level, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+```
+
+The number of observations according to the rounded glucose average are concentrated between 60 and 110, from there they are much scarcer, although they show a slight increase between 190 and 230:
+
+```{r dist_obs_rounded avg_glucose, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Distribution of observations by rounded avg_glucose_level  #####
+stroke_data %>% 
+  group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  ggplot(aes(x=avg_glucose_level, y=total)) +
+  geom_segment(aes(x=avg_glucose_level, xend=avg_glucose_level, y=0, yend=total), color="skyblue") +
+  geom_point( color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  # coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  labs(title = "Number of Observations by avg_glucose_level (Rounded)") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+Regarding the incidence of strokes according to rounded average glucose level, we observe a positive correlation (not as clear as in the case of age)
+
+```{r percent_strokes_by_rounded_avg_glucose, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Percent of strokes by rounded avg_glucose_level ####  
+stroke_data %>% 
+  group_by(avg_glucose_level = round(avg_glucose_level, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  ggplot(aes(x=avg_glucose_level, y=stroke_percent)) +
+  geom_segment(aes(x=avg_glucose_level, xend=avg_glucose_level, y=0, yend=stroke_percent), color="skyblue") +
+  geom_point(color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  # coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  labs(title = "Percent of Strokes by avg_glucose_level (Rounded)") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+#### 2.2.1.3 Body Mass Index
+
+The last of the numeric variables is the most complex, in the sense that it doesn't seem to separate the classes at all.
+
+The mean and median are very similar, and the minimum-maximum range for the "no_stroke" class completely covers the range for the "stroke" class:
+
+```{r bmi_statistics, echo=FALSE, message=FALSE}
+
+# __Statistical BMI Data  ####
+stroke_data %>% 
+  group_by(stroke) %>% 
+  summarise(avg_bmi = round(mean(bmi),1),
+            median_bmi = round(median(bmi)),
+            min_bmi = min(bmi),
+            max_bmi = max(bmi)) %>% 
+  kable()
+
+```
+
+The density and box plots make this much clearer:
+
+```{r bmi_density_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Density Plot: BMI per Class ####
+stroke_data %>% ggplot(aes(bmi, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "BMI density plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+```{r bmi_box_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Box Plot: BMI per Class ####
+stroke_data %>% ggplot(aes(stroke, bmi, color = stroke)) +
+  geom_boxplot() +
+  geom_jitter(alpha = 0.3, width = 0.15)  +
+  labs(title = "BMI box plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+This variable, despite everything, seems to be important according to the random forest variable selection method (Amat, 2018), which we will see later.
+
+In any case, the random forest model did not yield good results with any of the balancing techniques. A possible course of action when it comes to improving the models is to test the training without this variable.
+
+The BMI table rounded to the nearest ten shows very few observations starting at 70, and that the incidence is concentrated between 20 and 40.
+
+```{r summary_table_by_rounded_bmi, echo=FALSE, message=FALSE}
+
+# __Summary table by bmi (round to nearest ten) #####
+# bmi, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  mutate(bmi = as.numeric(bmi)) %>% 
+  group_by(round_bmi = round(bmi,-1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+```
+
+In any case, we are talking about percentages ranging from 2% to 5%, which reinforces the hypothesis that this variable, in this specific dataset, should not have a great weight.
+
+```{r percent_strokes_by_rounded_bmi, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Percent of strokes by rounded bmi ####  
+stroke_data %>% 
+  mutate(bmi = as.numeric(bmi)) %>% 
+  group_by(bmi = round(bmi, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  ggplot(aes(x=bmi, y=stroke_percent)) +
+  geom_segment(aes(x=bmi, xend=bmi, y=0, yend=stroke_percent), color="skyblue") +
+  geom_point(color="blue", size=4, alpha=0.6) +
+  theme_light() +
+  # coord_flip() +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.y = element_blank()
+  ) +
+  labs(title = "Percent of bmi (Rounded)") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+#### 2.2.1.4 Gender
+
+Based on the available data, the incidence of strokes among men is slightly higher than among women. The difference is not great, and as we will see later, the variable has some importance but it is not among the main ones:
+
+```{r summary_table_by_gender, echo=FALSE, message=FALSE}
+
+# __Summary table by gender #####
+# gender, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(gender) %>%
+  summarise(total = n(), percent = round(total/n, 3), 
+            strokes = sum(stroke == "stroke"), 
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+stroke_data <- stroke_data %>% filter(!gender == "Other") # Filtering gender "Other" for training purposes
+
+```
+
+The bar graphs clearly show the distribution of the variables, but due to the high prevalence of the "no_stroke" class, it is difficult to see that the incidence is actually somewhat higher among men, as shown in the table.
+
+```{r gender_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Gender distribution #####
+stroke_data %>% 
+  ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Gender distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+#### 2.2.1.5 Hypertension
+
+Due to the clear difference in the incidence of strokes depending on whether or not one suffers from hypertension, it is logical to think that this variable will have an important weight:
+
+```{r summary_table_by_hypertencion, echo=FALSE, message=FALSE}
+
+# __Summary table by hypertension #####
+# hypertension, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(hypertension) %>%
+  summarise( total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+```
+
+Among those who do not suffer from hypertension, the incidence is 3%. Among those who do suffer it, it reaches 13%.
+
+Again, it is difficult to see this reality in bar charts:
+
+```{r hypertension_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Hypertension distribution #####
+stroke_data %>% 
+  ggplot(aes(x = hypertension, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Hypertension distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+```
+
+#### 2.2.1.6 Heart Desease
+
+Among those with heart disease, the incidence of strokes is around 17%, while among those who do not, the percentage of cases does not reach 4%:
+
+```{r summary_table_by_heart_desease, echo=FALSE, message=FALSE}
+
+# __Summary table by heart_disease #####
+# heart_disease, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(heart_disease) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke =="stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+```
+
+```{r heart_desease_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Heart_disease distribution #####
+stroke_data %>% 
+  ggplot(aes(x = heart_disease, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Heart disease distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+Due to the clear difference in the probability of suffering a stroke depending on whether or not one has heart disease, it is reasonable to think that the variable will have a certain weight for the classification models.
+
+When we get to the point of assessing the importance of variables, we will find certain surprises. Some variables that with this analysis seemed firm candidates to have a clear weight, in reality they do not, at least for those models in which the selection of variables is evident.
+
+#### 2.2.1.7 Ever Married
+
+There is also some difference in the probability of suffering a stroke whether you have been married or not. This difference is only partly surprising, if one takes into account that being married or not is directly related to age. Young people are obviously less likely to have been married than older people, and we have already seen that there is a clear relationship between age and strokes.
+
+```{r summary_table_by_ever_married, echo=FALSE, message=FALSE}
+
+# __Summary table by ever_married #####
+# ever_married, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(ever_married) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+```
+
+Among those who have been married, the percentage of strokes is around 6%. Among those who have always been single, the percentage barely exceeds 1%.
+
+```{r ever_married_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Ever_married distribution #####
+stroke_data %>% 
+  ggplot(aes(x = ever_married, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Ever married distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+#### 2.2.1.8 Work Type
+
+Those who are self-employed appear to be at slightly higher risk of strokes than other types of work.
+
+```{r summary_table_by_work_type, echo=FALSE, message=FALSE}
+
+# __Summary table by work_type #####
+# work_type, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(work_type) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+```
+
+The cases of never worked are very few, and there are no incidences of strokes in this group. Children also do not present cases. This would explain why certain models, when they take this variable into account, use the group formed by Govt_job, Private and Self-employed as a single decision element.
+
+```{r work_type_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Work_type distribution #####
+stroke_data %>% 
+  ggplot(aes(x = work_type, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Work type distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+#### 2.2.1.9 Residense Type
+
+The type of residence does not seem to influence the risk of suffering a stroke. Both groups are very balanced, and the percentage of strokes in the two cases is very similar to the baseline incidence.
+
+```{r summary_table_by_residence_type, echo=FALSE, message=FALSE}
+
+# Summary table by Residence_type #####
+# age, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(Residence_type) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+```
+
+```{r residence_type_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Residence_type distribution #####
+stroke_data %>% 
+  ggplot(aes(x = Residence_type, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Residence type distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
+```
+
+#### 2.2.1.10 Smoking Status
+
+Finally, and as expected, the incidence of strokes is higher in the group of smokers and in those who have ever smoked. However, the incidence is not clearly higher. Where there is an important difference with the base incidence percentage in the "unknown" group. As we will see, in the models that consider smoking_status, "unknown" is used as a decision element.
+
+```{r summary_table_by_smoking_statys, echo=FALSE, message=FALSE}
+
+# __Summary table by smoking_status  #####
+# smoking_status, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(smoking_status) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"), 
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+```
+
+```{r smoking_status_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Smoking_status distribution #####
+stroke_data %>% 
+  ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Smoking status distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+```
+
+### 2.2.2 Variable importance
+
+The exploratory analysis above allows to get an idea of which variables will have more weight when classifying and predicting the probabilities of suffering a stroke. By the way, it allows us to find those groups with few cases, which might not be present in both data sets (training and test), and which might be worth filtering.
+
+However, and as Rodrigo Amat points out in *Machine Learning with R and caret*, this approach says nothing about the relationship between variables, and their joint effects.
+
+Next we will analyze the correlation between numerical variables, the importance of the variables with the random forest method, and we will make sure that none of the variables have a variance close to zero. Again, it is necessary to refer to Rodrigo Amat as the source of this approach.
+
+#### 2.2.2.1 Correlation between numerical variables
+
+As is well known, a strong correlation between numerical predictors can harm the results of a model. At this point, we find a new stumbling block, in addition to those found previously. Although visually the correlations do not seem strong, numerically they have some importance. In all cases they are less than 0.5, but we cannot say that there is no correlation at all. The values obtained are at that point where we believe that all numerical variables should be kept for modeling purposes, although it might be worth testing by eliminating those that are more correlated in future iterations.
+
+```{r age_vs_avg_glucose_level, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Age vs Avg Glucose Level #####
+stroke_data %>% 
+  ggplot(aes(age, avg_glucose_level)) +
+  geom_point() +
+  geom_smooth() +
+  labs(title = "Age vs Avg Glucose Level") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+The numerical correlation between Age and Average Glucose Level is close to 0.24:
+
+```{r age_vs_avg_glucose_level_corr, echo=FALSE, message=FALSE, warning=FALSE}
+# __Age vs Avg Glucose Level correlation test #####
+cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
+```
+
+```{r age_vs_bmi, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Age vs BMI #####
+stroke_data %>% 
+  ggplot(aes(age, bmi)) +
+  geom_point() +
+  geom_smooth() +
+  labs(title = "Age vs BMI") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+The correlation between age and body mass index is even slightly stronger, exceeding 0.33.
+
+```{r age_vs_avg_bmi_corr, echo=FALSE, message=FALSE, warning=FALSE}
+
+# __Age vs BMI correlation test
+cor.test(stroke_data$age, stroke_data$bmi, method = "pearson")
+```
+
+```{r avg_glucose_vs_bmi, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Avg Glucose Level vs BMI #####
+stroke_data %>% 
+  ggplot(aes(avg_glucose_level, bmi)) +
+  geom_point() +
+  geom_smooth() +
+  labs(title = "Avg Glucose Level vs BMI") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+Finally, the correlation between Average Glucose Level and Mass Index is around 0.18.
+
+```{r avg_glucose_vs_bmi_corr, echo=FALSE, message=FALSE, warning=FALSE}
+
+# __Avg Glucose Level vs BMI correlation test
+cor.test(stroke_data$avg_glucose_level, stroke_data$bmi, method = "pearson")
+# 0.1756717
+```
+
+#### 2.2.2.1 Contrast of proportions
+
+With respect to categorical variables, Amat's approach is based on performing a portion test. It is about seeing which variables present a proportion of cases that are really different from the baseline level, taking into account the number of cases. The results are ordered from lowest to highest p-value. 
+
+Next we see the table with the first 10 results. Although for some variables it is noted that the Chi-squared approximation may be incorrect (not shown in this table), this exercise confirms part of what we had seen previously: suffering from hypertension or heart disease considerably increases the risk of suffering a stroke.
+
+On the contrary, not having been married, or being a child who does not work, reduces the risk considerably.
+
+Again, we must note that this approach does not take into account the joint effect of the variables, nor the relationship between them (Amat, 2018).
+
+```{r contrast_proportions, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Contrast of proportions #####
+
+# Continuous and qualitative variables that do not group patients are excluded.
+stroke_categorical <- stroke_data %>% 
+  select(gender, hypertension, heart_disease, ever_married, work_type,
+         Residence_type, smoking_status, stroke)
+
+stroke_categorical_tidy <- data.frame(stroke_categorical %>%
+                                        gather(key = "variable", value = "group",-stroke))
+
+# An identifier consisting of the name of the variable and the group is added
+stroke_categorical_tidy <- stroke_categorical_tidy %>%
+  mutate(group_variable = paste(variable, group, sep = "_"))
+
+# Function that calculates the proportions test for the column "Stroke" of a df
+proportion_test <- function(df){
+  n_strokes <- sum(df$stroke == "stroke") 
+  n_no_stroke     <- sum(df$stroke == "no_stroke")
+  n_total <- n_strokes + n_no_stroke
+  test <- prop.test(x = n_strokes, n = n_total, p = 0.04257486)
+  prop_strokes <- n_strokes / n_total
+  return(data.frame(p_value = test$p.value, prop_strokes))
+}
+
+# The data is grouped by "group_variable" and the test_proportion () function 
+# is applied to each group.
+prop_analisis <- stroke_categorical_tidy %>%
+  group_by(group_variable) %>%
+  nest() %>%
+  arrange(group_variable) %>%
+  mutate(prop_test = map(.x = data, .f = proportion_test)) %>%
+  unnest(prop_test) %>%
+  arrange(p_value) %>% 
+  select(group_variable,p_value, prop_strokes) %>% 
+  head(10) %>% 
+  kable()
+prop_analisis
+```
+
+#### 2.2.2.3 The random forest method
+
+Next, we will review the importance of the variables using the random forest method. It is important to note that this analysis has been carried out on the original, strongly unbalanced dataset. Results will vary when techniques are applied to balance the training set.
+
+This method can be applied in two ways: by accuracy reduction, or Gini reduction. Here we will apply both to see where they coincide and where they differ.
+
+```{r random_forest_method_accuracy, echo=FALSE}
+
+# __Random Forest Method: Accuracy reduction#####
+variables_rf <- stroke_data
+
+
+randforest_model <- randomForest(formula = stroke ~ . ,
+                                 data = variables_rf,
+                                 mtry = 5,
+                                 importance = TRUE, 
+                                 ntree = 1000) 
+
+importance <- as.data.frame(randforest_model$importance)
+importance <- rownames_to_column(importance,var = "variable")
+
+importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                             y = MeanDecreaseAccuracy,
+                                             fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1
+```
+
+```{r random_forest_method_gini, echo=FALSE}
+
+importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseGini),
+                                             y = MeanDecreaseGini,
+                                             fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2
+```
+
+In the case of Accurcy Reduction, the most important variable is Age, followed by Ever Married. BMI and Hypertension are next on the list, but they are not given great weight.
+
+Despite being an unbalanced dataset, this approach yields surprising results to say the least. It is difficult to understand why Ever Married prefers over other variables such as BMI or Hypertension.ç
+
+Gini Reduction shows results more related to what we have seen so far. Age is an important variable in both cases. At the top of the list is Avg Glucose Level and BMI. It is still surprising that Hypertension and Heart Desease carry so little weight in comparison.
+
+It is necessary to say again, in any case, that the random forest model did not obtain good results. In this case, the selection of variables effected by this method does not seem the most appropriate.
+
+#### 2.2.2.3 Near Zero Variance Analysis
+
+The last of the analyzes recommended by Amat, before training models, is the one destined to eliminate the variables that present, before scaling and centering the numerical data, variables close to zero.
+
+Using the original unbalanced dataset, the only variable that presents a variance close to zero is Heart Desease (which would explain its bad positions in the importance analysis carried out previously):
+
+```{r near_zero_variance_analysis, echo=FALSE}
+
+# __Near Zero Variance Analysis #####
+stroke_data %>% 
+  select(-stroke) %>% 
+  nearZeroVar(saveMetrics = TRUE)
+
+```
+
+This changes when techniques are applied to balance the training set, and none of the variables presents variance close to zero.
+
+#### 2.2.2.4 Classification Tree Visualization
+
+Another way to easily visualize important variables is through decision trees. Next we experiment with the unbalanced dataset, aware that it is only a test, and that the final models cannot be trained without first balancing the classes.
+
+The first experiment is to visualize the tree generated by the default "rpart" model. It uses Gini Reduction and applies the following parameters:
+
+1. Complexity parameter = 0.1
+2. Minsplit = 20
+3. Minbucket = 20/3
+4. MaxDepth = 30
+
+As explained in *Learn by marketing*[^4], the complexity parameter (cp) in rpart is the minimum improvement in the model needed at each node. Minsplit is the minimum number of samples at each node, and MaxDepth is the maximum depth of the tree.
+
+As expected, the result is not a tree but a single node that classifies all instances as "no_stroke", given the prevalence of that class:
+
+```{r gini_tree_0.01, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Gini Tree, CP = 0.01, minsplit = 20, minbucket round 20/3, maxdepht = 30 ####
+rpart.plot(rpart(stroke ~ ., 
+                 data = stroke_data)) # Default rpart tree
+
+```
+
+To see something, we must resort to overtraining. Again, it is important to note that for now we are only experimenting to see if we can see some variables. We are not training any models yet.
+
+To create the following tree we have set the Complexity Parameter to 0.001, and the MaxDeth to 6:
+
+```{r gini_tree_0.001_m_6, echo=FALSE, fig.align='center', message=FALSE, warning=FALSE}
+
+# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 6 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("gini")),
+                 cp = 0.001,
+                 maxdepth = 6))
+```
+
+Although this tree requires pruning, we can already see that the variables that are repeated the most are Age, Average Glucose Level and BMI. As for the categorical ones, Heart Desease and Gender appear.
+
+If instead of Gini Reduction we opt for Information Gain, we see that the main numerical variables are Age and Average Glucose Level. With respect to categorical variables, Work Type, Smoking Status and Heart Desease appear.
+
+Both approaches, although we are clearly overtraining, yield results that, intuitively, seem more accurate than those obtained with the random forest method.
+
+The following tree uses the Information Gain method, the CP is set to 0.0023, and the MaxDepth is equal to 6:
+
+```{r information_tree_0.0023_m_6, echo=FALSE, fig.align='center', message=FALSE, warning=FALSE}
+
+# __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 6 #####
+rpart.plot(rpart(stroke ~., 
+                 data = stroke_data, 
+                 parms=list(split=c("information")),
+                 cp = 0.0023,
+                 maxdepth = 6))
+
+```
+
+It is interesting to note that if we try to create a tree only using categorical variables, no results are obtained with any method. This may be due to the fact that these types of variables are not capable of classifying between "stroke" and "no_stroke" by themselves, and that they need to interact with numeric variables.
+
+The latter, on the other hand, are capable of generating trees when they interact with each other, without the need for categorical variables.
+
+#### 2.2.2.5 Balanced Data
+
+But what happens if we balance the data? For this exercise, we have used three methods to match the number of instances classified as "stroke" and "no_stroke", using the "ROSE" library.
+
+1. Oversamplig: observations from the minority class are randomly added.
+2. Both: the distributions are equalized by randomly adding observations from the minority class, and randomly removing observations from the majority class.
+3. Better estimates: the library has a function that generates synthetic data to balance the classes. *The data generated using ROSE is considered to provide better estimate of original data*[^5].
+
+Next we review, for the case of Oversamplig, that although the classes have been balanced, the statistics and the distribution of the variables are maintained. This is true for the other two methods used.
+
+After applying the "ovun.sample" function, with the "over method, the new distribution is as follows:
+
+```{r over_sampling, echo=TRUE, message=FALSE, warning=FALSE}
+
+# _______________________########
+# Over Sampling ######
+# _______________________########
+
+n_over = sum(stroke_data == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
+
+stroke_data_over <- ovun.sample(stroke ~ ., data = stroke_data, method = "over", N = n_over*2)$data
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke"
+stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
+
+table(stroke_data_over$stroke) %>% 
+  kable()
+
+prop.table(table(stroke_data_over$stroke))  %>% 
+  kable()
+```
+
+This, as has been said, does not change the statistics or the distributions of the numerical variables. Below for the Age variable, we show the original tables and graphs, compared to the balanced data.
+
+*Original data*
+
+|stroke    | avg_age| median_age| min_age| max_age|
+|:---------|-------:|----------:|-------:|-------:|
+|stroke    |    67.7|         70|   14.00|      82|
+|no_stroke |    41.8|         43|    0.08|      82|
+
+```{r age_density_plot_2, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Density Plot: Avg Level per Class ####
+stroke_data %>% ggplot(aes(age, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "Age density plot - Original") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+```
+
+*Balanced data*
+
+|stroke    | avg_age| median_age| min_age| max_age|
+|:---------|-------:|----------:|-------:|-------:|
+|stroke    |    68.1|         71|   14.00|      82|
+|no_stroke |    41.8|         43|    0.08|      82|
+
+```{r age_density_plot_balnaced, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# __Density Plot: Age per Class ####
+stroke_data_over %>% ggplot(aes(age, fill = stroke)) +
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "Age density plot - Balanced") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+```
+
+In the case of categorical variables, similar proportions of the groups are maintained, but the percentage of "strokes" changes. What used to be 0.6% becomes 60%.
+
+To exemplify the case of categorical variables, we have selected Smoking Status:
+
+*Original data*
+
+|smoking_status  | total| percent| strokes| stroke_percent|
+|:---------------|-----:|-------:|-------:|--------------:|
+|formerly smoked |   836|   0.170|      57|          0.068|
+|never smoked    |  1852|   0.377|      84|          0.045|
+|smokes          |   737|   0.150|      39|          0.053|
+|Unknown         |  1483|   0.302|      29|          0.020|
+
+*Balanced data*
+
+|smoking_status  | total| percent| strokes| stroke_percent|
+|:---------------|-----:|-------:|-------:|--------------:|
+|formerly smoked |  2067|   0.220|    1288|          0.623|
+|never smoked    |  3657|   0.389|    1889|          0.517|
+|smokes          |  1581|   0.168|     883|          0.559|
+|Unknown         |  2093|   0.223|     639|          0.305|
+
+
+This same check has been carried out for all methods and all variables (numerical and categorical ones).
+
+We have also verified that the correlation between numerical variables is similar to that found with the original data.
+
+So what changes? With the data balanced with the over method, we see changes in the list of variables obtained with the contrast of proportions, and with the random forest method. This is precisely what we are looking for: determining the importance of variables without the prevalence problems of the original dataset.
+
+|group_variable                 |   p_value| prop_strokes|
+|:------------------------------|---------:|------------:|
+|ever_married_No                | 0.0000000|    0.2213988|
+|work_type_children             | 0.0000000|    0.0218978|
+|hypertension_Yes               | 0.0000000|    0.7733333|
+|heart_disease_Yes              | 0.0000000|    0.8157895|
+|smoking_status_Unknown         | 0.0000000|    0.3053034|
+|ever_married_Yes               | 0.0000000|    0.5830916|
+|smoking_status_formerly smoked | 0.0000000|    0.6231253|
+|hypertension_No                | 0.0000000|    0.4385508|
+|work_type_Self-employed        | 0.0000000|    0.6211962|
+|heart_disease_No               | 0.0000000|    0.4580521|
+|smoking_status_smokes          | 0.0000037|    0.5585073|
+|work_type_Never_worked         | 0.0000076|    0.0000000|
+|work_type_Private              | 0.0215709|    0.5155291|
+|smoking_status_never smoked    | 0.0472166|    0.5165436|
+|gender_Male                    | 0.0587473|    0.5151362|
+|Residence_type_Rural           | 0.0791351|    0.4868275|
+|Residence_type_Urban           | 0.0912210|    0.5121901|
+|gender_Female                  | 0.1064600|    0.4889584|
+|work_type_Govt_job             | 0.2342951|    0.5172414|
+
+```{r random_forest_method_accuracy_over, echo=FALSE}
+
+# __Random Forest Method #####
+variables_rf_over <- stroke_data_over
+
+
+randforest_model_over <- randomForest(formula = stroke ~ . ,
+                                      data = variables_rf_over,
+                                      mtry = 5,
+                                      importance = TRUE, 
+                                      ntree = 1000) 
+
+importance_over <- as.data.frame(randforest_model_over$importance)
+importance_over <- rownames_to_column(importance_over,var = "variable")
+
+importance1_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                                       y = MeanDecreaseAccuracy,
+                                                       fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Over") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_over
+
+```
+
+```{r random_forest_method_gini_over, echo=FALSE}
+
+importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseGini),
+                                                       y = MeanDecreaseGini,
+                                                       fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - Over") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_over
+```
+
+These results are similar for all the methods used to balance the data, although their small differences cause different results in the applied models, as we will see below.
+
+Finally, we have verified that the balanced data do not present variables with variation close to zero.
+
+
+[^1]: https://www.kaggle.com/fedesoriano/stroke-prediction-dataset
+[^2]: https://www.kaggle.com/fedesoriano
+[^3]: Amat, Rodrigo: *Machine Learning con R y caret*. cienciadedatos.net, 2018: https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
+[^4]: *Learn by Marketing*: https://www.learnbymarketing.com/tutorials/rpart-decision-trees-in-r/
+[^5]: *Practical Guide to deal with Imbalanced Classification Problems in R*. Analytics Vidhya, 2016: https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
+
+

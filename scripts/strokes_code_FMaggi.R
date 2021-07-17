@@ -146,11 +146,21 @@ library(rattle)
 # _______________________########
 
 # stroke_data from github #####
+
+stroke_data_orig <- 
+  read.csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
+
+str(stroke_data_orig)
+
 stroke_data <- 
   read_csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
 
 str(stroke_data)
 head(stroke_data)
+
+# _______________________########
+# DATA WRANGLING ########
+# _______________________########
 
 # Categorical and binary data as.factors #####
 
@@ -191,8 +201,11 @@ n_strokes <-  sum(stroke_data$stroke == "stroke")
 # 209
 
 # Strokes proportion #####
-table(stroke_data$stroke)
-prop.table(table(stroke_data$stroke))
+table(stroke_data$stroke) %>% 
+  kable()
+
+prop.table(table(stroke_data$stroke)) %>% 
+  kable()
 
 # Number of gender = Male in data set ####
 n_males <- sum(stroke_data$gender == "Male") 
@@ -235,7 +248,6 @@ stroke_data %>%
 # AGE (continuous)######
 
 # __Statistical Age Data  ####
-
 stroke_data %>% 
   group_by(stroke) %>% 
   summarise(avg_age = round(mean(age),1),
@@ -245,18 +257,22 @@ stroke_data %>%
   kable()
 
 # __Density Plot: Age per Class ####
-
 stroke_data %>% ggplot(aes(age, fill = stroke)) +
-  geom_density(alpha = 0.2, bw = 1)
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "Age density plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 stroke_data %>% ggplot(aes(age, y = ..count.., fill = stroke)) +
-  geom_density(alpha = 0.2, bw = 1)
+  geom_density(alpha = 0.2, bw = 1) 
 
 # __Box Plot: Age per Class ####
-
 stroke_data %>% ggplot(aes(stroke, age, color = stroke)) +
   geom_boxplot() +
-  geom_jitter(alpha = 0.3, width = 0.15)
+  geom_jitter(alpha = 0.3, width = 0.15) +
+  labs(title = "Age box plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 # __Summary table by age #####
 # age, total of observations, number of strokes, percent of strokes
@@ -283,7 +299,7 @@ stroke_data %>%
   group_by(age) %>%
   summarise(age = age, total = n(), strokes = sum(stroke == "stroke"),
             stroke_ratio = mean(stroke == "stroke")) %>% 
-  #filter(!stroke_ratio == 0) %>% 
+  # filter(!stroke_ratio == 0) %>% 
   unique() %>%
   ggplot(aes(x=age, y=total)) +
   geom_segment(aes(x=age, xend=age, y=0, yend=total), color="skyblue") +
@@ -413,7 +429,6 @@ stroke_data %>%
 # AVG GLUCOSE LEVEL (continuous) ######
 
 # __Statistical Glucose Data  ####
-
 stroke_data %>% 
   group_by(stroke) %>% 
   summarise(avg_glucose = round(mean(avg_glucose_level),1),
@@ -423,23 +438,31 @@ stroke_data %>%
   kable()
 
 # __Density Plot: Avg Level per Class ####
-
 stroke_data %>% ggplot(aes(avg_glucose_level, fill = stroke)) +
-  geom_density(alpha = 0.2, bw = 5)
+  geom_density(alpha = 0.2, bw = 5) +
+  labs(title = "Avg Glucose Level density plot") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+  
 
 stroke_data %>% ggplot(aes(avg_glucose_level, y = ..count.., fill = stroke)) +
-  geom_density(alpha = 0.2, bw = 1)
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "Avg Glucose Level density plot") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 # __Box Plot: Avg Level per Class ####
-
 stroke_data %>% ggplot(aes(stroke, avg_glucose_level, color = stroke)) +
   geom_boxplot() +
-  geom_jitter(alpha = 0.3, width = 0.15)
+  geom_jitter(alpha = 0.3, width = 0.15) +
+  labs(title = "Avg Glucose Level box plot") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 # __Summary table by avg_glucose_level (round to nearest ten) #####
 # avg_glucose_level, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
-  group_by(round(avg_glucose_level, -1)) %>%
+  group_by(round_avg_glucose_level = round(avg_glucose_level, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
   unique() %>%
@@ -508,34 +531,37 @@ stroke_data %>%
 # BMI (continuous) ######
 
 # __Statistical BMI Data  ####
-
 stroke_data %>% 
   group_by(stroke) %>% 
-  summarise(avg_glucose = round(mean(bmi),1),
-            median_glucose = round(median(bmi)),
-            min_glucose = min(bmi),
-            max_glucose = max(bmi)) %>% 
+  summarise(avg_bmi = round(mean(bmi),1),
+            median_bmi = round(median(bmi)),
+            min_bmi = min(bmi),
+            max_bmi = max(bmi)) %>% 
   kable()
 
-# __Density Plot: Avg Glucose Level per Class ####
-
+# __Density Plot: BMI per Class ####
 stroke_data %>% ggplot(aes(bmi, fill = stroke)) +
-  geom_density(alpha = 0.2, bw = 1)
+  geom_density(alpha = 0.2, bw = 1) +
+  labs(title = "BMI density plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 stroke_data %>% ggplot(aes(bmi, y = ..count.., fill = stroke)) +
   geom_density(alpha = 0.2, bw = 1)
 
-# __Box Plot: Avg Level Glucose  per Class ####
-
+# __Box Plot: BMI per Class ####
 stroke_data %>% ggplot(aes(stroke, bmi, color = stroke)) +
   geom_boxplot() +
-  geom_jitter(alpha = 0.3, width = 0.15)
+  geom_jitter(alpha = 0.3, width = 0.15)  +
+  labs(title = "BMI box plot") +
+  theme(plot.title = element_text(size = 12, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 # __Summary table by bmi (round to nearest ten) #####
 # bmi, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   mutate(bmi = as.numeric(bmi)) %>% 
-  group_by(round(bmi,-1)) %>%
+  group_by(round_bmi = round(bmi,-1)) %>%
   summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
   unique() %>%
@@ -608,15 +634,6 @@ stroke_data %>%
 
 # GENDER (binary)_____ ######
 
-# __Gender distribution #####
-stroke_data %>% 
-  ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
-  geom_bar() +
-  scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Gender") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
 # __Summary table by gender #####
 # gender, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
@@ -627,18 +644,18 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-stroke_data <- stroke_data %>% filter(!gender == "Other") # Filtering gender "Other"
+stroke_data <- stroke_data %>% filter(!gender == "Other") # Filtering gender "Other" for training purposes
 
-# HYPERTENSION (binary) ######
-
-# __Hypertension distribution #####
+# __Gender distribution #####
 stroke_data %>% 
-  ggplot(aes(x = hypertension, y = ..count.., fill = stroke)) +
+  ggplot(aes(x = gender, y = ..count.., fill = stroke)) +
   geom_bar() +
   scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Hypertension") +
+  labs(title = "Gender distribution") +
   theme_bw() +
   theme(legend.position = "bottom")
+
+# HYPERTENSION (binary) ######
 
 # __Summary table by hypertension #####
 # hypertension, total of observations, number of strokes, percent of strokes
@@ -649,16 +666,16 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# HEART DESEASE (binary) ######
-
-# __Heart_disease distribution #####
+# __Hypertension distribution #####
 stroke_data %>% 
-  ggplot(aes(x = heart_disease, y = ..count.., fill = stroke)) +
+  ggplot(aes(x = hypertension, y = ..count.., fill = stroke)) +
   geom_bar() +
   scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Heart_disease") +
+  labs(title = "Hypertension distribution") +
   theme_bw() +
   theme(legend.position = "bottom")
+
+# HEART DESEASE (binary) ######
 
 # __Summary table by heart_disease #####
 # heart_disease, total of observations, number of strokes, percent of strokes
@@ -669,16 +686,16 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# __EVER MARRIED (binary) ######
-
-# Ever_married distribution #####
+# __Heart_disease distribution #####
 stroke_data %>% 
-  ggplot(aes(x = ever_married, y = ..count.., fill = stroke)) +
+  ggplot(aes(x = heart_disease, y = ..count.., fill = stroke)) +
   geom_bar() +
   scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Ever_married") +
+  labs(title = "Heart disease distribution") +
   theme_bw() +
   theme(legend.position = "bottom")
+
+# __EVER MARRIED (binary) ######
 
 # __Summary table by ever_married #####
 # ever_married, total of observations, number of strokes, percent of strokes
@@ -689,14 +706,32 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
+# Ever_married distribution #####
+stroke_data %>% 
+  ggplot(aes(x = ever_married, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Ever married distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
 # WORK TYPE (nominal) ######
+
+# __Summary table by work_type #####
+# work_type, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(work_type) %>%
+  summarise(total = n(), percent = round(total/n, 3), strokes = sum(stroke == "stroke"),
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
 
 # __Work_type distribution #####
 stroke_data %>% 
   ggplot(aes(x = work_type, y = ..count.., fill = stroke)) +
   geom_bar() +
   scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Work_type") +
+  labs(title = "Work type distribution") +
   theme_bw() +
   theme(legend.position = "bottom")
 
@@ -711,15 +746,6 @@ stroke_data %>%
 
 # RESIDENCE TYPE (binary)######
 
-# __Residence_type distribution #####
-stroke_data %>% 
-  ggplot(aes(x = Residence_type, y = ..count.., fill = stroke)) +
-  geom_bar() +
-  scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Residence_type") +
-  theme_bw() +
-  theme(legend.position = "bottom")
-
 # Summary table by Residence_type #####
 # age, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
@@ -729,16 +755,17 @@ stroke_data %>%
   unique() %>%
   knitr::kable()
 
-# SMOKING STATUS (nominal) ######
-
-# __Smoking_status distribution #####
+# __Residence_type distribution #####
 stroke_data %>% 
-  ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
+  ggplot(aes(x = Residence_type, y = ..count.., fill = stroke)) +
   geom_bar() +
   scale_fill_manual(values = c("gray50", "orangered2")) +
-  labs(title = "Smoking_status") +
+  labs(title = "Residence type distribution") +
   theme_bw() +
   theme(legend.position = "bottom")
+
+
+# SMOKING STATUS (nominal) ######
 
 # __Summary table by smoking_status  #####
 # smoking_status, total of observations, number of strokes, percent of strokes
@@ -748,6 +775,15 @@ stroke_data %>%
             stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
   unique() %>%
   knitr::kable()
+
+# __Smoking_status distribution #####
+stroke_data %>% 
+  ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Smoking status distribution") +
+  theme_bw() +
+  theme(legend.position = "bottom")
 
 # _______________________########
 # VARIABLE IMPORTANCE: Looking for variables I ########
@@ -759,70 +795,53 @@ stroke_data %>%
 stroke_data %>% 
   ggplot(aes(age, avg_glucose_level)) +
   geom_point() +
-  geom_smooth()
+  geom_smooth() +
+  labs(title = "Age vs Avg Glucose Level") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 cor(stroke_data$age, stroke_data$avg_glucose_level)
+
+# __Age vs Avg Glucose Level correlation test
 cor.test(stroke_data$age, stroke_data$avg_glucose_level, method = "pearson")
 # 0.2359996
-
-# __BMI vs Avg Glucose Level #####
-stroke_data %>% 
-  ggplot(aes(bmi, avg_glucose_level)) +
-  geom_point() +
-  geom_smooth()
-
-cor(stroke_data$bmi, stroke_data$avg_glucose_level)
-cor.test(stroke_data$bmi, stroke_data$avg_glucose_level, method = "pearson")
-# 0.1756717
 
 # __Age vs BMI #####
 stroke_data %>% 
   ggplot(aes(age, bmi)) +
   geom_point() +
-  geom_smooth()
+  geom_smooth() +
+  labs(title = "Age vs BMI") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
 
 cor(stroke_data$age, stroke_data$bmi)
+
+# __Age vs BMI correlation test
 cor.test(stroke_data$age, stroke_data$bmi, method = "pearson")
 # 0.3333142
+
+# __Avg Glucose Level vs BMI #####
+stroke_data %>% 
+  ggplot(aes(avg_glucose_level, bmi)) +
+  geom_point() +
+  geom_smooth() +
+  labs(title = "Avg Glucose Level vs BMI") +
+  theme(plot.title = element_text(size = 10, face = "bold")) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))
+
+cor(stroke_data$avg_glucose_level, stroke_data$bmi)
+
+# __Avg Glucose Level vs BMI correlation test
+cor.test(stroke_data$avg_glucose_level, stroke_data$bmi, method = "pearson")
+# 0.1756717
+
 
 # There are some correlation between numerical variables, 
 # but it is not really strong
 
-# NUMERICAL AND CATEGORICAL VARIABLES #####
 
-# __Random Forest Method #####
-variables_rf <- stroke_data
-
-
-randforest_model <- randomForest(formula = stroke ~ . ,
-                                 data = variables_rf,
-                                 mtry = 5,
-                                 importance = TRUE, 
-                                 ntree = 1000) 
-
-importance <- as.data.frame(randforest_model$importance)
-importance <- rownames_to_column(importance,var = "variable")
-
-importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                             y = MeanDecreaseAccuracy,
-                                             fill = MeanDecreaseAccuracy)) +
-  labs(x = "variable", title = "Accuracy reduction") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance1
-
-importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseGini),
-                                             y = MeanDecreaseGini,
-                                             fill = MeanDecreaseGini)) +
-  labs(x = "variable", title = "Gini Reduction") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance2
-
+# CATEGORICAL VARIABLES #####
 # __Contrast of proportions #####
 
 # Continuous and qualitative variables that do not group patients are excluded.
@@ -861,11 +880,45 @@ prop_analisis <- stroke_categorical_tidy %>%
   kable()
 prop_analisis
 
-# Near Zero Variance Analysis #####
+# NUMERICAL AND CATEGORICAL VARIABLES #####
+
+# __Random Forest Method #####
+variables_rf <- stroke_data
+
+
+randforest_model <- randomForest(formula = stroke ~ . ,
+                                 data = variables_rf,
+                                 mtry = 5,
+                                 importance = TRUE, 
+                                 ntree = 1000) 
+
+importance <- as.data.frame(randforest_model$importance)
+importance <- rownames_to_column(importance,var = "variable")
+
+importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                             y = MeanDecreaseAccuracy,
+                                             fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1
+
+importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseGini),
+                                             y = MeanDecreaseGini,
+                                             fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2
+
+# __Near Zero Variance Analysis #####
 stroke_data %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
-
 
 # _______________________########
 # TREES (rpart): Loking for variables II ########
@@ -895,7 +948,7 @@ plot(maxdepth_tune, main = "tune maxdepth")
 
 # All Data #####
 
-# __Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+# __Gini Tree, CP = 0.01, minsplit = 20, minbucket round 20/3, maxdepht = 30 ####
 rpart.plot(rpart(stroke ~ ., 
                  data = stroke_data)) # Default rpart tree
 
@@ -911,12 +964,12 @@ rpart.plot(rpart(stroke ~.,
                  parms=list(split=c("gini")),
                  cp = 0.0024))
 
-# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 5 #####
+# __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 6 #####
 rpart.plot(rpart(stroke ~., 
                  data = stroke_data, 
                  parms=list(split=c("gini")),
                  cp = 0.001,
-                 maxdepth = 5))
+                 maxdepth = 6))
 
 # __Information Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 rpart.plot(rpart(stroke ~., 
@@ -1017,8 +1070,11 @@ table(stroke_data_over$stroke)
 # Relevel "stroke" "no_stroke" factors: positive class: "stroke"
 stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
 
-table(stroke_data_over$stroke)
-prop.table(table(stroke_data_over$stroke))
+table(stroke_data_over$stroke) %>% 
+  kable()
+
+prop.table(table(stroke_data_over$stroke))  %>% 
+  kable()
 
 # As expected, the process of balancing (over, both or better method) doesn't change the distributions of 
 # variables. We will see ths next:
@@ -1150,14 +1206,17 @@ stroke_data_over %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
-rpart.plot(rpart(stroke ~ ., 
-                 data = stroke_data_over)) # Default rpart tree
+# __Summary table by smoking_status  #####
+# smoking_status, total of observations, number of strokes, percent of strokes
 
-caret_tree_print_over <- train(stroke ~ ., method = "rpart", 
-                               data = stroke_data_over)
-
-fancyRpartPlot(caret_tree_print_over$finalModel)
+n_stroke_over <-  nrow(stroke_data_over)
+  
+stroke_data_over %>% 
+  group_by(smoking_status) %>%
+  summarise(total = n(), percent = round(total/n_stroke_over, 3), strokes = sum(stroke == "stroke"), 
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
 
 # __Smoking_status distribution #####
 stroke_data_over %>% 
@@ -1167,6 +1226,15 @@ stroke_data_over %>%
   labs(title = "Smoking_status") +
   theme_bw() +
   theme(legend.position = "bottom")
+
+# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+rpart.plot(rpart(stroke ~ ., 
+                 data = stroke_data_over)) # Default rpart tree
+
+caret_tree_print_over <- train(stroke ~ ., method = "rpart", 
+                               data = stroke_data_over)
+
+fancyRpartPlot(caret_tree_print_over$finalModel)
 
 # COR. OF NUMERICAL VARIABLES #####
 
@@ -1198,39 +1266,6 @@ cor(stroke_data_over$age, stroke_data_over$bmi)
 cor.test(stroke_data_over$age, stroke_data_over$avg_glucose_level, method = "pearson")
 
 # NUMERICAL AND CATEGORICAL VARIABLES #####
-
-# __ Random Forest Method #####
-variables_rf_over <- stroke_data_over
-
-
-randforest_model_over <- randomForest(formula = stroke ~ . ,
-                                      data = variables_rf_over,
-                                      mtry = 5,
-                                      importance = TRUE, 
-                                      ntree = 1000) 
-
-importance_over <- as.data.frame(randforest_model_over$importance)
-importance_over <- rownames_to_column(importance_over,var = "variable")
-
-importance1_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                                       y = MeanDecreaseAccuracy,
-                                                       fill = MeanDecreaseAccuracy)) +
-  labs(x = "variable", title = "Accuracy reduction - Over") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance1_over
-
-importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseGini),
-                                                       y = MeanDecreaseGini,
-                                                       fill = MeanDecreaseGini)) +
-  labs(x = "variable", title = "Gini Reduction - Over") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance2_over
 
 # __Contrast of proportions #####
 
@@ -1267,10 +1302,44 @@ prop_analisis_over <- stroke_categorical_tidy_over %>%
   unnest(prop_test) %>%
   arrange(p_value) %>% 
   select(group_variable,p_value, prop_strokes) %>% 
-  head(20)
+  head(20) %>% 
+  kable()
 prop_analisis_over
 
-# Near Zero Variance Analysis #####
+# __Random Forest Method #####
+variables_rf_over <- stroke_data_over
+
+
+randforest_model_over <- randomForest(formula = stroke ~ . ,
+                                      data = variables_rf_over,
+                                      mtry = 5,
+                                      importance = TRUE, 
+                                      ntree = 1000) 
+
+importance_over <- as.data.frame(randforest_model_over$importance)
+importance_over <- rownames_to_column(importance_over,var = "variable")
+
+importance1_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                                       y = MeanDecreaseAccuracy,
+                                                       fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Over") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_over
+
+importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseGini),
+                                                       y = MeanDecreaseGini,
+                                                       fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - Over") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_over
+
+# __Near Zero Variance Analysis #####
 stroke_data_over %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
@@ -1292,6 +1361,27 @@ stroke_data_both$stroke <- relevel(stroke_data_both$stroke, ref = "stroke")
 table(stroke_data_over$stroke)
 prop.table(table(stroke_data_over$stroke))
 
+# __Summary table by smoking_status  #####
+# smoking_status, total of observations, number of strokes, percent of strokes
+
+n_stroke_both <-  nrow(stroke_data_both)
+
+stroke_data_both %>% 
+  group_by(smoking_status) %>%
+  summarise(total = n(), percent = round(total/n_stroke_both, 3), strokes = sum(stroke == "stroke"), 
+            stroke_percent = round(mean(stroke == "stroke"), 3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# __Smoking_status distribution #####
+stroke_data_over %>% 
+  ggplot(aes(x = smoking_status, y = ..count.., fill = stroke)) +
+  geom_bar() +
+  scale_fill_manual(values = c("gray50", "orangered2")) +
+  labs(title = "Smoking_status") +
+  theme_bw() +
+  theme(legend.position = "bottom")
+
 # Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
 rpart.plot(rpart(stroke ~ ., 
                  data = stroke_data_both)) # Default rpart tree
@@ -1303,6 +1393,8 @@ fancyRpartPlot(caret_tree_print_both$finalModel)
 
 table(stroke_data$stroke)
 prop.table(table(stroke_data$stroke))
+
+
 
 # COR. OF NUMERICAL VARIABLES #####
 
@@ -1335,39 +1427,6 @@ cor(stroke_data_both$age, stroke_data_both$bmi)
 cor.test(stroke_data_both$age, stroke_data_both$avg_glucose_level, method = "pearson")
 
 # NUMERICAL AND CATEGORICAL VARIABLES #####
-
-#__ Random Forest Method #####
-variables_rf_both <- stroke_data_both
-
-
-randforest_model_both <- randomForest(formula = stroke ~ . ,
-                                      data = variables_rf_both,
-                                      mtry = 5,
-                                      importance = TRUE, 
-                                      ntree = 1000) 
-
-importance_both <- as.data.frame(randforest_model_both$importance)
-importance_both <- rownames_to_column(importance_both,var = "variable")
-
-importance1_both <- ggplot(data = importance_both, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                                       y = MeanDecreaseAccuracy,
-                                                       fill = MeanDecreaseAccuracy)) +
-  labs(x = "variable", title = "Accuracy reduction - Both") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance1_both
-
-importance2_both <- ggplot(data = importance_both, aes(x = reorder(variable, MeanDecreaseGini),
-                                                       y = MeanDecreaseGini,
-                                                       fill = MeanDecreaseGini)) +
-  labs(x = "variable", title = "Gini Reduction - Both") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance2_both
 
 #__Contrast of proportions #####
 
@@ -1407,7 +1466,40 @@ prop_analisis_both <- stroke_categorical_tidy_both %>%
   head(20)
 prop_analisis_both
 
-# Near Zero variance
+#__Random Forest Method #####
+variables_rf_both <- stroke_data_both
+
+
+randforest_model_both <- randomForest(formula = stroke ~ . ,
+                                      data = variables_rf_both,
+                                      mtry = 5,
+                                      importance = TRUE, 
+                                      ntree = 1000) 
+
+importance_both <- as.data.frame(randforest_model_both$importance)
+importance_both <- rownames_to_column(importance_both,var = "variable")
+
+importance1_both <- ggplot(data = importance_both, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                                       y = MeanDecreaseAccuracy,
+                                                       fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Both") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_both
+
+importance2_both <- ggplot(data = importance_both, aes(x = reorder(variable, MeanDecreaseGini),
+                                                       y = MeanDecreaseGini,
+                                                       fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - Both") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_both
+
+# __Near Zero Variance Analysis #####
 stroke_data_both %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
@@ -1471,39 +1563,6 @@ cor.test(stroke_data_better$age, stroke_data_better$avg_glucose_level, method = 
 
 # NUMERICAL AND CATEGORICAL VARIABLES #####
 
-#__Random Forest Method #####
-variables_rf_better <- stroke_data_better
-
-
-randforest_model_better <- randomForest(formula = stroke ~ . ,
-                                        data = variables_rf_better,
-                                        mtry = 5,
-                                        importance = TRUE, 
-                                        ntree = 1000) 
-
-importance_better <- as.data.frame(randforest_model_better$importance)
-importance_better<- rownames_to_column(importance_better,var = "variable")
-
-importance1_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseAccuracy),
-                                                           y = MeanDecreaseAccuracy,
-                                                           fill = MeanDecreaseAccuracy)) +
-  labs(x = "variable", title = "Accuracy reduction - Better") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance1_better
-
-importance2_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseGini),
-                                                           y = MeanDecreaseGini,
-                                                           fill = MeanDecreaseGini)) +
-  labs(x = "variable", title = "Gini Reduction - better") +
-  geom_col() +
-  coord_flip() +
-  theme_bw() +
-  theme(legend.position = "bottom")
-importance2_better
-
 #__Contrast of proportions #####
 
 # Continuous and qualitative variables that do not group patients are excluded.
@@ -1542,7 +1601,40 @@ prop_analisis_better <- stroke_categorical_tidy_better %>%
   head(20)
 prop_analisis_better
 
-# NUM and CAT: Near Zero Variance Analysis #####
+#__Random Forest Method #####
+variables_rf_better <- stroke_data_better
+
+
+randforest_model_better <- randomForest(formula = stroke ~ . ,
+                                        data = variables_rf_better,
+                                        mtry = 5,
+                                        importance = TRUE, 
+                                        ntree = 1000) 
+
+importance_better <- as.data.frame(randforest_model_better$importance)
+importance_better<- rownames_to_column(importance_better,var = "variable")
+
+importance1_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseAccuracy),
+                                                           y = MeanDecreaseAccuracy,
+                                                           fill = MeanDecreaseAccuracy)) +
+  labs(x = "variable", title = "Accuracy reduction - Better") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance1_better
+
+importance2_better <- ggplot(data = importance_better, aes(x = reorder(variable, MeanDecreaseGini),
+                                                           y = MeanDecreaseGini,
+                                                           fill = MeanDecreaseGini)) +
+  labs(x = "variable", title = "Gini Reduction - better") +
+  geom_col() +
+  coord_flip() +
+  theme_bw() +
+  theme(legend.position = "bottom")
+importance2_better
+
+# __Near Zero Variance Analysis #####
 stroke_data_better %>% 
   select(-stroke) %>% 
   nearZeroVar(saveMetrics = TRUE)
@@ -5459,21 +5551,9 @@ F_meas(confusionMatrix(y_hat_ensamble_b,
 # https://www.iartificial.net/precision-recall-f1-accuracy-en-clasificacion/
 # https://developers.google.com/machine-learning/crash-course/classification/roc-and-auc?hl=en
 # https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
-
-
-# Ver comentarios
-
+# https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
+# https://www.r-graph-gallery.com/301-custom-lollipop-chart.html
 # https://topepo.github.io/caret/train-models-by-tag.html#Two_Class_Only
-# Cost-Sensitive CART
-
-# method = 'rpartCost'
-# Type: Classification
-
-# Tuning parameters:
-
-# cp (Complexity Parameter)
-# Cost (Cost)
-# Required packages: rpart, plyr
 
  
 
