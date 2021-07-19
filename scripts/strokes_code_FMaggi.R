@@ -915,6 +915,39 @@ importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseG
   theme(legend.position = "bottom")
 importance2
 
+# Why is Heart Disease so underweight?
+# Because it is closely related to age, which is the main variable
+
+# __Summary table by age and Heart Desease
+stroke_data %>% 
+  group_by(age) %>%
+  summarise(total = n(), percent = round(total/n, 3), heart_disease = sum(heart_disease == "Yes"),
+            heart_desease_percent = heart_disease/total) %>% 
+  unique() %>%
+  knitr::kable()
+
+# __Summary table by age (rounded nearest 10) and Heart Desease
+# age, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(round_age = round(age, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), heart_disease = sum(heart_disease == "Yes"),
+            heart_desease_percent = round(heart_disease/total,3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+# Why is Hypertension so underweight?
+# As Heart Desease, it is closely related to age, which is the main variable
+
+# __Summary table by age (rounded nearest 10) and Hypertension
+# age, total of observations, number of strokes, percent of strokes
+stroke_data %>% 
+  group_by(round_age = round(age, -1)) %>%
+  summarise(total = n(), percent = round(total/n, 3), hypertension = sum(hypertension == "Yes"),
+            hypertension_percent = round(hypertension/total,3)) %>% 
+  unique() %>%
+  knitr::kable()
+
+
 # __Near Zero Variance Analysis #####
 stroke_data %>% 
   select(-stroke) %>% 
@@ -1394,10 +1427,7 @@ fancyRpartPlot(caret_tree_print_both$finalModel)
 table(stroke_data$stroke)
 prop.table(table(stroke_data$stroke))
 
-
-
 # COR. OF NUMERICAL VARIABLES #####
-
 
 #__ Age vs Avg Glucose Level #####
 stroke_data_both %>% 
@@ -4271,12 +4301,12 @@ roc_tp_fp_fda_both <- evalm(list(train_fda_both),
                             title = "True Positive - False Positive rate ROC",
                             gnames=c('FDA - both'))
 
-# __Accuracy : 0.7485    ####
-# __Sensitivity : 0.85714  ####        
+# __Accuracy : 0.7413    ####
+# __Sensitivity : 0.73810  ####        
 # __Specificity : 0.74149 ####  
-# __Balanced Accuracy :  0.80038   ####
-# __F_meas, beta = 1 : 0.2257053 #####
-# __AUC Sens vs Spec : 0.8275 ###### 
+# __Balanced Accuracy :  0.73979   ####
+# __F_meas, beta = 1 : 0.1962025 #####
+# __AUC Sens vs Spec : 0.8346 ###### 
 
 
 # NAIVE BAYES ######
