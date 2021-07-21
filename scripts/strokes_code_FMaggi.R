@@ -147,16 +147,10 @@ library(rattle)
 
 # stroke_data from github #####
 
-stroke_data_orig <- 
+stroke_data <- 
   read.csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
 
-str(stroke_data_orig)
-
-stroke_data <- 
-  read_csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
-
 str(stroke_data)
-head(stroke_data)
 
 # _______________________########
 # DATA WRANGLING ########
@@ -2702,9 +2696,6 @@ roc_tp_fp_fda <- evalm(list(train_fda),
 # Oversampling #####
 # _______________________######## 
 
-table(train_stroke_t$stroke)
-prop.table(table(train_stroke_t$stroke))
-
 n_over = sum(train_stroke_t$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
@@ -2712,12 +2703,15 @@ set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.see
 # Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this ramdom process.
 
 train_stroke_over <- ovun.sample(stroke ~ ., data = train_stroke_t, method = "over", N = n_over*2)$data
-table(train_stroke_over$stroke)
 
 str(train_stroke_over)
 
 # Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
 train_stroke_over$stroke <- relevel(train_stroke_over$stroke, ref = "stroke")
+
+# Strokes proportion #####
+table(train_stroke_over$stroke) %>% 
+  kable()
 
 
 # RPART native #######
@@ -3277,6 +3271,7 @@ set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1
 train_nnet_over <- train(stroke ~ ., method = "nnet",
                          data = train_stroke_over,
                          trControl = ctrl,
+                         trace = FALSE,
                          metric="ROC")
 
 plot(train_nnet_over)
@@ -3968,7 +3963,6 @@ cm_rf_both
 F_meas(confusionMatrix(y_hat_rf_both, test_stroke_t$stroke)$table, 
        reference = Reference, beta = 1)
 
-
 # Calc. Probs for every class
 roc_rf_both <- predict(train_rf_both,
                        test_stroke_t, type = "prob")
@@ -4127,6 +4121,7 @@ set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1
 train_nnet_both <- train(stroke ~ ., method = "nnet",
                          data = train_stroke_both,
                          trControl = ctrl,
+                         trace = FALSE,
                          metric="ROC")
 
 plot(train_nnet_both)
@@ -4167,7 +4162,7 @@ sens_espec_roc_nnet_both <- plot(roc(response = test_stroke_t$stroke,
                                  ylim = c(0,1),
                                  xlab = "Specificity", 
                                  ylab ="Sensibility", 
-                                 main = "NNET - Over")
+                                 main = "NNET - both")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_nnet_both)
@@ -4261,7 +4256,7 @@ sens_espec_roc_fda_both <- plot(roc(response = test_stroke_t$stroke,
                                 ylim = c(0,1),
                                 xlab = "Specificity", 
                                 ylab ="Sensibility", 
-                                main = "Flexible Discriminant Analysis - Over")
+                                main = "Flexible Discriminant Analysis - both")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_fda_both)
@@ -4689,7 +4684,7 @@ roc_tp_fp_caret_tree_better <- evalm(list(train_caret_tree_better),
 # __Specificity : 0.81277  ####
 # __Balanced Accuracy : 0.77543   ####
 # __F_meas, beta = 1 : 0.248996 #####
-# __AUC Sens vs Spec : 0.8338######
+# __AUC Sens vs Spec : 0.8338 ######
 
 
 #KNN caret #######
@@ -4972,6 +4967,7 @@ set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1
 train_nnet_better <- train(stroke ~ ., method = "nnet",
                            data = train_stroke_better,
                            trControl = ctrl,
+                           trace = FALSE,
                            metric="ROC")
 
 plot(train_nnet_better)
@@ -5223,7 +5219,7 @@ cc_naiveBayes_better <- evalm(list(train_naiveBayes_better),
 prg_naiveBayes_better <- evalm(list(train_naiveBayes_better), 
                                positive = "stroke",
                                plots = "prg",
-                               title = "Precision - Recall Gain",
+                               title = " - Recall Gain",
                                gnames=c('Naive Bayes - better'))
 
 # Precision - Recall Curve
@@ -5240,12 +5236,182 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
                                      title = "True Positive - False Positive rate ROC",
                                      gnames=c('Naive Bayes - both'))
 
+
+
 # __Accuracy : 0.9379  ##### 
 # __Sensitivity : 0.14286    #####         
 # __Specificity : 0.97340  ##### 
 # __Balanced Accuracy : 0.55813  ##### 
 # __F_meas, beta = 1 : 0.1643836 #####
 #__AUC Sens vs Spec : 0.8503 ######
+
+# _______________________########
+# RESULTS SUMMARY ########
+# _______________________########
+
+models <- c("gini_tree_cp0.001_over",
+            "gini_tree_cp0.001_over",
+            "cost_matrix_tree_over",
+            "caret_tree_over",
+            "knn_over",
+            "nnet_over",
+            "fda_over",
+            "gini_tree_cp0.01_both",
+            "gini_tree_cp0.001_both",
+            "cost_matrix_tree_both",
+            "caret_tree_both",
+            "knn_both",
+            "nnet_both",
+            "fda_both",
+            "gini_tree_cp0.01_better",
+            "gini_tree_cp0.001_better",
+            "cost_matrix_tree_better",
+            "caret_tree_better",
+            "knn_better",
+            "rf_better",
+            "nnet_better",
+            "fda_better")
+
+sensitivity <- c(
+  0.73810,
+  0.47619,
+  0.90476,
+  0.73810,
+  0.42857,
+  0.76190,
+  0.73810,
+  0.71429,
+  0.38095,
+  0.85714,
+  0.71429,
+  0.57143,
+  0.76190,
+  0.73810,
+  0.73810,
+  0.38095,
+  0.85714,
+  0.73810,
+  0.61905,
+  0.59524,
+  0.71429,
+  0.85714)
+
+specificity <- c(
+  0.75745,
+  0.88723,
+  0.63085,
+  0.77553,
+  0.77553,
+  0.77766,
+  0.74574,
+  0.79894,
+  0.84681,
+  0.59574,
+  0.79894,
+  0.77340,
+  0.78085,
+  0.74149,
+  0.81277,
+  0.84681,
+  0.59574,
+  0.81277,
+  0.77021,
+  0.79468,
+  0.76064,
+  0.75426)
+
+balanced_accuracy <- c(
+  0.74777,
+  0.68171,
+  0.76781,
+  0.75681,
+  0.60205,
+  0.76978,
+  0.74192,
+  0.75661,
+  0.61388,
+  0.72644,
+  0.75661,
+  0.67242,
+  0.77138,
+  0.73979,
+  0.77543,
+  0.61388,
+  0.72644,
+  0.77543,
+  0.69463,
+  0.69496,
+  0.73746,
+  0.80570)
+
+AUC <- c(
+  0.7372,
+  0.3212,
+  0.7525,
+  0.8042,
+  0.4015,
+  0.8095,
+  0.8163,
+  0.7352,
+  0.3724,
+  0.7368,
+  0.7352,
+  0.6639,
+  0.8138,
+  0.8346,
+  0.8338,
+  0.8052,
+  0.2991,
+  0.8338,
+  0.7685,
+  0.8196,
+  0.8000,
+  0.8588)
+
+results_summary <- data.frame(models, 
+                              sensitivity, specificity, balanced_accuracy, AUC) %>% 
+  arrange(desc(AUC)) %>% 
+  kable()
+
+# FDA BETTER: Best model#####
+
+# |Accuracy|Sensitivity|Specificity|Balanced Accuracy|      AUC |
+# |-------:|----------:|----------:|----------------:|---------:|
+# |  0.7587|    0.85714|    0.75426|          0.80570|    0.8588|
+
+
+# Model comp. Precision-Recall Curve ####
+# As an example, let's compare here the FDA-better model with three others: 
+# Caret RPART-better, NNET-both and RF-better 
+
+# __ROC True Prositve - False Positive ####
+
+comp_roc <- evalm(list(train_caret_tree_better, train_nnet_both,
+                       train_rf_better, train_fda_better), 
+                  positive = "stroke",
+                  plots = "r",
+                  title = "ROC True Positive - False Positive",
+                  gnames=c('caret_tree_better', 'nnet_both',
+                           'train_rf_better', "train_fda_better"))
+
+comp_prg <- evalm(list(train_caret_tree_better, train_nnet_both,
+                       train_rf_better, train_fda_better), 
+                  positive = "stroke",
+                  plots = "prg",
+                  title = "Precision - Recall Gain",
+                  gnames=c('caret_tree_better', 'nnet_both',
+                           'train_rf_better', "train_fda_better"))
+
+comp_pr <- evalm(list(train_caret_tree_better, train_nnet_both,
+                      train_rf_better, train_fda_better), 
+                 positive = "stroke",
+                 plots = "pr",
+                 title = "Precision - Recall Curve",
+                 gnames=c('caret_tree_better', 'nnet_both',
+                          'train_rf_better', "train_fda_better"))
+
+
+
 
 # _______________________########
 # SELECTED MODELS A ########
@@ -5584,6 +5750,7 @@ F_meas(confusionMatrix(y_hat_ensamble_b,
 # https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
 # https://www.r-graph-gallery.com/301-custom-lollipop-chart.html
 # https://topepo.github.io/caret/train-models-by-tag.html#Two_Class_Only
+# http://ww.web.stanford.edu/~hastie/Papers/fda.pdf
 
  
 
