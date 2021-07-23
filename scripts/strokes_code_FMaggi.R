@@ -181,8 +181,6 @@ str(stroke_data)
 
 # _______________________########
 # EXPLORATORY DATA ANALYSIS ########
-# https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
-
 # _______________________########
 
 #Number of observations ######
@@ -782,6 +780,8 @@ stroke_data %>%
 # _______________________########
 # VARIABLE IMPORTANCE: Looking for variables I ########
 # _______________________########
+
+# Main Source: Amat, Rodrigo:  https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
 
 # COR. OF NUMERICAL VARIABLES #####
 
