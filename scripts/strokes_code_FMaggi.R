@@ -1089,7 +1089,7 @@ n_over = sum(stroke_data == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
 # Every time we run the code, we get a different ovun.sample
-# Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this ramdom process.
+# Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this random process.
 
 stroke_data_over <- ovun.sample(stroke ~ ., data = stroke_data, method = "over", N = n_over*2)$data
 table(stroke_data_over$stroke)
@@ -1377,7 +1377,7 @@ stroke_data_over %>%
 n_both = sum(stroke_data$stroke == "stroke") + sum(stroke_data$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
-# Accuracy and balanced accuracy strongly depends on this ramdom process.
+# Accuracy and balanced accuracy strongly depends on this random process.
 
 stroke_data_both <- ovun.sample(stroke ~ ., data = stroke_data, method = "both", p = 0.5, N = n_both)$data
 table(stroke_data_both$stroke)
@@ -1536,7 +1536,7 @@ table(stroke_data$stroke)
 prop.table(table(stroke_data$stroke))
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
-# Accuracy and balanced accuracy strongly depends on this ramdom process.
+# Accuracy and balanced accuracy strongly depends on this random process.
 
 stroke_data_better <- ROSE(stroke ~ ., data = stroke_data)$data
 table(stroke_data_better$stroke)
@@ -2700,7 +2700,7 @@ n_over = sum(train_stroke_t$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
 # Every time we run the code, we get a different ovun.sample
-# Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this ramdom process.
+# Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this random process.
 
 train_stroke_over <- ovun.sample(stroke ~ ., data = train_stroke_t, method = "over", N = n_over*2)$data
 
@@ -3558,7 +3558,7 @@ prop.table(table(train_stroke$stroke))
 n_both = sum(train_stroke$stroke == "stroke") + sum(train_stroke$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
-# Accuracy and balanced accuracy strongly depends on this ramdom process.
+# Accuracy and balanced accuracy strongly depends on this random process.
 
 train_stroke_both <- ovun.sample(stroke ~ ., data = train_stroke_t, method = "both", p = 0.5, N = n_both)$data
 table(train_stroke_both$stroke)
@@ -4402,7 +4402,7 @@ roc_tp_fp_naiveBayes_both <- evalm(list(train_naiveBayes_both),
 # _______________________######## 
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
-# Accuracy and balanced accuracy strongly depends on this ramdom process.
+# Accuracy and balanced accuracy strongly depends on this random process.
 
 train_stroke_better <- ROSE(stroke ~ ., data = train_stroke_t)$data
 table(train_stroke_better$stroke)

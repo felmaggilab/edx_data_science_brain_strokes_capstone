@@ -1007,7 +1007,7 @@ Next, we will review the importance of the variables using the random forest met
 
 This method can be applied in two ways: by Accuracy Reduction, or Gini Reduction. Here we will apply both to see where they coincide and where they differ.
 
-```{r random_forest_method_accuracy, echo=FALSE}
+```{r random_forest_method_accuracy, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # __Random Forest Method: Accuracy reduction#####
 variables_rf <- stroke_data
@@ -1033,7 +1033,7 @@ importance1 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseA
 importance1
 ```
 
-```{r random_forest_method_gini, echo=FALSE}
+```{r random_forest_method_gini, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseGini),
                                              y = MeanDecreaseGini,
@@ -1048,7 +1048,7 @@ importance2
 
 In the case of Accuracy Reduction, the most important variable is Age, followed by Ever Married. BMI and Hypertension are next on the list, but they are not given great weight.
 
-Despite being an unbalanced data set, this approach yields surprising results to say the least. It is difficult to understand why Ever Married is prefered over other variables such as BMI or Hypertension.
+Despite being an unbalanced data set, this approach yields surprising results to say the least. It is difficult to understand why Ever Married is preferred over other variables such as BMI or Hypertension.
 
 Gini Reduction shows results more related to what we have seen so far. Age is an important variable in both cases. At the top of the list is Avg Glucose Level and BMI. It is still surprising that Hypertension and Heart Disease carry so little weight in comparison.
 
@@ -1329,7 +1329,7 @@ prop_analisis_over <- stroke_categorical_tidy_over %>%
 prop_analisis_over
 ```
 
-```{r random_forest_method_accuracy_over, echo=FALSE}
+```{r random_forest_method_accuracy_over, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # __Random Forest Method #####
 variables_rf_over <- stroke_data_over
@@ -1356,7 +1356,7 @@ importance1_over
 
 ```
 
-```{r random_forest_method_gini_over, echo=FALSE}
+```{r random_forest_method_gini_over, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 importance2_over <- ggplot(data = importance_over, aes(x = reorder(variable, MeanDecreaseGini),
                                                        y = MeanDecreaseGini,
@@ -1379,9 +1379,7 @@ stroke_data_over %>%
   nearZeroVar(saveMetrics = TRUE)
 ```
 
-These outputs are similar for all the methods used to balance the data, although their small differences cause different results in the applied models, as we will in the next chapters.
-
-To illustrate the differences between the results obtained with the different methods to balance the data, we show the trees that are now generated with the default "rpart" algorithm.
+These outputs are similar for all the methods used to balance the data, although their small differences cause different results in the applied models, as we will in the next chapters. To illustrate the differences between the results obtained with the different methods to balance the data, we show the trees that are now generated with the default "rpart" algorithm.
 
 ```{r both_sampling, message=FALSE, warning=FALSE, include=FALSE}
 
@@ -1594,7 +1592,7 @@ Once we had verified what we already knew (with the unbalanced data we were not 
 - Random Forest (RF)
 - Neural Network (NNET)
 - Flexible Discriminant Analysis (FDA)
-- Naives Bayes (NB)
+- Naives Bayes (NB): we know that in this case Naives Bayes is not a good choice. Being a generative model, more than two numeric predictors are too many, and its distribution, as we will see, is not normal in all cases. We have included it for experimentation.
 
 For balanced data, we have added two other models: Neural Network and Naive Bayes.
 
@@ -1602,9 +1600,7 @@ Once the aforementioned models were trained, for each balancing method, we were 
 
 However, to see if we could further improve those results, we created two Ensambles with the best-performing models for each balancing method.
 
-The criteria for the first Ensamble was the "Area Under de Roc Curve" (AUC). For the second Ensamble we opted for "Balanced Accuracy" to select the models.
-
-Once the Ensambled were created, we selected "Balaced Acccuracy" as the comparison metric in both cases, and we looked for the cutoff (x) that optimized that metric (if x or more models predict "stroke", then predict "stroke").
+The criteria for the first Ensamble was the "Area Under de Roc Curve" (AUC). For the second Ensamble we opted for "Balanced Accuracy" to select the models. Once the Ensembles were created, we selected "Balaced Acccuracy" as the comparison metric in both cases, and we looked for the cutoff (x) that optimized that metric (if x or more models predict "stroke", then predict "stroke").
 
 # 3. Results
 
@@ -1763,7 +1759,7 @@ In our approach, we have preferred to sacrifice Accuracy in favor of Sensitivity
 
 It is important to say that for modeling purposes, the balancing methods have been applied only on the scaled and centralized training set. The test set has remained unbalanced.
 
-### 3.2.1 Oversamplig Method
+### 3.2.1 Oversampling Method
 
 For this and the other methods to generate a balanced training set, the steps described in *Practical Guide to deal with Imbalanced Classification Problems in R* have been followed.
 
@@ -1779,7 +1775,7 @@ n_over = sum(train_stroke_t$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
 # Every time we run the code, we get a different ovun.sample
-# Accuracy and balanced accuracy strongly depends on this ramdom process.
+# Accuracy and balanced accuracy strongly depends on this random process.
 
 train_stroke_over <- ovun.sample(stroke ~ ., data = train_stroke_t, 
                                  method = "over", N = n_over*2)$data
@@ -2019,9 +2015,13 @@ The final CP was 0.01729183, and the variables considered were:
 
 *Variable importance*
 
-|age|ever_marriedYes|bmi      |smoking_statusUnknown|avg_glucose_level|avg_glucose_level|smoking_statussmokes|
-|--:|--------------:|--------:|--------------------:|----------------:|----------------:|-------------------:|
-|61 |             18|        8|                    6|                6|                6|                   1|
+|age|ever_marriedYes|bmi      |smoking_statusUnknown|avg_glucose_level|
+|--:|--------------:|--------:|--------------------:|----------------:|
+|61 |             18|        8|                    6|                6|
+
+|avg_glucose_level|smoking_statussmokes|
+|----------------:|-------------------:|
+|                6|                   1|
 
 #### 3.2.1.5 K-Nearest-Neighbor
 
@@ -2068,7 +2068,7 @@ sens_espec_roc_knn_over <- plot(roc(response = test_stroke_t$stroke,
 
 In this case, the best tune for k = 9.
 
-#### 3.2.1.6 Ramdom Forest
+#### 3.2.1.6 Random Forest
 
 This model requires the longest calculation time. Despite that, it is one of the worst performers in terms of Sensitivity and Balanced Accuracy.
 
@@ -3326,7 +3326,7 @@ results_summary
 
 So far the best model, in terms of Sensitivity and Balanced Accuracy, has turned out to be Flexible Discrimimant Analysis, along with the better estimates method for balancing the data. 
 
-As explained in the summary of the paper by Tevor Hastie, Robert Tibishirani and Andreas Buja, *Fisher's linear discriminant analysis is a valuable tool for multigroup classification. With a large number of predictors, one can find a reduced number of discriminant coordinate functions that are "optimal" for separating groups. With two such functions, one can produce a classification map that partitions the reduced space into regions taht are identified with group membership, and the desicion boundaries are linear* (Tevor Hastie, et al. 2021)[^7]:
+As explained in the summary of the paper by Tevor Hastie, Robert Tibishirani and Andreas Buja, *Fisher's linear discriminant analysis is a valuable tool for multigroup classification. With a large number of predictors, one can find a reduced number of discriminant coordinate functions that are "optimal" for separating groups. With two such functions, one can produce a classification map that partitions the reduced space into regions that are identified with group membership, and the decision boundaries are linear* (Tevor Hastie, et al. 2021)[^7]:
 
 This model. As we have seen, it returns the following results when training with balanced data according to better estimates:
 
@@ -3749,25 +3749,25 @@ Furthermore, since the confusion matrices are so unbalanced, the F-Meas metric i
 
 In terms of Sensitivity, the Cost Matrix models (those that penalize false negatives) are the best, but at the cost of presenting a Specificity that is around the lower limit of 60% which, as we have already said, cannot be lower given the prevalence of the negative class. In this sense, our Ensembles perform similarly to Cost Matrix models.
 
-## 4.3 Pontential Impact
+## 4.3 Potential Impact
 The applicability of either model for this project is debatable. The best of them, from our point of view, has a Sensitivity of 85% (calculated on 42 positive cases, which is what the test data set contains).
 
 Taking into account the incidence of strokes in the population (suppose it is 4%, the same prevalence as in the original data set), the real possibility of suffering a stroke if the FDA better model predict "stroke" is 13% if we apply Bayes. This means that with a positive test, we have 3.25 more options to suffer a stroke than the population base.
 
 According to data from the world health organization, in 2019 about 6 million people died of stroke. That represents approximately 0.08% of the world's population for that year. Therefore, if our model predicts "stroke", the possibility of dying (not just suffering) from that disease is, according to Bayes, close to 0.27%. Again, we are talking about 3.5 more options than base population.
 
-If the decision to keep the training data set unbalanced was the right one, a positive result is enough to warn a person to watch their glucose level and body mass index. If the person smokes, it would be time to quit. Age and marital status "ever married" are factors that we cannot alter.
+If the decision to keep the training data set unbalanced was the right one, a positive result is enough to warn a person to watch their glucose level and body mass index. If the person smokes, it would be time to quit. Age and marital status "ever married = yes" are factors that we cannot alter.
 
 ## 4.4 Future Work
 To improve the results, there are least are three lines of action that would be worth testing:
 
 1. Create dummy variables from the categorical variables, and transform them to 0 and 1, instead of factors.
 2. Create age groups, "babies", "children", "young people" and "old people" to train the models using these groups, or at least group the ages to the nearest ten.
-3. Train the models eliminating variables with apparently little weight (Hypertension and Heart Disease, for example).
+3. Train the models eliminating one by one variables with apparently little weight (Hypertension, Heart Disease, Residence Type and Gender, for example).
 
 However, to continue with this work with certain guarantees of improvement, we believe that it would be necessary to add other variables that may not be contemplated in the original data set.
 
-[^1]:*The top 10 causes of death*. World Health Organization, 2020. https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
+[^1]:*The top 10 causes of death*. https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
 [^2]: https://www.kaggle.com/fedesoriano/stroke-prediction-data set
 [^3]: https://www.kaggle.com/fedesoriano
 [^4]: Amat, Rodrigo: *Machine Learning con R y caret*. cienciadedatos.net, 2018: https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
@@ -3775,8 +3775,7 @@ However, to continue with this work with certain guarantees of improvement, we b
 [^6]: *Practical Guide to deal with Imbalanced Classification Problems in R*. Analytics Vidhya, 2016: https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
 [^7]: *Flexible Discriminant Analysis by Optimal Scoring*. Tevor Hastie, Robert Tibishirani & Andreas Buja. http://ww.web.stanford.edu/~hastie/Papers/fda.pdf
 
-
-# 5. References
+# References
 
 *The top 10 causes of death*. World Health Organization, 2020. https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
 
