@@ -669,7 +669,7 @@ stroke_data %>%
   theme_bw() +
   theme(legend.position = "bottom")
 
-# HEART DESEASE (binary) ######
+# HEART DISEASE (binary) ######
 
 # __Summary table by heart_disease #####
 # heart_disease, total of observations, number of strokes, percent of strokes
@@ -912,25 +912,25 @@ importance2
 # Why is Heart Disease so underweight?
 # Because it is closely related to age, which is the main variable
 
-# __Summary table by age and Heart Desease
+# __Summary table by age and Heart Disease
 stroke_data %>% 
   group_by(age) %>%
   summarise(total = n(), percent = round(total/n, 3), heart_disease = sum(heart_disease == "Yes"),
-            heart_desease_percent = heart_disease/total) %>% 
+            heart_disease_percent = heart_disease/total) %>% 
   unique() %>%
   knitr::kable()
 
-# __Summary table by age (rounded nearest 10) and Heart Desease
+# __Summary table by age (rounded nearest 10) and Heart Disease
 # age, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(round_age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), heart_disease = sum(heart_disease == "Yes"),
-            heart_desease_percent = round(heart_disease/total,3)) %>% 
+            heart_disease_percent = round(heart_disease/total,3)) %>% 
   unique() %>%
   knitr::kable()
 
 # Why is Hypertension so underweight?
-# As Heart Desease, it is closely related to age, which is the main variable
+# As Heart Disease, it is closely related to age, which is the main variable
 
 # __Summary table by age (rounded nearest 10) and Hypertension
 # age, total of observations, number of strokes, percent of strokes
@@ -4522,7 +4522,7 @@ sens_espec_roc_gini_tree_cp0.001_better <- plot(roc(response = test_stroke_t$str
                                                 ylim = c(0,1),
                                                 xlab = "Specificity", 
                                                 ylab ="Sensibility", 
-                                                main = "Gini Tree, CP:001 - both")
+                                                main = "Gini Tree, CP:001 - better")
 
 # Sensitivity vs Specificity AUC
 auc(sens_espec_roc_gini_tree_cp0.001_better)
@@ -5249,7 +5249,7 @@ roc_tp_fp_naiveBayes_better <- evalm(list(train_naiveBayes_better),
 # RESULTS SUMMARY ########
 # _______________________########
 
-models <- c("gini_tree_cp0.001_over",
+models <- c("gini_tree_cp0.01_over",
             "gini_tree_cp0.001_over",
             "cost_matrix_tree_over",
             "caret_tree_over",
@@ -5270,7 +5270,12 @@ models <- c("gini_tree_cp0.001_over",
             "knn_better",
             "rf_better",
             "nnet_better",
-            "fda_better")
+            "fda_better",
+            "rf_over",
+            "rf_both",
+            "nb_over",
+            "nb_both",
+            "nb_better")
 
 sensitivity <- c(
   0.73810,
@@ -5294,7 +5299,12 @@ sensitivity <- c(
   0.61905,
   0.59524,
   0.71429,
-  0.85714)
+  0.85714,
+  0.07143,
+  0.11905,
+  0.26190,
+  0.26190,
+  0.14286)
 
 specificity <- c(
   0.75745,
@@ -5318,7 +5328,12 @@ specificity <- c(
   0.77021,
   0.79468,
   0.76064,
-  0.75426)
+  0.75426,
+  0.98617,
+  0.96383,
+  0.96489,
+  0.96596,
+  0.97340)
 
 balanced_accuracy <- c(
   0.74777,
@@ -5342,7 +5357,12 @@ balanced_accuracy <- c(
   0.69463,
   0.69496,
   0.73746,
-  0.80570)
+  0.80570,
+  0.52880,
+  0.54144,
+  0.61340,
+  0.61393,
+  0.55813)
 
 AUC <- c(
   0.7372,
@@ -5366,11 +5386,26 @@ AUC <- c(
   0.7685,
   0.8196,
   0.8000,
-  0.8588)
+  0.8588,
+  0.7827,
+  0.8050,
+  0.8489,
+  0.8505,
+  0.8503)
+
+# Models ordered by ROC #####
 
 results_summary <- data.frame(models, 
                               sensitivity, specificity, balanced_accuracy, AUC) %>% 
   arrange(desc(AUC)) %>% 
+  kable()
+
+results_summary
+
+# Order by Balanced Accuracy
+
+data.frame(models, sensitivity, specificity, balanced_accuracy, AUC) %>% 
+  arrange(desc(balanced_accuracy)) %>% 
   kable()
 
 # FDA BETTER: Best model#####
@@ -5380,125 +5415,118 @@ results_summary <- data.frame(models,
 # |  0.7587|    0.85714|    0.75426|          0.80570|    0.8588|
 
 
-# Model comp. Precision-Recall Curve ####
+# Model comp. ROC and Precision-Recall Curves ####
 # As an example, let's compare here the FDA-better model with three others: 
 # Caret RPART-better, NNET-both and RF-better 
 
-# __ROC True Prositve - False Positive ####
-
-comp_roc <- evalm(list(train_caret_tree_better, train_nnet_both,
-                       train_rf_better, train_fda_better), 
+comp_roc <- evalm(list(train_caret_tree_better, 
+                       train_nnet_both,
+                       train_rf_better, 
+                       train_knn_better, 
+                       train_naiveBayes_both, 
+                       train_fda_better), 
                   positive = "stroke",
                   plots = "r",
                   title = "ROC True Positive - False Positive",
-                  gnames=c('caret_tree_better', 'nnet_both',
-                           'train_rf_better', "train_fda_better"))
+                  gnames=c('caret_tree_better', 
+                           'nnet_both',
+                           'rf_better',
+                           'knn_better',
+                           'naive_bayes_both',
+                           'fda_better'))
 
-comp_prg <- evalm(list(train_caret_tree_better, train_nnet_both,
-                       train_rf_better, train_fda_better), 
+comp_prg <- evalm(list(train_caret_tree_better, 
+                       train_nnet_both,
+                       train_rf_better, 
+                       train_knn_better, 
+                       train_naiveBayes_both, 
+                       train_fda_better), 
                   positive = "stroke",
                   plots = "prg",
-                  title = "Precision - Recall Gain",
-                  gnames=c('caret_tree_better', 'nnet_both',
-                           'train_rf_better', "train_fda_better"))
+                  title = "ROC True Positive - False Positive",
+                  gnames=c('caret_tree_better', 
+                           'nnet_both',
+                           'rf_better',
+                           'knn_better',
+                           'naive_bayes_both',
+                           'fda_better'))
 
-comp_pr <- evalm(list(train_caret_tree_better, train_nnet_both,
-                      train_rf_better, train_fda_better), 
+comp_pr <- evalm(list(train_caret_tree_better, 
+                      train_nnet_both,
+                      train_rf_better, 
+                      train_knn_better, 
+                      train_naiveBayes_both, 
+                      train_fda_better), 
                  positive = "stroke",
                  plots = "pr",
-                 title = "Precision - Recall Curve",
-                 gnames=c('caret_tree_better', 'nnet_both',
-                          'train_rf_better', "train_fda_better"))
+                 title = "ROC True Positive - False Positive",
+                 gnames=c('caret_tree_better', 
+                          'nnet_both',
+                          'rf_better',
+                          'knn_better',
+                          'naive_bayes_both',
+                          'fda_better'))
 
+# Order by Model #####
 
-
+data.frame(models, sensitivity, specificity, balanced_accuracy, AUC) %>% 
+  arrange(desc(models)) %>% 
+  kable()
 
 # _______________________########
 # SELECTED MODELS A ########
 # AUC Sens vs Spec >= 0.8  ########
 # _______________________########
 
-# OVER
-# 1.caret_tree_over ####
-y_hat_caret_tree_over
-
-# 2.nnet_over ####
-y_hat_nnet_over
-
-# 3.fda_over ####
-y_hat_fda_over
-
-# 4.naiveBayes_over  ####
-y_hat_naiveBayes_over
-
-# 5.rf_both  ####
-y_hat_rf_both
-
-# 6.fda_both   ####
-y_hat_fda_both
-
-# 7.nnet_both   ####
-y_hat_nnet_both 
-
-# 8.naiveBayes_both   ####
-y_hat_naiveBayes_both
-
-#  9.gini_tree_cp0.001_better
-y_hat_gini_tree_cp0.001_better
-
-#  10.caret_tree_better   ####
-y_hat_caret_tree_better
-
-# 11.rf_better   ####
-y_hat_rf_better
-
-#  12.nnet_better   ####
-y_hat_nnet_better
-
-#  13.fda_better   ####
-y_hat_fda_better
-
-#  14.naiveBayes_better   ####
-y_hat_naiveBayes_better
+# |models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+# |:------------------------|-----------:|-----------:|-----------------:|------:|
+# |fda_better               |     0.85714|     0.75426|           0.80570| 0.8588|
+# |caret_tree_better        |     0.73810|     0.81277|           0.77543| 0.8338|
+# |nnet_both                |     0.76190|     0.78085|           0.77138| 0.8138|
+# |caret_tree_over          |     0.73810|     0.77553|           0.75681| 0.8042|
+# |fda_over                 |     0.73810|     0.74574|           0.74192| 0.8163|
+# |nnet_better              |     0.71429|     0.76064|           0.73746| 0.8000|
+# |rf_better                |     0.59524|     0.79468|           0.69496| 0.8196|
+# |nb_both                  |     0.26190|     0.96596|           0.61393| 0.8505|
+# |gini_tree_cp0.001_better |     0.38095|     0.84681|           0.61388| 0.8052|
+# |nb_over                  |     0.26190|     0.96489|           0.61340| 0.8489|
+# |nb_better                |     0.14286|     0.97340|           0.55813| 0.8503|
+# |rf_both                  |     0.11905|     0.96383|           0.54144| 0.8050|
 
 # _______________________########
-# ENSAMBLE Models A ########
+# ENSEMBLE A ########
 # _______________________########
 
-ensamble_1_a <- data.frame(caret_tree_over = y_hat_caret_tree_over,
-                           nnet_over = y_hat_nnet_over,
-                           fda_over = y_hat_fda_over,
-                           naiveBayes_over = y_hat_naiveBayes_over,
-                           rf_both = y_hat_rf_both,
-                           fda_both = y_hat_fda_both,
-                           nnet_both = y_hat_nnet_both,
-                           naiveBayes_both = y_hat_naiveBayes_both,
-                           gini_tree_cp0.001_better = y_hat_gini_tree_cp0.001_better,
+ensamble_1_a <- data.frame(fda_better = y_hat_caret_tree_over,
                            caret_tree_better = y_hat_caret_tree_better,
-                           rf_better = y_hat_rf_better,
+                           nnet_both  = y_hat_nnet_both,
+                           caret_tree_over  = y_hat_caret_tree_over,
+                           fda_over  = y_hat_fda_over,
                            nnet_better = y_hat_nnet_better,
-                           fda_better = y_hat_fda_better,
-                           naiveBayes_better = y_hat_naiveBayes_better) 
+                           rf_better = y_hat_rf_better,
+                           nb_both = y_hat_naiveBayes_both,
+                           gini_tree_cp0.001_better = y_hat_gini_tree_cp0.001_better,
+                           nb_over = y_hat_naiveBayes_over,
+                           nb_better = y_hat_naiveBayes_better,
+                           rf_both  = y_hat_rf_both)
 
 ensamble_2_a <- ensamble_1_a %>% 
-  mutate(caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
-         nnet_over = ifelse(nnet_over == "stroke", 1,0),
-         fda_over = ifelse(fda_over == "stroke", 1,0),
-         naiveBayes_over = ifelse(naiveBayes_over == "stroke", 1,0),
-         rf_both = ifelse(rf_both == "stroke", 1,0),
-         fda_both = ifelse(fda_both == "stroke", 1,0),
-         nnet_both = ifelse(nnet_both == "stroke", 1,0),
-         naiveBayes_both = ifelse(naiveBayes_both == "stroke", 1,0),
-         gini_tree_cp0.001_better = ifelse(gini_tree_cp0.001_better == "stroke", 1,0),
+  mutate(fda_better = ifelse(fda_better == "stroke", 1,0),
          caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
-         rf_better = ifelse(rf_better == "stroke", 1,0),
+         nnet_both = ifelse(nnet_both == "stroke", 1,0),
+         caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
+         fda_over = ifelse(fda_over == "stroke", 1,0),
          nnet_better = ifelse(nnet_better == "stroke", 1,0),
-         fda_better = ifelse(fda_better == "stroke", 1,0),
-         naiveBayes_better = ifelse(naiveBayes_better == "stroke", 1,0))
+         rf_better = ifelse(rf_better == "stroke", 1,0),
+         nb_both = ifelse(nb_both  == "stroke", 1,0),
+         gini_tree_cp0.001_better = ifelse(gini_tree_cp0.001_better == "stroke", 1,0),
+         nb_over = ifelse(nb_over == "stroke", 1,0),
+         nb_better = ifelse(nb_better == "stroke", 1,0),
+         rf_both = ifelse(rf_both == "stroke", 1,0))
 
 # Searching Best Cut-Off
 
-cut_off_a <- seq(1:14)
+cut_off_a <- seq(1:12)
 
 ensamble_acc_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5509,7 +5537,7 @@ ensamble_acc_a <- map_dbl(cut_off_a, function(cut_off_a){
 })
 
 cut_of_acc_a <- data.frame(cut_off_a, ensamble_acc_a)
-plot(cut_off_a, ensamble_acc_a, main = "Cut_Off vs Accuracy")
+plot(cut_off_a, ensamble_acc_a, main = "Number of models = stroke vs Accuracy")
 
 ensamble_sens_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5520,7 +5548,7 @@ ensamble_sens_a <- map_dbl(cut_off_a, function(cut_off_a){
 })
 
 cut_of_sens_a <- data.frame(cut_off_a, ensamble_sens_a)
-plot(cut_off_a, ensamble_sens_a, main = "Cut_Off vs Sensibility")
+plot(cut_off_a, ensamble_sens_a, main = "Number of models = stroke vs Sensitivity")
 
 ensamble_spe_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5531,7 +5559,7 @@ ensamble_spe_a <- map_dbl(cut_off_a, function(cut_off_a){
 })
 
 cut_of_spe_a <- data.frame(cut_off_a, ensamble_spe_a)
-plot(cut_off_a, ensamble_spe_a, main = "Cut_Off vs Specificity")
+plot(cut_off_a, ensamble_spe_a, main = "Number of models = stroke vs Specificity")
 
 ensamble_bal_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5542,7 +5570,7 @@ ensamble_bal_a <- map_dbl(cut_off_a, function(cut_off_a){
 })
 
 cut_of_bal_a <- data.frame(cut_off_a, ensamble_bal_a)
-plot(cut_off_a, ensamble_bal_a, main = "Cut_Off vs Balanced Accuracy")
+plot(cut_off_a, ensamble_bal_a, main = "Number of models = stroke vs Balanced Accuracy")
 
 ensamble_F_Meas_a <- map_dbl(cut_off_a, function(cut_off_a){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
@@ -5553,10 +5581,10 @@ ensamble_F_Meas_a <- map_dbl(cut_off_a, function(cut_off_a){
 })
 
 cut_of_fmeas_a <- data.frame(cut_off_a, ensamble_F_Meas_a)
-plot(cut_off_a, ensamble_F_Meas_a, main = "Cut_Off vs F_Meas")
+plot(cut_off_a, ensamble_F_Meas_a, main = "Number of models = stroke, vs F_Meas")
 
 y_hat_ensamble_a <- data.frame(total = rowSums(ensamble_2_a)) %>% 
-  mutate(total = as.factor(ifelse(total >=4, "stroke", "no_stroke"))) %>% 
+  mutate(total = as.factor(ifelse(total >=1, "stroke", "no_stroke"))) %>% 
   pull(total) %>% relevel(ref = "stroke")
 
 # Model Evaluation ::::::::
@@ -5573,66 +5601,68 @@ confusionMatrix(y_hat_ensamble_a,
 cm_ensamble_a <- confusionMatrix(y_hat_ensamble_a, test_stroke_t$stroke)
 cm_ensamble_a
 
+# Cut off = 2
+
+# |Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+# |:------------------------|--------:|-----------:|-----------:|-----------------:|
+# |Esemble A                |   0.7037|     0.88095|     0.69574|           0.78835|
+
+# Cut off = 1
+
+# |Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+# |:------------------------|--------:|-----------:|-----------:|-----------------:|
+# |Esemble A                |    0.613|     0.92857|     0.59894|           0.76375|
+
 F_meas(confusionMatrix(y_hat_ensamble_a,
                        test_stroke_t$stroke)$table,beta = 1)
-
-# __Accuracy : 0.7525   ##### 
-# __Sensitivity : 0.88095    #####         
-# __Specificity : 0.74681  ##### 
-# __Balanced Accuracy : 0.81388  ##### 
-# __F_meas, beta = 1 : 0.2334385 #####
 
 
 # _______________________########
 # SELECTED MODELS B ########
-# Balanced Accuracy >= 0.75  ########
+# Balanced Accuracy >= 0.70  ########
 # _______________________########
 
-# 1.gini_tree_cp0.01_over ######
-# 2.cost_matrix_tree_over ######
-# 3.caret_tree_over ######
-# 4.nnet_over ######
-# 5.gini_tree_cp0.01_both ######
-# 6.caret_tree_both  ###### 
-# 7.nnet_both ######
-# 8.fda_both ######
-# 9.gini_tree_cp0.01_better ######
-# 10.caret_tree_better  ######
-# 11.fda_better ######
+# models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+# |:------------------------|-----------:|-----------:|-----------------:|------:|
+# |fda_better               |     0.85714|     0.75426|           0.80570| 0.8588|
+# |caret_tree_better        |     0.73810|     0.81277|           0.77543| 0.8338|
+# |nnet_both                |     0.76190|     0.78085|           0.77138| 0.8138|
+# |cost_matrix_tree_over    |     0.90476|     0.63085|           0.76781| 0.7525|
+# |caret_tree_over          |     0.73810|     0.77553|           0.75681| 0.8042|
+# |caret_tree_both          |     0.71429|     0.79894|           0.75661| 0.7352|
+# |fda_over                 |     0.73810|     0.74574|           0.74192| 0.8163|
+# |nnet_better              |     0.71429|     0.76064|           0.73746| 0.8000|
+# |cost_matrix_tree_both    |     0.85714|     0.59574|           0.72644| 0.7368|
 
 # _______________________########
-# ENSAMBLE Models B ########
+# ENSEMBLE Models B ########
 # _______________________########
 
-ensamble_1_b <- data.frame(gini_tree_cp0.01_over = y_hat_gini_tree_cp0.01_over,
-                           cost_matrix_tree_over = y_hat_cost_matrix_tree_over,
-                           caret_tree_over = y_hat_caret_tree_over,
-                           nnet_over = y_hat_nnet_over,
-                           gini_tree_cp0.01_both = y_hat_gini_tree_cp0.01_both,
-                           caret_tree_both = y_hat_caret_tree_both,
-                           nnet_both = y_hat_nnet_both,
-                           fda_both = y_hat_fda_both,
-                           gini_tree_cp0.01_better = y_hat_gini_tree_cp0.01_better,
+ensamble_1_b <- data.frame(fda_better = y_hat_fda_better,
                            caret_tree_better = y_hat_caret_tree_better,
-                           fda_better = y_hat_fda_better) 
+                           nnet_both  = y_hat_nnet_both ,
+                           cost_matrix_tree_over  = y_hat_cost_matrix_tree_over,
+                           caret_tree_over  = y_hat_caret_tree_over ,
+                           caret_tree_both = y_hat_caret_tree_both,
+                           fda_over = y_hat_fda_over,
+                           nnet_better = y_hat_nnet_better,
+                           cost_matrix_tree_both = y_hat_cost_matrix_tree_both)
 
 ensamble_2_b <- ensamble_1_b %>% 
-  mutate(gini_tree_cp0.01_over = ifelse(gini_tree_cp0.01_over == "stroke", 1,0),
+  mutate(fda_better = ifelse(fda_better == "stroke", 1,0),
+         caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
+         nnet_both = ifelse(nnet_both == "stroke", 1,0),
          cost_matrix_tree_over = ifelse(cost_matrix_tree_over == "stroke", 1,0),
          caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
-         nnet_over = ifelse(nnet_over == "stroke", 1,0),
-         gini_tree_cp0.01_both = ifelse(gini_tree_cp0.01_both == "stroke", 1,0),
          caret_tree_both = ifelse(caret_tree_both == "stroke", 1,0),
-         nnet_both = ifelse(nnet_both == "stroke", 1,0),
-         fda_both = ifelse(fda_both == "stroke", 1,0),
-         gini_tree_cp0.01_better = ifelse(gini_tree_cp0.01_better == "stroke", 1,0),
-         caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
-         fda_better = ifelse(fda_better == "stroke", 1,0))
+         fda_over = ifelse(fda_over == "stroke", 1,0),
+         nnet_better = ifelse(nnet_better == "stroke", 1,0),
+         cost_matrix_tree_both = ifelse(cost_matrix_tree_both == "stroke", 1,0))
 
 
 # Searching Best Cut-Off
 
-cut_off_b <- seq(1:11)
+cut_off_b <- seq(1:9)
 
 ensamble_acc_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5643,7 +5673,7 @@ ensamble_acc_b <- map_dbl(cut_off_b, function(cut_off_b){
 })
 
 cut_of_acc_b <- data.frame(cut_off_b, ensamble_acc_b)
-plot(cut_off_b, ensamble_acc_b, main = "Cut_Off vs Accuracy")
+plot(cut_off_b, ensamble_acc_b, main = "Number of models = stroke vs Accuracy")
 
 ensamble_sens_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5654,7 +5684,7 @@ ensamble_sens_b <- map_dbl(cut_off_b, function(cut_off_b){
 })
 
 cut_of_sens_b <- data.frame(cut_off_b, ensamble_sens_b)
-plot(cut_off_b, ensamble_sens_b, main = "Cut_Off vs Sensitivity")
+plot(cut_off_b, ensamble_sens_b, main = "Number of models = stroke vs Sensitivity")
 
 ensamble_spe_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5665,7 +5695,7 @@ ensamble_spe_b <- map_dbl(cut_off_b, function(cut_off_b){
 })
 
 cut_of_spe_b <- data.frame(cut_off_b, ensamble_spe_b)
-plot(cut_off_b, ensamble_spe_b, main = "Cut_Off vs Specificity")
+plot(cut_off_b, ensamble_spe_b, main = "Number of models = stroke vs Specificity")
 
 ensamble_bal_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5676,7 +5706,7 @@ ensamble_bal_b <- map_dbl(cut_off_b, function(cut_off_b){
 })
 
 cut_of_bal_b <- data.frame(cut_off_b, ensamble_bal_b)
-plot(cut_off_b, ensamble_bal_b, main = "Cut_Off vs Balanced Accuracy")
+plot(cut_off_b, ensamble_bal_b, main = "Number of models = stroke vs Balanced Accuracy")
 
 ensamble_F_Meas_b <- map_dbl(cut_off_b, function(cut_off_b){
   y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_b)) %>% 
@@ -5687,10 +5717,10 @@ ensamble_F_Meas_b <- map_dbl(cut_off_b, function(cut_off_b){
 })
 
 cut_of_fmeas_b <- data.frame(cut_off_b, ensamble_F_Meas_b)
-plot(cut_off_b, ensamble_F_Meas_b, main = "Cut_Off vs F_Meas")
+plot(cut_off_b, ensamble_F_Meas_b, main = "Number of models = stroke vs F_Meas")
 
 y_hat_ensamble_b <- data.frame(total = rowSums(ensamble_2_b)) %>% 
-  mutate(total = as.factor(ifelse(total >=3, "stroke", "no_stroke"))) %>% 
+  mutate(total = as.factor(ifelse(total >=2, "stroke", "no_stroke"))) %>% 
   pull(total) %>% relevel(ref = "stroke")
 
 # Model Evaluation ::::::::
@@ -5710,11 +5740,19 @@ cm_ensamble_b
 F_meas(confusionMatrix(y_hat_ensamble_b,
                        test_stroke_t$stroke)$table,beta = 1)
 
-# __Accuracy : 0.7149    ##### 
-# __Sensitivity : 0.90476    #####         
-# __Specificity : 0.70638  ##### 
-# __Balanced Accuracy : 0.80557  ##### 
-# __F_meas, beta = 1 : 0.2134831 #####
+# _______________________########
+# CONCLUSIONS ########
+# _______________________########
+
+# Bayes #######
+
+# |Accuracy|Sensitivity|Specificity|Balanced Accuracy|      AUC |
+# |-------:|----------:|----------:|----------------:|---------:|
+# |  0.7587|    0.85714|    0.75426|          0.80570|    0.8588|
+
+
+0.85714 * 0.04/((0.85714*0.04) + (0.24574*0.96))
+
 
 # _______________________########
 # Resources ########

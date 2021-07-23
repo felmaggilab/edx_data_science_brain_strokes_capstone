@@ -1,7 +1,7 @@
 ---
-title: "Strokes"
+title: "Classification models for stroke prediction"
 author: "Felipe Maggi"
-date: "16/7/2021"
+date: "23/7/2021"
 output:
   pdf_document: default
   html_document: default
@@ -156,11 +156,16 @@ library(rattle)
 
 ***
 ### Abstract
+According to the World Health Organization, strokes are responsible for approximately 11% of total deaths worldwide, and were the second leading cause of mortality in 2019, only behind ischaemic heart disease[^1]. 
+
+In this report we describe the process for training various classification models with the intention of predicting whether a patient is prone to stroke, and taking appropriate action before it occurs.
+
+The best model, according to the selected comparison criteria, turned out to be Flexible Discriminant Analysis, together with a data balancing method based on the random selection of variables that is supposed to guarantee the best estimates. 
+
 ***
 
 # 1. Introduction
 
-## 1.1 Dataset description
 The objective of this project is to develop a model capable of predicting whether a patient has a tendency to suffer a stroke, based on the following variables:
 
 1. Gender (binary)
@@ -173,11 +178,13 @@ The objective of this project is to develop a model capable of predicting whethe
 8. Body mass index (numerical)
 9. Smoking status (categorical)
 
-The dataset used (Stroke Prediction Data Data Set) contains 5,110 observations. It is available in Kaggle [^1], and was uploaded to the platform by Federico Soriano (fedesorian) [^2]. 
+## 1.1 data set description
+
+The data set used (Stroke Prediction Data Data Set) contains 5,110 observations. It is available in Kaggle [^2], and was uploaded to the platform by Federico Soriano (fedesorian) [^3]. 
 
 Originally, the variables and their respective classes are as follows:
 
-```{r data_download, echo=FALSE, message=FALSE}
+```{r data_download, message=FALSE, include=FALSE}
 
 # _______________________########
 # DATA DOWNLOAD ########
@@ -185,34 +192,43 @@ Originally, the variables and their respective classes are as follows:
 
 # stroke_data from github #####
 
-stroke_data_orig <- 
-  read.csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
-
 stroke_data <- 
-  read_csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
-
-str(stroke_data_orig)
+  read.csv("https://raw.github.com/felmaggilab/edx_data_science_capstone_strokes/master/data/healthcare-dataset-stroke-data.csv")
 
 ```
 
-In the following sections we will explain the changes that were made to the original dataset, in order to apply the selected models.
+```{r stroke_data, echo=TRUE}
 
-To train the models, the final dataset was divided into a training set and a test set, in a ratio of 80-20. We decided to reserve at least 20% of the observations for the test set because the dataset is not excessively large and, as we will see, it is highly unbalanced. With a lower percentage of observations, we ran the risk of not having enough stroke cases in the test set, or that certain variables would see their proportions significantly affected.
+str(stroke_data)
 
-Unfortunately, we think we don't have enough observations to reserve a part of the dataset and use it as a validation set. Because of this, we have only worked with the training and test sets, and we have relied on cross-validation.
+```
+
+In the following sections we will explain the changes that were made to the original data set, in order to apply the selected models.
+
+To train the models, the final data set was divided into a training set and a test set, in a ratio of 80-20. We decided to reserve at least 20% of the observations for the test set because the data set is not excessively large and, as we will see, it is highly unbalanced. With a lower percentage of observations, we ran the risk of not having enough stroke cases in the test set, or that certain variables would see their proportions significantly affected.
+
+Unfortunately, we think we don't have enough observations to reserve a part of the data set and use it as a validation set. Because of this, we have only worked with the training and test sets, and we have relied on cross-validation.
 
 ## 1.2 Goals and key steps
 As we have already mentioned, the objective of this project is to train a model capable of predicting whether a patient has a high probability of suffering a stroke, taking into account the mentioned predictors.
 
+The selected model must have a high Sensitivity, without sacrificing too much Specificity. In other words, we are looking for a model with a high Balanced Accuracy, compared to the rest.
+
+As we will see, this will not be an easy task. The prevalence of negative class is staggering, and the predictor variables do not separate classes clearly.
+
+Due to the nature of this project, we have trained several models with the original data and with balanced data. The underlying idea was to experiment with various algorithms, and compare their performance in this particular case.
+
+In an exercise that could be described as brute force, six models have been trained with the unbalanced data, and nine models with each of the balancing methods.
+
 The key steps in the development of this project were:
 
-1. Treat the original dataset, cleaning data and eliminating superfluous variables like "id".
-2. Carry out an exploratory analysis of the data
-3. Determine the importance of the selected variables
-4. Center and scale the numeric variables
-5. Test provisional results, training and visualizing various models with the original unbalanced dataset.
+1. Treat the original data set, cleaning data and eliminating superfluous variables like "id".
+2. Carry out an exploratory analysis of the data.
+3. Determine the importance of the selected variables.
+4. Center and scale the numeric variables.
+5. Test provisional results, training and visualizing various models with the original unbalanced data set.
 6. Balance the training set using various techniques.
-7. Train the classification models with the different training sets obtained with the modes used in the previous point.
+7. Train several classification models with the different training sets obtained with the techniques used in the previous point.
 8. Create ensembles of the best performing models for each balancing technique, and select a stroke prediction criterion based on the balanced accuracy metric.
 
 # 2. Methods and Analysis
@@ -224,9 +240,9 @@ After eliminating the N/As the BMI variable was transformed into numeric (in the
 
 Finally, the stroke variable was factored ("no_stroke", "stroke"), and the levels were reordered so that "stroke" became the positive class. 
 
-The resulting dataset now contains 4,909 observations. The 201 deleted observations correspond to those in which BMI was reported as N/A:
+The resulting data set now contains 4,909 observations. The 201 deleted observations correspond to those in which BMI was reported as N/A:
 
-```{r data_wrangling, echo=FALSE, message=FALSE}
+```{r data_wrangling, echo=TRUE, message=FALSE, warning=FALSE}
 
 # _______________________########
 # DATA WRANGLING ########
@@ -256,15 +272,15 @@ str(stroke_data)
 
 ```
 
-Then, during data exploration, it was discovered that there was an observation whose variable "gender" was reported as "Other". This observation was also removed. The hypothesis here is that this observation would add noise if gender was an important variable. We do not want this to be misunderstood. Filtering this class is for training purposes only. A single observation can generate significant changes in the output of the models (something we check). The author unconditionally respects any sexual preference.
+During the exploration, we discovered an observation whose variable "gender" had the value of "Other". This observation was also removed. The hypothesis here is that this observation would add noise if gender turns out to be an important variable. We do not want this to be misunderstood. Filtering this class is for training purposes only. A single observation can generate significant changes in the output of the models (something we check). The author unconditionally respects any sexual preference.
 
 Before starting to train models, the numerical variables were scaled and centralized.
 
-The last modifications made to the dataset was to balance the "stroke" and "no_stroke" classes, with different methods. We will see the details later.
+The last modifications made to the data set was to balance the "stroke" and "no_stroke" classes, with different methods. We will see the details later.
 
 ## 2.2 Data exploration
 
-For certain parts of this exploratory analysis we have followed the recommendations of Joaquín Amat Rodrigo, exposed on the site *Machine Learning with R and caret*[^3]. Specifically, with regard to: 
+For certain parts of this exploratory analysis we have followed the recommendations of Joaquín Amat Rodrigo, exposed on the site *Machine Learning with R and caret*[^4]. Specifically, with regard to: 
 
 1. The statistical data of the numerical variables
 2. The Density and box plots
@@ -293,11 +309,11 @@ prop.table(table(stroke_data$stroke)) %>%
 
 Only 4% of the observations are labeled "stroke", so the prevalence of the "no_stroke" class is staggering (close to 96%).
 
-This represents the first hurdle to overcome. With such a prevalence of the negative class, training any model keeping the proportions of the original dataset will not give good results.
+This represents the first hurdle to overcome. With such a prevalence of the negative class, training any model keeping the proportions of the original data set will not give good results.
 
-Obviously, the "accuracy" metric loses all sense. A model that predicts "no_stroke" in all cases will have an accuracy close to 96%. The important thing here is the sensitivity of the model (remember that "stroke" is the positive class). But, at the same time, we want to obtain a model that has a correct specificity. Predicting "stroke" in all cases would raise the sensitivity to 100%, but would leave us with another useless model unable to correctly classify any negative cases.
+Obviously, the "accuracy" metric loses all sense. A model that predicts "no_stroke" in all cases will have an accuracy close to 96%. The important thing here is the Sensitivity of the model (remember that "stroke" is the positive class). But, at the same time, we want to obtain a model that has a correct Specificity. Predicting "stroke" in all cases would raise the Sensitivity to 100%, but would leave us with another useless model unable to correctly classify any negative cases.
 
-Anyway, we will analyze the distribution of the variables in this dataset, and then we will apply various methods to balance the training set. This step is necessary to check if the changes made to the training set do not alter the statistical data of the predictor variables.
+Anyway, we will analyze the distribution of the variables in this data set, and then we will apply various methods to balance the training set. This step is necessary to check if the changes made to the training set do not alter the statistical data of the predictor variables.
 
 #### 2.2.1.1 Age
 
@@ -316,7 +332,7 @@ stroke_data %>%
 
 ```
 
-It is not surprising that age, as we shall see, is the most important variable when classifying subjects according to "stroke" and "no_stroke". However, the overlap in the age range already indicates another obstacle that affect the models obtained from the selected dataset. This overlap is clearly observed in the following density graph:
+It is not surprising that age, as we shall see, is the most important variable when classifying subjects according to "stroke" and "no_stroke". However, the overlap in the age range already indicates another obstacle that affect the models obtained from the selected data set. This overlap is clearly observed in the following density graph:
 
 ```{r age_density_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -331,7 +347,7 @@ stroke_data %>% ggplot(aes(age, fill = stroke)) +
 
 It is clear that age is an important factor, but as a variable it is far from dividing the observations clearly between one class and another.
 
-The same is observed by means of box plots. As we are working with the original dataset, the prevalence of the "no_stroke" class represented by the point density is also clearly visible.
+The same is observed by means of box plots. As we are working with the original data set, the prevalence of the "no_stroke" class represented by the point density is also clearly visible.
 
 ```{r age_boox_plot, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -442,7 +458,7 @@ Why, if knowing this, were the models trained the ungrouped age? First, to deter
 
 #### 2.2.1.2 Average Glucose Level
 
-Some of the problems detected in the case of age are even more serious in the case of the average glucose level. There are some differences in mean and median, but the ranges between minimum and maximum clearly overlap:
+Some of the problems detected in the case of age are even more serious in the case of the average glucose level. There are minor differences in mean and median, but the ranges between minimum and maximum clearly overlap:
 
 ```{r avg_glucose_statistics, echo=FALSE, message=FALSE}
 
@@ -482,7 +498,7 @@ stroke_data %>% ggplot(aes(stroke, avg_glucose_level, color = stroke)) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 ```
 
-It is also important to highlight that with so few observations belonging to the "stroke" class, their variability is much greater, and it is perfectly possible that the data are not representative of the population. The latter is something that affects all variables, and balancing techniques do not solve. It is true that they increase the number of observations of the "stroke" class, but they do so by randomly repeating (or according to best estimate criteria) the available observations. Representativeness, or its lack of it, we understand that it is maintained.
+It is also important to highlight that with so few observations belonging to the "stroke" class, their variability is much greater, and it is perfectly possible that the data are not representative of the population. The latter is something that affects all variables, and balancing techniques do not solve. It is true that they increase the number of observations of the "stroke" class, but they do so by randomly (or according to best estimate criteria) repeating  the available observations. Representativeness, or its lack of it, we understand that it is maintained.
 
 In this case we have rounded to the nearest ten directly, although the models have been trained with the ungrouped data:
 
@@ -524,7 +540,7 @@ stroke_data %>%
   theme(plot.margin = unit(c(1,0,1,0), "cm"))
 ```
 
-Regarding the incidence of strokes according to rounded average glucose level, we observe a positive correlation (not as clear as in the case of age)
+Regarding the incidence of strokes according to rounded average glucose level, we observe a positive correlation (not as clear as in the case of age):
 
 ```{r percent_strokes_by_rounded_avg_glucose, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -614,7 +630,7 @@ stroke_data %>%
 
 ```
 
-In any case, we are talking about percentages ranging from 2% to 5%, which reinforces the hypothesis that this variable, in this specific dataset, should not have a great weight.
+In any case, we are talking about percentages ranging from 2% to 5%, which reinforces the hypothesis that this variable, in this specific data set, should not have a great weight (but the fact is that it does, as we will see later).
 
 ```{r percent_strokes_by_rounded_bmi, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -643,7 +659,7 @@ stroke_data %>%
 
 #### 2.2.1.4 Gender
 
-Based on the available data, the incidence of strokes among men is slightly higher than among women. The difference is not great, and as we will see later, the variable has some importance but it is not among the main ones:
+Based on the available data, the incidence of strokes among men is slightly higher than among women. The difference is not great, and as we will see later, the variable actually has little weight.
 
 ```{r summary_table_by_gender, echo=FALSE, message=FALSE}
 
@@ -661,7 +677,7 @@ stroke_data <- stroke_data %>% filter(!gender == "Other") # Filtering gender "Ot
 
 ```
 
-The bar graphs clearly show the distribution of the variables, but due to the high prevalence of the "no_stroke" class, it is difficult to see that the incidence is actually somewhat higher among men, as shown in the table.
+The bar graphs clearly show the distribution of the variables, but due to the high prevalence of the "no_stroke" class, it is difficult to see that the incidence is actually somewhat higher among men, as shown in the table:
 
 ```{r gender_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -708,11 +724,11 @@ stroke_data %>%
 
 ```
 
-#### 2.2.1.6 Heart Desease
+#### 2.2.1.6 Heart Disease
 
-Among those with heart disease, the incidence of strokes is around 17%, while among those who do not, the percentage of cases does not reach 4%:
+In the group suffering from Heart Disease, the incidence of stroke reaches 17%. Those who do not have heart problems have the same chances of having a stroke as the base population (4%).
 
-```{r summary_table_by_heart_desease, echo=FALSE, message=FALSE}
+```{r summary_table_by_heart_disease, echo=FALSE, message=FALSE}
 
 # __Summary table by heart_disease #####
 # heart_disease, total of observations, number of strokes, percent of strokes
@@ -725,7 +741,7 @@ stroke_data %>%
 
 ```
 
-```{r heart_desease_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+```{r heart_disease_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # __Heart_disease distribution #####
 stroke_data %>% 
@@ -758,7 +774,7 @@ stroke_data %>%
 
 ```
 
-Among those who have been married, the percentage of strokes is around 6%. Among those who have always been single, the percentage barely exceeds 1%.
+For those who have been married, the percentage of strokes is around 6%. Among those who have always been single, the percentage barely exceeds 1%.
 
 ```{r ever_married_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -789,7 +805,9 @@ stroke_data %>%
 
 ```
 
-The cases of never worked are very few, and there are no incidences of strokes in this group. Children also do not present cases. This would explain why certain models, when they take this variable into account, use the group formed by Govt_job, Private and Self-employed as a single decision element.
+The cases of never worked are very few, and there are no incidences of strokes in this group. Children also do not present cases. This would explain why certain models, when they take this variable into account, use the group formed by Govt_job, Private and Self-employed as a single decision element. 
+
+Another future course of action could be to delete the observations tagged as Never Worked. They are very few and can add noise.
 
 ```{r work_type_distribution, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -935,7 +953,7 @@ cor.test(stroke_data$avg_glucose_level, stroke_data$bmi, method = "pearson")
 
 #### 2.2.2.1 Contrast of proportions
 
-With respect to categorical variables, Amat's approach is based on performing a portion test. It is about seeing which variables present a proportion of cases that are really different from the baseline level, taking into account the number of cases. The results are ordered from lowest to highest p-value. 
+With respect to categorical variables, Amat's approach is based on performing a proportion test. It is about seeing which variables present a proportion of cases that are really different from the baseline level, taking into account the number of cases. The results are ordered from lowest to highest p-value. 
 
 Next we see the table with the first 10 results. Although for some variables it is noted that the Chi-squared approximation may be incorrect (not shown in this table), this exercise confirms part of what we had seen previously: suffering from hypertension or heart disease considerably increases the risk of suffering a stroke.
 
@@ -985,9 +1003,9 @@ prop_analisis
 
 #### 2.2.2.3 The random forest method
 
-Next, we will review the importance of the variables using the random forest method. It is important to note that this analysis has been carried out on the original, strongly unbalanced dataset. Results will vary when techniques are applied to balance the training set.
+Next, we will review the importance of the variables using the random forest method. It is important to note that this analysis has been carried out on the original, strongly unbalanced data set. Results will vary when techniques are applied to balance the training set.
 
-This method can be applied in two ways: by accuracy reduction, or Gini reduction. Here we will apply both to see where they coincide and where they differ.
+This method can be applied in two ways: by Accuracy Reduction, or Gini Reduction. Here we will apply both to see where they coincide and where they differ.
 
 ```{r random_forest_method_accuracy, echo=FALSE}
 
@@ -1028,27 +1046,27 @@ importance2 <- ggplot(data = importance, aes(x = reorder(variable, MeanDecreaseG
 importance2
 ```
 
-In the case of Accurcy Reduction, the most important variable is Age, followed by Ever Married. BMI and Hypertension are next on the list, but they are not given great weight.
+In the case of Accuracy Reduction, the most important variable is Age, followed by Ever Married. BMI and Hypertension are next on the list, but they are not given great weight.
 
-Despite being an unbalanced dataset, this approach yields surprising results to say the least. It is difficult to understand why Ever Married ins prefered over other variables such as BMI or Hypertension.
+Despite being an unbalanced data set, this approach yields surprising results to say the least. It is difficult to understand why Ever Married is prefered over other variables such as BMI or Hypertension.
 
-Gini Reduction shows results more related to what we have seen so far. Age is an important variable in both cases. At the top of the list is Avg Glucose Level and BMI. It is still surprising that Hypertension and Heart Desease carry so little weight in comparison.
+Gini Reduction shows results more related to what we have seen so far. Age is an important variable in both cases. At the top of the list is Avg Glucose Level and BMI. It is still surprising that Hypertension and Heart Disease carry so little weight in comparison.
 
 If we look more deeply at the case of Heart Disease, we see that its incidence is clearly related to age:
 
 ```{r heart_deasead_and_age_table, echo=FALSE, message=FALSE}
 
-# __Summary table by age (rounded nearest 10) and Heart Desease
+# __Summary table by age (rounded nearest 10) and Heart Disease
 # age, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
   group_by(round_age = round(age, -1)) %>%
   summarise(total = n(), percent = round(total/n, 3), heart_disease = sum(heart_disease == "Yes"),
-            heart_desease_percent = round(heart_disease/total,3)) %>% 
+            heart_disease_percent = round(heart_disease/total,3)) %>% 
   unique() %>%
   knitr::kable()
 ```
 
-This would explain why, once age is used as a decision factor, Heart Desease loses importance.
+This would explain why, once age is used as a decision factor, Heart Disease loses importance.
 
 The same goes for Hypertension. The incidence, as is obvious, is closely related to age:
 
@@ -1064,13 +1082,13 @@ stroke_data %>%
   knitr::kable()
 ```
 
-It is necessary to say again, in any case, that the random forest model did not obtain good results. In this case, the selection of variables effected by this method does not seem the most appropriate, at least for Accuracy Reduction.
+It is necessary, in any case, that the random forest model did not obtain good results. In this case, the selection of variables effected by this method does not seem the most appropriate, at least for Accuracy Reduction.
 
 #### 2.2.2.3 Near Zero Variance Analysis
 
 The last of the analyzes recommended by Amat, before training models, is the one destined to eliminate the variables that present, before scaling and centering the numerical data, variables close to zero.
 
-Using the original unbalanced dataset, the only variable that presents a variance close to zero is Heart Desease (which would explain its bad positions in the importance analysis carried out previously):
+Using the original unbalanced data set, the only variable that presents a variance close to zero is Heart Disease (which would explain its bad positions in the importance analysis carried out previously):
 
 ```{r near_zero_variance_analysis, echo=FALSE}
 
@@ -1081,11 +1099,11 @@ stroke_data %>%
 
 ```
 
-This changes when techniques are applied to balance the training set, and none of the variables presents variance close to zero.
+This changes when we apply techniques to balance the training set, and none of the variables presents variance close to zero.
 
 #### 2.2.2.4 Classification Tree Visualization
 
-Another way to easily visualize important variables is through decision trees. Next we experiment with the unbalanced dataset, aware that it is only a test, and that the final models cannot be trained without first balancing the classes.
+Another way to easily visualize important variables is through decision trees. Next we experiment with the unbalanced data set, aware that it is only a test, and that the final models cannot be trained without first balancing the classes.
 
 The first experiment is to visualize the tree generated by the default "rpart" model. It uses Gini Reduction and applies the following parameters:
 
@@ -1094,11 +1112,11 @@ The first experiment is to visualize the tree generated by the default "rpart" m
 3. Minbucket = 20/3
 4. MaxDepth = 30
 
-As explained in *Learn by marketing*[^4], the complexity parameter (cp) in rpart is the minimum improvement in the model needed at each node. Minsplit is the minimum number of samples at each node, and MaxDepth is the maximum depth of the tree.
+As explained in *Learn by marketing*[^5], the complexity parameter (cp) in rpart is the minimum improvement in the model needed at each node. Minsplit is the minimum number of samples at each node, and MaxDepth is the maximum depth of the tree.
 
 As expected, the result is not a tree but a single node that classifies all instances as "no_stroke", given the prevalence of that class:
 
-```{r gini_tree_0.01, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+```{r gini_tree_0.01, echo=TRUE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # __Gini Tree, CP = 0.01, minsplit = 20, minbucket round 20/3, maxdepht = 30 ####
 rpart.plot(rpart(stroke ~ ., 
@@ -1110,7 +1128,7 @@ To see something, we must resort to overtraining. Again, it is important to note
 
 To create the following tree we have set the Complexity Parameter to 0.001, and the MaxDeth to 6:
 
-```{r gini_tree_0.001_m_6, echo=FALSE, fig.align='center', fig.width=10, message=FALSE}
+```{r gini_tree_0.001_m_6, echo=TRUE, fig.align='center', fig.width=10, message=FALSE}
 
 # __Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 6 #####
 rpart.plot(rpart(stroke ~., 
@@ -1120,15 +1138,15 @@ rpart.plot(rpart(stroke ~.,
                  maxdepth = 6))
 ```
 
-Although this tree requires pruning, we can already see that the variables that are repeated the most are Age, Average Glucose Level and BMI. As for the categorical ones, Heart Desease and Gender appear.
+Although this tree requires pruning, we can already see that the variables that are repeated the most are Age, Average Glucose Level and BMI. As for the categorical ones, Heart Disease and Gender appear.
 
-If instead of Gini Reduction we opt for Information Gain, we see that the main numerical variables are Age and Average Glucose Level. With respect to categorical variables, Work Type, Smoking Status and Heart Desease appear.
+If instead of Gini Reduction we opt for Information Gain, we see that the main numerical variables are Age and Average Glucose Level. With respect to categorical variables, Work Type, Smoking Status and Heart Disease appear.
 
 Both approaches, although we are clearly overtraining, yield results that, intuitively, seem more accurate than those obtained with the random forest method.
 
 The following tree uses the Information Gain method, the CP is set to 0.0023, and the MaxDepth is equal to 6:
 
-```{r information_tree_0.0023_m_6, echo=FALSE, fig.align='center', fig.width=10, message=FALSE}
+```{r information_tree_0.0023_m_6, echo=TRUE, fig.align='center', fig.width=10, message=FALSE}
 
 # __Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 6 #####
 rpart.plot(rpart(stroke ~., 
@@ -1149,23 +1167,24 @@ But what happens if we balance the data? For this exercise, we have used three m
 
 1. Oversamplig: observations from the minority class are randomly added.
 2. Both: the distributions are equalized by randomly adding observations from the minority class, and randomly removing observations from the majority class.
-3. Better estimates: the library has a function (ROSE) that generates synthetic data to balance the classes. *The data generated using ROSE is considered to provide better estimate of original data*[^5].
+3. Better estimates: the library has a function (ROSE) that generates synthetic data to balance the classes. *The data generated using ROSE is considered to provide better estimate of original data*[^6].
 
 Next we review, for the case of Oversamplig, that although the classes have been balanced, the statistics and the distribution of the variables are maintained. This is true for the other two methods used.
 
-After applying the "ovun.sample" function, with the "over" method, the new distribution is as follows:
+After applying the "ovun.sample" function, with the "over" method, the new frequencies are as follows:
 
-```{r over_sampling, echo=FALSE, message=FALSE, warning=FALSE}
+```{r over_sampling, echo=TRUE, message=FALSE, warning=FALSE}
 
 # _______________________########
-# Over Sampling ######
+# Over Sampling: all data ######
 # _______________________########
 
 n_over = sum(stroke_data == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
 
-stroke_data_over <- ovun.sample(stroke ~ ., data = stroke_data, method = "over", N = n_over*2)$data
+stroke_data_over <- ovun.sample(stroke ~ ., data = stroke_data, 
+                                method = "over", N = n_over*2)$data
 
 # Relevel "stroke" "no_stroke" factors: positive class: "stroke"
 stroke_data_over$stroke <- relevel(stroke_data_over$stroke, ref = "stroke")
@@ -1219,7 +1238,7 @@ stroke_data_over %>%
   kable()
 ```
 
-```{r age_density_plot_balnaced, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+```{r age_density_plot_balanced, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # __Density Plot: Age per Class ####
 stroke_data_over %>% ggplot(aes(age, fill = stroke)) +
@@ -1236,6 +1255,7 @@ To exemplify the case of categorical variables, we have selected Smoking Status:
 *Original data*
 
 ```{r summ_smoking_2, echo=FALSE, message=FALSE}
+
 # __Summary table by smoking_status  #####
 # smoking_status, total of observations, number of strokes, percent of strokes
 stroke_data %>% 
@@ -1266,9 +1286,10 @@ This same check has been carried out for all methods and all variables (numerica
 
 We have also verified that the correlation between numerical variables is similar to that found with the original data.
 
-So what changes? With the data balanced using the oversampling method, we see changes in the list of variables obtained with the contrast of proportions (here we show the first ten), and with the random forest method. This is precisely what we are looking for: determining the importance of variables without the prevalence problems of the original dataset.
+So what changes? With the data balanced using the oversampling method, we see changes in the list of variables obtained with the contrast of proportions (here we show the first ten), and with the random forest method. This is precisely what we are looking for: determining the importance of variables without the prevalence problems of the original data set.
 
 ```{r contrast_prop_2_over, echo=FALSE, message=FALSE, warning=FALSE}
+
 # __Contrast of proportions #####
 
 # Continuous and qualitative variables that do not group patients are excluded.
@@ -1351,6 +1372,7 @@ importance2_over
 Finally, we have verified that the balanced data do not present variables with variation close to zero. Again, we show the results for the balanced data with the oversampling method:
 
 ```{r near_zero_variance_over, echo=FALSE, message=FALSE}
+
 # __Near Zero Variance Analysis #####
 stroke_data_over %>% 
   select(-stroke) %>% 
@@ -1366,6 +1388,7 @@ To illustrate the differences between the results obtained with the different me
 # _______________________########
 # Over_Under Sampling: Both ######
 # _______________________########
+
 n_both = sum(stroke_data$stroke == "stroke") + sum(stroke_data$stroke == "no_stroke")
 
 set.seed(1969, sample.kind="Rounding") # Every time we run the code, we get a different ovun.sample
@@ -1435,17 +1458,17 @@ As we can see, "Age" is the most important variable in all cases. Average Glucos
 
 The "oversampling" and "both" methods generate trees in which smoking status is relevant. "BMI" only appears when using the "Both" method. Better Estimates only takes into account the variables "Age" and "Average Glucose Level". Finally, the tree generated with the oversampling method incorporates the variable "Gender" as a decision element.
 
-It is important to note that the processes for balancing the data are random. Every time we apply the function by selecting the "Oversampling" and "Both" methods, we obtain different datasets, and this can cause certain variables to acquire more or less prominence.
+It is important to note that the processes for balancing the data are random. Every time we apply the function by selecting the "Oversampling" and "Both" methods, we obtain different data sets, and this can cause certain variables to acquire more or less prominence.
 
 ### 2.2.3 Summary of Exploratory Analysis
 
 At this point, we know that:
 
-1. The original dataset is not large. We have just over 5,000 observations.
+1. The original data set is not large. We have just over 5,000 observations.
 2. The original data is strongly unbalanced. Only 4% of the observations (about 200) are classified as "stroke".
 3. There are no variables that completely separate the two classes. The numerical variables overlap, and the categorical variables are present in both classes (some of them with balanced distributions). This means that predictors with very similar values are present in observations classified as "stroke" and "no_stroke".
 4. The numerical variables (Age, Average Glucose Level and BMI), which are important according to various analysis techniques, show a certain correlation.
-5. Variables that present a clearly different incidence from the baseline, such as Heart Desease and Hypertension, do not seem to be important when analyzed together with the rest of the variables. Their relationship with Age is so strong that once Age is selected as the main variable, the others lose weight.
+5. Variables that present a clearly different incidence from the baseline, such as Heart Disease and Hypertension, do not seem to be important when analyzed together with the rest of the variables. Their relationship with Age is so strong that once Age is selected as the main variable, the others lose weight.
 
 The situation, therefore, does not look very promising when it comes to finding a model that yields good results. Without having trained any model yet, we can already anticipate that algorithms based on neighbors, for example, should not be suitable in this case.
 
@@ -1455,7 +1478,7 @@ The situation, therefore, does not look very promising when it comes to finding 
 
 As anticipated in the introduction, for the creation of the training set we reserve 80% of the data. Because the positive class "stroke" is very minor, before training the models we made sure that both classes were present in the test set, and that they had a similar distribution.
 
-```{r train_test_sets, message=FALSE, include=FALSE}
+```{r train_test_sets, echo=TRUE, message=FALSE, warning=FALSE}
 
 # Creating train and test set #####
 
@@ -1466,14 +1489,13 @@ test_index <- createDataPartition(y = stroke_data$stroke, times = 1, p = 0.2,
 
 # __train_stroke ####
 train_stroke <- stroke_data[-test_index,]
-str(train_stroke)
 
 # __test_stroke ####
 test_stroke <- stroke_data[test_index,]
-str(test_stroke)
+
 ```
 
-```{r review_proportions, echo=TRUE}
+```{r review_proportions, echo=TRUE, message=FALSE, warning=FALSE}
 
 # Review #####
 # Comparing test and train set to be sure that proportions are similar
@@ -1518,7 +1540,7 @@ A high ROC, together with other indicators, is usually obtained when there is a 
 
 ### 2.3.3 Training Models
 
-Despite the comments in point 5 of the *Summary of Exploratory Analysis section*, all the variables contribute to positive reductions (in Accuracy and Gini). This, together with the fact that depending on the balancing method some variables acquire more importance than others, has made us believe that it is worth training and comparing models taking into account all the variables. We will let the models capable of doing so select the predictor variables through cross validation.
+Despite the comments in point 5 of the *Summary of Exploratory Analysis section*, all the variables contribute to positive reductions (in Accuracy and Gini). This, together with the fact that depending on the balancing method some variables acquire more importance than others, has made us believe that it is worth training and comparing models taking into account all the variables. We will let the models capable of doing so, select the predictor variables through cross validation.
 
 Given the nature of this project, we think the main goal is to experiment with various models. This allows us to analyze their differences, not only in terms of results, but also with respect to other aspects, such as computation times, tune parameters, and explicability.
 
@@ -1526,7 +1548,7 @@ In this report we will focus on the models that allow us to exemplify the proces
 
 As part of this experimentation, the first step was to train a series of models with the original data (after scaling and centralizing the numerical variables). At this stage, we were fully aware that due to the prevalence of the negative class, the results were not going to be good.
 
-```{r prepocessing, message=FALSE, include=FALSE}
+```{r prepocessing, echo=TRUE, message=FALSE, warning=FALSE}
 
 # PreProcessing: Centering and Scaling numerical variables ######
 #(t stands for transformed)#####
@@ -1540,7 +1562,7 @@ train_stroke_t <- predict(preProcValues, train_stroke)
 test_stroke_t <- predict(preProcValues, test_stroke)
 ```
 
-With the original umbalnced data, the following models were trained:
+With the original umbalanced data, the following models were trained:
 
 - Rpart native
     - Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 (default)
@@ -1550,8 +1572,8 @@ With the original umbalnced data, the following models were trained:
     - Information Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
     - Information Tree, CP = 0.001. minslit = 20, minbucket round 20/3, maxdepht = 30
     - Information Tree, CP = 0.0023. minslit = 20, minbucket round 20/3, maxdepht = 30
-- Default Caret Rpart 
-- K-Nearest-Neighbor (KNN)
+- Caret Rpart:
+- Caret K-Nearest-Neighbor: (KNN)
 - Random Forest (RF)
 - Flexible Discriminant Analysis (FDA)
 
@@ -1561,7 +1583,7 @@ As objectives, this previous exercise had:
 2. Compare the performance of the "rpart" method of the caret package with the tree generated by the default rpart function.
 3. Check the results of three classification models, two of them seen in the course documentation (KNN and RF), and another not included in it (FDA).
 
-Once we had verified what we already knew (with the unbalanced data we were not going to obtain correct results), we balanced the training set with the methods already described in the previous section, and we trained the following models for each of the cases (oversampling, both and better estimates):
+Once we had verified what we already knew (with the unbalanced data we were not going to obtain correct results), we balanced the training set with the methods described in the previous section, and we trained the following models for each of the cases (oversampling, both and better estimates): 
 
 - RPART native
     - Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
@@ -1574,7 +1596,7 @@ Once we had verified what we already knew (with the unbalanced data we were not 
 - Flexible Discriminant Analysis (FDA)
 - Naives Bayes (NB)
 
-La selección de estos modelos  para el caso de datos balanceados responde a razones similares a las expuestas para el caso de los datos originales. 
+For balanced data, we have added two other models: Neural Network and Naive Bayes.
 
 Once the aforementioned models were trained, for each balancing method, we were able to determine which model, by itself, yields the best results.
 
@@ -1582,7 +1604,7 @@ However, to see if we could further improve those results, we created two Ensamb
 
 The criteria for the first Ensamble was the "Area Under de Roc Curve" (AUC). For the second Ensamble we opted for "Balanced Accuracy" to select the models.
 
-Once the Ensambled were created, we selected "Balaced Acccuracy" as the comparison metric in both cases, and we looked for the feedback criteria that optimized that metric (if x or more models predict "stroke", then predict "stroke").
+Once the Ensambled were created, we selected "Balaced Acccuracy" as the comparison metric in both cases, and we looked for the cutoff (x) that optimized that metric (if x or more models predict "stroke", then predict "stroke").
 
 # 3. Results
 
@@ -1592,7 +1614,7 @@ We are not going to stop long here, because as expected the results are not good
 
 ### 3.1.1 Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
 
-```{r gini_001_20_30_unb, echo=FALSE, message=FALSE, warning=FALSE}
+```{r gini_001_20_30_unb, echo=TRUE, message=FALSE, warning=FALSE}
 
 # Gini, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
@@ -1613,7 +1635,7 @@ This is true for all models based on the native rpart function. If we set the CP
 
 ### 3.1.2 Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30
 
-```{r gini_0001_20_30_unb, echo=FALSE, message=FALSE, warning=FALSE}
+```{r gini_0001_20_30_unb, echo=TRUE, message=FALSE, warning=FALSE}
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
@@ -1634,11 +1656,11 @@ cm_y_hat_gini_tree_cp0.001
 
 These results are similar for most of the cases in which the CP is less than 0.0023
 
-The results of the "train" function (caret package), with the "rpart" method are practically the same.
+### 3.1.3 RPART caret
 
-### 3.1.3 RPART caret, KNN and RF
+The results of the "train" function (caret package), with the "rpart" method are practically the same as the previous ones:
 
-```{r rpart_caret_unb, echo=FALSE, message=FALSE, warning=FALSE}
+```{r rpart_caret_unb, echo=TRUE, message=FALSE, warning=FALSE}
 # RPART caret ######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 train_caret_tree <- train(stroke ~ ., method = "rpart", 
@@ -1663,13 +1685,55 @@ plot(train_caret_tree,
 
 ```
 
-As for the other models, KNN does not classify any instance as "stroke", RF gives results similar to those seen for the overtrained decision trees (a sensitivity of around 2%).
+### 3.1.4 K-Nearest-Neighbor
 
-### 3.1.4 Flexible Discriminant Analysis (FDA)
+KNN does not classify any instance as "stroke":
+
+```{r knn_umb, echo=TRUE, message=FALSE, warning=FALSE}
+
+# KNN ########
+# K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_knn <- train(stroke ~ ., method = "knn", 
+                   data = train_stroke_t, 
+                   trControl = ctrl, 
+                   metric = "ROC")
+
+y_hat_knn <- predict(train_knn, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_knn <- confusionMatrix(y_hat_knn, test_stroke_t$stroke)
+cm_knn
+```
+
+### 3.1.5 Random Forest
+
+RF gives results similar to those seen for the overtrained decision trees (a Sensitivity of around 2%).
+
+```{r rf_umb, echo=TRUE, message=FALSE, warning=FALSE}
+
+# RANDOM FOREST ########
+# it takes time! ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_rf <- train(stroke ~ ., method = "rf", 
+                  data = train_stroke_t, 
+                  trControl = ctrl, 
+                  metric = "ROC")
+
+y_hat_rf <- predict(train_rf, test_stroke_t, type = "raw")
+
+# Model Evaluation :::::::: 
+
+cm_rf <- confusionMatrix(y_hat_rf, test_stroke_t$stroke)
+cm_rf
+```
+
+### 3.1.6 Flexible Discriminant Analysis (FDA)
 
 The only model that stands out in this phase, comparatively speaking, is FDA. This model is able to correctly classify as "stroke" 14% of the instances (6 of 42):
 
-```{r fda_unb, echo=FALSE, message=FALSE, warning=FALSE}
+```{r fda_unb, echo=TRUE, message=FALSE, warning=FALSE}
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -1691,28 +1755,6 @@ The results are still deplorable, but this model already makes a difference with
 
 ## 3.2 Balanced data
 
-```{r oversamplig_training_set, message=FALSE, warning=FALSE, include=FALSE}
-
-# _______________________######## 
-# Oversampling #####
-# _______________________######## 
-
-table(train_stroke_t$stroke)
-prop.table(table(train_stroke_t$stroke))
-
-n_over = sum(train_stroke_t$stroke == "no_stroke")
-
-set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
-# Every time we run the code, we get a different ovun.sample
-# Visualization tree, Accuracy, Sensibility, Balanced accuracy and F.meas strongly depends on this ramdom process.
-
-train_stroke_over <- ovun.sample(stroke ~ ., data = train_stroke_t, method = "over", N = n_over*2)$data
-table(train_stroke_over$stroke)
-
-# Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
-train_stroke_over$stroke <- relevel(train_stroke_over$stroke, ref = "stroke")
-```
-
 It is time to get serious and train models after solving one of the main obstacles: the imbalance of the data.
 
 This, as we will see, improves the metrics, but we cannot expect outstanding results (a high Accuracy, along with high Sensitivity and Specificity). This, as we saw in the exploratory section, does not seem possible, since there are no predictor variables capable of clearly separating the classes.
@@ -1725,11 +1767,38 @@ It is important to say that for modeling purposes, the balancing methods have be
 
 For this and the other methods to generate a balanced training set, the steps described in *Practical Guide to deal with Imbalanced Classification Problems in R* have been followed.
 
+The code bellow illustrates how to generate the oversampled training set, and print the table with the resulting new frequencies:
+
+```{r train_stroke_over, echo=TRUE, message=FALSE, warning=FALSE}
+
+# _______________________######## 
+# Oversampling #####
+# _______________________######## 
+
+n_over = sum(train_stroke_t$stroke == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1969)`
+# Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_over <- ovun.sample(stroke ~ ., data = train_stroke_t, 
+                                 method = "over", N = n_over*2)$data
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
+train_stroke_over$stroke <- relevel(train_stroke_over$stroke, ref = "stroke")
+
+# Strokes distribution #####
+table(train_stroke_over$stroke) %>% 
+  kable()
+```
+
 We will now review the results of the different models trained with the set generated by oversampling.
 
 #### 3.2.1.1 Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
 
-```{r gini_001_20_30_over, echo=FALSE, message=FALSE, warning=FALSE}
+This model has an Accuracy close to 76%. Its Sensitivity is around 74%, and its Specificity is 76%. The Balanced Accuracy is close to 75%. They are much better results than the previous ones. However, for the type of problem in question, the sensitivity is low. It has wrongly classified as negative 11 of 42 cases. 
+
+```{r gini_001_20_30_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # RPART native #######
 # Recursive Partitioning and Regression Trees ######
@@ -1748,7 +1817,7 @@ cm_gini_tree_cp0.01_over <- confusionMatrix(y_hat_gini_tree_cp0.01_over,
 cm_gini_tree_cp0.01_over
 ```
 
-This model has an Accuracy close to 76%. Its Sensitivity is around 74%, and its Specificity is 76%. The Balanced Accuracy is close to 75%. They are much better results than the previous ones. However, for the type of problem in question, the sensitivity is low. It has wrongly classified as negative 11 of 42 cases. The area under the ROC curve is around 0.74.
+The area under the ROC curve is around 0.74.
 
 ```{r sens_espec_ROC_gini_001_20_30_over, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -1768,7 +1837,7 @@ sens_roc_gini_tree_cp0.01_over <- plot(roc(response = test_stroke_t$stroke,
                                        main = "Gini Tree, CP: 0.01 - Over")
 ```
 
-To obtain these results, the model has selected as best tunes a CP of 0.011, and 8 nodes:
+To obtain these results, the model has selected as best tunes: CP = 0.011, size of tree = 8:
 
 ```{r plot_gini_tree_cp0.01_over, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -1790,7 +1859,7 @@ The variables considered have been:
 
 With balanced data, overtraining does not give good results in terms of Sensitivity. Although we get better Accuracy, the sensitivity drops to 48%, and the Balanced Accuracy does not reach 70%:
 
-```{r gini_0001_20_30, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+```{r gini_0001_20_30, echo=TRUE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
@@ -1828,11 +1897,9 @@ sens_espec_roc_gini_tree_cp0.001_over <- plot(roc(response = test_stroke_t$strok
                                               ylab ="Sensibility", 
                                               main = "Gini Tree, CP:001 - Over")
 
-# Sensitivity vs Specificity AUC
-auc(sens_espec_roc_gini_tree_cp0.001_over)
 ```
 
-In this case, overtraining is evident if we look at the size of the tree, with 109 modules:
+In this case, overtraining is evident if we look at the size of the tree (109).
 
 ```{r plot_gini_tree_cp0.001_over, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -1843,14 +1910,15 @@ plotcp(gini_tree_cp0.001_over)
 
 In this model, we have experimented with a cost matrix, giving preference to Sensitivity (a false negative is 3 times worse than a false positive). If we increase the cost, we gain Sensitivity, but we lose Balanced Accuracy):
 
-```{r gini_tree_cost_over, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+```{r gini_tree_cost_over, echo=TRUE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
 # Default Gini Tree & Cost Matrix 3 to 1 #####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
 cost_matrix_tree_over <- rpart(stroke ~ ., 
                                data = train_stroke_over,
                                parms=list(
-                                 loss=matrix(c(0,3,1,0), # A false negative is 3 times worse than a false positive
+                                 loss=matrix(c(0,3,1,0), 
+                                             # A false negative is 3 times worse than a false positive
                                              byrow=TRUE,
                                              nrow=2)))
 
@@ -1885,8 +1953,6 @@ sens_espec_roc_cost_matrix_tree_over <- plot(roc(response = test_stroke_t$stroke
                                              ylab ="Sensibility", 
                                              main = "Default Gini Tree & Cost Matrix 3 to 1 - Over")
 
-# Sensitivity vs Specificity AUC
-auc(sens_espec_roc_cost_matrix_tree_over)
 ```
 
 The CP is 0.01, as specified, and the tree size is reasonable:
@@ -1910,7 +1976,7 @@ Smoking Status and Hypertension also appear, but with less importance.
 
 As you might expect, the results of this model are similar to those of native default rpart (Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30).
 
-```{r rpart_caret_over, echo=FALSE, message=FALSE, warning=FALSE}
+```{r rpart_caret_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # RPART caret ####
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
@@ -1947,8 +2013,6 @@ sens_espec_roc_caret_tree_over <- plot(roc(response = test_stroke_t$stroke,
                                        ylab ="Sensibility", 
                                        main = "RPART caret - Over")
 
-# Sensitivity vs Specificity AUC
-auc(sens_espec_roc_caret_tree_over)
 ```
 
 The final CP was 0.01729183, and the variables considered were:
@@ -1963,7 +2027,7 @@ The final CP was 0.01729183, and the variables considered were:
 
 As we anticipated in the exploratory section, a model based on the nearest neighbors is not suitable in this case.
 
-```{r knn_over, echo=FALSE, message=FALSE, warning=FALSE}
+```{r knn_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # K-Nearest-Neighbor #######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
@@ -2000,8 +2064,6 @@ sens_espec_roc_knn_over <- plot(roc(response = test_stroke_t$stroke,
                                 ylab ="Sensibility", 
                                 main = "KNN - Over")
 
-# Sensitivity vs Specificity AUC
-auc(sens_espec_roc_knn_over)
 ```
 
 In this case, the best tune for k = 9.
@@ -2010,7 +2072,7 @@ In this case, the best tune for k = 9.
 
 This model requires the longest calculation time. Despite that, it is one of the worst performers in terms of Sensitivity and Balanced Accuracy.
 
-```{r rf_over, echo=FALSE, message=FALSE, warning=FALSE}
+```{r rf_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # RANDOM FOREST ########
 # it takes time! ######
@@ -2056,7 +2118,7 @@ In this case, the best tune for "mtry" parameter (randomly selected predictors) 
 
 This is another model with a comparatively good performance. 
 
-```{r nnet_over, echo=FALSE, message=FALSE, warning=FALSE}
+```{r nnet_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # NNET: great variability !!!#####
 # Neural Network ####
@@ -2077,7 +2139,7 @@ cm_nnet_over <- confusionMatrix(as.factor(y_hat_nnet_over), test_stroke_t$stroke
 cm_nnet_over
 ```
 
-Its Accuracy is almost 77%. The Sensitivity exceeds 76%, and the Specificity is close to 78%. Balanced Accuracy is also around 77%
+Its Accuracy is almost 77%. The Sensitivity exceeds 76%, and the Specificity is close to 78%. Balanced Accuracy is also around 77%.
 
 The area under de ROC curve is 0.81:
 
@@ -2097,8 +2159,6 @@ sens_espec_roc_nnet_over <- plot(roc(response = test_stroke_t$stroke,
                                  ylab ="Sensibility", 
                                  main = "NNET - Over")
 
-# Sensitivity vs Specificity AUC
-auc(sens_espec_roc_nnet_over)
 ```
 
 The selected parameters were Weight Decay = 0 and Hidden Units = 5:
@@ -2113,7 +2173,7 @@ This model is another one that stands out, comparatively speaking. As we will se
 
 With the oversampling method, the results are as follows:
 
-```{r fda_over, echo=FALSE, message=FALSE, warning=FALSE}
+```{r fda_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # FDA #####
 # Flexible Discriminant Analysis #####
@@ -2151,8 +2211,6 @@ sens_espec_roc_fda_over <- plot(roc(response = test_stroke_t$stroke,
                                 ylab ="Sensibility", 
                                 main = "Flexible Discriminant Analysis - Over")
 
-# Sensitivity vs Specificity AUC
-auc(sens_espec_roc_fda_over)
 ```
 
 The final values used for the model were degree = 1 and nprune = 16.
@@ -2161,7 +2219,7 @@ The final values used for the model were degree = 1 and nprune = 16.
 
 Finally, the Naives Bayes model is another that has some surprises in store. Its Accuracy is very high (greater than 93%), but the Sensitivity is very low (26%). Balanced Accuracy stays at 61%.
 
-```{r nb_over, echo=FALSE, message=FALSE, warning=FALSE}
+```{r nb_over, echo=TRUE, message=FALSE, warning=FALSE}
 
 # NAIVE BAYES ######
 set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
@@ -2178,7 +2236,7 @@ cm_naiveBayes_over <- confusionMatrix(y_hat_naiveBayes_over, test_stroke_t$strok
 cm_naiveBayes_over
 ```
 
-Despite these results, the area under the ROC curve is close to 0.85. Once again, we note the next steps after the delivery of this report to analyze this result to fully understand it.
+Despite these results, the area under the ROC curve is close to 0.85. One of the next steps after the delivery of this report to analyze this result to fully understand it. 
 
 ```{r sens_espec_ROC_nb, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
 
@@ -2196,61 +2254,1559 @@ sens_espec_roc_naiveBayes_over <- plot(roc(response = test_stroke_t$stroke,
                                        ylab ="Sensibility", 
                                        main = "Naive Bayes - Over")
 
-# Sensitivity vs Specificity AUC
 ```
 
 The final values used for the model were laplace = 0, usekernel = TRUE and adjust = 1.
 
 As we have already warned, the results, although better, are not excessively good. To find a sensitivity greater than 85%, together with a Specificity greater than 75%, we will have to wait for the FDA model with the better estimates method.
 
-Below we summarize the results obtained with each model and the "both" and "better estimates" methods.
-
 ### 3.2.2 Both Method
+
+The following code illustrates the how to generate the balanced training set with the "both" method, and print the table with the resulting new frequencies:
+
+```{r train_stroke_both_2, echo=TRUE, message=FALSE, warning=FALSE}
+
+# _______________________######## 
+# Oversamplig and Undersampling: both #####
+# _______________________######## 
+
+n_both = sum(train_stroke$stroke == "stroke") + sum(train_stroke$stroke == "no_stroke")
+
+set.seed(1969, sample.kind="Rounding") 
+# Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_both <- ovun.sample(stroke ~ ., data = train_stroke_t, 
+                                 method = "both", p = 0.5, N = n_both)$data
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke" #### 
+train_stroke_both$stroke <- relevel(train_stroke_both$stroke, ref = "stroke")
+
+# Strokes distribution #####
+table(train_stroke_both$stroke) %>% 
+  kable()
+```
+
+Here, we will only show the results.
 
 #### 3.2.2.1 Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
 
+```{r gini_001_20_30_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+# RPART native #######
+# Recursive Partitioning and Regression Trees ######
+
+# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+gini_tree_cp0.01_both <- rpart(stroke ~ ., 
+                               data = train_stroke_both)
+
+y_hat_gini_tree_cp0.01_both <- predict(gini_tree_cp0.01_both, test_stroke_t, 
+                                       type = "class")
+
+# Model Evaluation ::::::::
+
+cm_gini_tree_cp0.01_both <- confusionMatrix(y_hat_gini_tree_cp0.01_both, 
+                                            test_stroke_t$stroke)
+cm_gini_tree_cp0.01_both
+```
+
+```{r sens_espec_ROC_gini_001_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.01_both <- predict(gini_tree_cp0.01_both,
+                                     test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Sensitivity vs Specificity ROC CURVE
+sens_roc_gini_tree_cp0.01_both <- plot(roc(response = test_stroke_t$stroke, 
+                                           predictor = roc_gini_tree_cp0.01_both$stroke, 
+                                           levels = c("stroke", "no_stroke")), 
+                                       print.auc = TRUE,
+                                       xlim = c(1,0),
+                                       ylim = c(0,1),
+                                       xlab = "Specificity", 
+                                       ylab ="Sensibility", 
+                                       main = "Gini Tree, CP: 0.01 - both")
+```
+
+To obtain these results, the model has selected as best tunes: CP = 0.011, size of tree = 7:
+
+```{r plot_gini_tree_cp0.01_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+plotcp(gini_tree_cp0.01_both)
+
+```
+
+The variables considered have been:
+
+*Variable importance*
+
+|age|ever_married|smoking_status|avg_glucose_level|bmi|work_type|
+|---:|----------:|-------------:|----------------:|--:|--------:|
+|54  |         13|             9|                8|  8|        8|
+
 #### 3.2.2.2 Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 3
+
+```{r gini_0001_20_30_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+gini_tree_cp0.001_both <- rpart(stroke ~., 
+                                data = train_stroke_both, 
+                                parms=list(split=c("gini")),
+                                cp = 0.001)
+
+y_hat_gini_tree_cp0.001_both <- predict(gini_tree_cp0.001_both, test_stroke_t, 
+                                        type = "class")
+
+# Model Evaluation ::::::::
+
+cm_gini_tree_cp0.001_both <- confusionMatrix(y_hat_gini_tree_cp0.001_both, 
+                                             test_stroke_t$stroke)
+cm_gini_tree_cp0.001_both
+```
+
+```{r sens_espec_ROC_gini_0001_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.001_both <- predict(gini_tree_cp0.001_both,
+                                      test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_gini_tree_cp0.001_both <- plot(roc(response = test_stroke_t$stroke, 
+                                                  predictor = roc_gini_tree_cp0.001_both$stroke, 
+                                                  levels = c("stroke", "no_stroke")), 
+                                              print.auc = TRUE,
+                                              xlim = c(1,0),
+                                              ylim = c(0,1),
+                                              xlab = "Specificity", 
+                                              ylab ="Sensibility", 
+                                              main = "Gini Tree, CP:001 - both")
+```
+
+To obtain these results, the model has selected as best tunes: CP = 0.0013, size of tree 88:
+
+```{r plot_gini_tree_cp0.001_both_2, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+plotcp(gini_tree_cp0.001_both)
+
+```
 
 #### 3.2.2.3 Default Gini Tree & Cost Matrix 3 to 1
 
+```{r gini_tree_cost_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Default Gini Tree & Cost Matrix 3 to 1 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+cost_matrix_tree_both <- rpart(stroke ~ ., 
+                               data = train_stroke_both,
+                               parms=list(
+                                 loss=matrix(c(0,3,1,0), # A false negative is 3 times worse than a false positive
+                                             byrow=TRUE,
+                                             nrow=2)))
+
+y_hat_cost_matrix_tree_both <- predict(cost_matrix_tree_both, test_stroke_t, 
+                                       type = "class")
+
+# Model Evaluation ::::::::
+
+cm_cost_matrix_tree_both <- confusionMatrix(y_hat_cost_matrix_tree_both, 
+                                            test_stroke_t$stroke)
+cm_cost_matrix_tree_both
+```
+
+```{r sens_espec_ROC_gini_tree_cost_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_cost_matrix_tree_both <- predict(cost_matrix_tree_both,
+                                     test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_cost_matrix_tree_both <- plot(roc(response = test_stroke_t$stroke, 
+                                                 predictor = roc_cost_matrix_tree_both$stroke, 
+                                                 levels = c("stroke", "no_stroke")), 
+                                             print.auc = TRUE,
+                                             xlim = c(1,0),
+                                             ylim = c(0,1),
+                                             xlab = "Specificity", 
+                                             ylab ="Sensibility", 
+                                             main = "Default Gini Tree & Cost Matrix 3 to 1 - both")
+
+```
+
+To obtain these results, the model has selected as best tunes: CP = 0.011, size of tree = 14
+
+```{r plot_gini_tree_cost_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+plotcp(cost_matrix_tree_both)
+```
+
+The variables considered have been:
+
+*Variable importance*
+
+|age |work_type|ever_married|bmi|avg_glucose_level|smoking_status|
+|---:|--------:|-----------:|--:|----------------:|-------------:|
+|50  |       15|          13|  9|                8|             4|
+
 #### 3.2.2.4 RPART caret
+
+```{r rpart_caret_both_2, echo=FALSE, message=FALSE, warning=FALSE}
+
+# RPART caret ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_caret_tree_both <- train(stroke ~ ., method = "rpart",
+                               data = train_stroke_both, 
+                               trControl = ctrl,
+                               metric="ROC")
+
+y_hat_caret_tree_both <- predict(train_caret_tree_both, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_caret_tree_both <- confusionMatrix(y_hat_caret_tree_both, test_stroke_t$stroke)
+cm_caret_tree_both
+```
+
+```{r sens_espec_ROC_caret_tree_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_caret_tree_both <- predict(train_caret_tree_both,
+                               test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_caret_tree_both <- plot(roc(response = test_stroke_t$stroke, 
+                                           predictor = roc_caret_tree_both$stroke, 
+                                           levels = c("stroke", "no_stroke")), 
+                                       print.auc = TRUE,
+                                       xlim = c(1,0),
+                                       ylim = c(0,1),
+                                       xlab = "Specificity", 
+                                       ylab ="Sensibility", 
+                                       main = "RPART caret - both")
+
+```
+
+The final value used for the model was cp = 0.00988482.
+
+The variables considered have been:
+
+*Variable importance*
+
+|age |ever_marriedYes|avg_glucose_level|bmi|smoking_statusUnknown|smoking_statusnever smoked |
+|---:|--------------:|----------------:|--:|--------------------:|--------------------------:|
+|58  |             14|               9|  9|                     6|                          3|
 
 #### 3.2.2.5 K-Nearest-Neighbor
 
+```{r knn_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+#KNN caret #######
+# K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_knn_both <- train(stroke ~ ., method = "knn", 
+                        data = train_stroke_both, 
+                        trControl = ctrl,
+                        metric="ROC")
+
+y_hat_knn_both <- predict(train_knn_both, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_knn_both <- confusionMatrix(y_hat_knn_both, test_stroke_t$stroke)
+cm_knn_both
+
+```
+
+```{r sens_espec_ROC_knn_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_knn_both <- predict(train_knn_both,
+                        test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_knn_both <- plot(roc(response = test_stroke_t$stroke, 
+                                    predictor = roc_knn_both$stroke, levels = c("stroke", "no_stroke")), 
+                                print.auc = TRUE,
+                                xlim = c(1,0),
+                                ylim = c(0,1),
+                                xlab = "Specificity", 
+                                ylab ="Sensibility", 
+                                main = "KNN - both")
+
+```
+
+The final value used for the model was k = 5.
+
 #### 3.2.2.6 Ramdom Forest
+
+```{r rf_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+# RANDOM FOREST ########
+# it takes time! ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_rf_both <- train(stroke ~ ., method = "rf", 
+                       data = train_stroke_both, 
+                       trControl = ctrl,
+                       metric="ROC")
+
+y_hat_rf_both <- predict(train_rf_both, test_stroke_t, type = "raw")
+
+# Model Evaluation ::::::::
+
+cm_rf_both <- confusionMatrix(y_hat_rf_both, test_stroke_t$stroke)
+cm_rf_both
+```
+
+```{r sens_espec_ROC_rf_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_rf_both <- predict(train_rf_both,
+                       test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_rf_both <- plot(roc(response = test_stroke_t$stroke, 
+                                   predictor = roc_rf_both$stroke, levels = c("stroke", "no_stroke")), 
+                               print.auc = TRUE,
+                               xlim = c(1,0),
+                               ylim = c(0,1),
+                               xlab = "Specificity", 
+                               ylab ="Sensibility", 
+                               main = "Random Forest - both")
+
+```
+
+The final value used for the model was mtry = 9.
 
 #### 3.2.2.7 Neural Network
 
+```{r nnet_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+# NNET: great variability !!!#####
+# Neural Network ####
+# It takes some time!
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+# Results are random variables: great variability!!!
+
+train_nnet_both <- train(stroke ~ ., method = "nnet",
+                         data = train_stroke_both,
+                         trControl = ctrl,
+                         trace = FALSE,
+                         metric="ROC")
+
+y_hat_nnet_both <- predict(train_nnet_both, test_stroke_t, type = "raw")
+
+# Model Evaluation ::::::::
+
+cm_nnet_both <- confusionMatrix(as.factor(y_hat_nnet_both), test_stroke_t$stroke)
+cm_nnet_both
+```
+
+```{r sens_espec_ROC_nnet_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_nnet_both <- predict(train_nnet_both,
+                         test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_nnet_both <- plot(roc(response = test_stroke_t$stroke, 
+                                     predictor = roc_nnet_both$stroke, 
+                                     levels = c("no_stroke", "stroke")), 
+                                 print.auc = TRUE,
+                                 xlim = c(1,0),
+                                 ylim = c(0,1),
+                                 xlab = "Specificity", 
+                                 ylab ="Sensibility", 
+                                 main = "NNET - both")
+```
+
+The final values used for the model were size = 5 and decay = 0.
+
 #### 3.2.2.8 Flexible Discriminant Analysis
+
+```{r fda_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+# FDA #####
+# Flexible Discriminant Analysis #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_fda_both <- train(stroke ~ ., method = "fda", 
+                        data = train_stroke_both, 
+                        trControl = ctrl,
+                        metric="ROC")
+
+y_hat_fda_both <- predict(train_fda_both, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_fda_both <- confusionMatrix(y_hat_fda_both, test_stroke_t$stroke)
+cm_fda_both
+```
+
+```{r sens_espec_ROC_fda_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_fda_both <- predict(train_fda_both,
+                        test_stroke_t, type = "prob")
+
+# Curve graph
+sens_espec_roc_fda_both <- plot(roc(response = test_stroke_t$stroke, 
+                                    predictor = roc_fda_both$stroke, 
+                                    levels = c("no_stroke", "stroke")), 
+                                print.auc = TRUE,
+                                xlim = c(1,0),
+                                ylim = c(0,1),
+                                xlab = "Specificity", 
+                                ylab ="Sensibility", 
+                                main = "Flexible Discriminant Analysis - both")
+
+```
+
+The final values used for the model were degree = 1 and nprune = 17.
 
 #### 3.2.2.9 Naive Bayes
 
+```{r nb_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+# NAIVE BAYES ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_naiveBayes_both <- train(stroke ~ ., method = "naive_bayes", 
+                               data = train_stroke_both, 
+                               trControl = ctrl,
+                               metric="ROC")
+
+y_hat_naiveBayes_both <- predict(train_naiveBayes_both, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_naiveBayes_both <- confusionMatrix(y_hat_naiveBayes_both, test_stroke_t$stroke)
+cm_naiveBayes_both
+```
+
+```{r sens_espec_ROC_nb_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_naiveBayes_both <- predict(train_naiveBayes_both,
+                               test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_naiveBayes_both<- plot(roc(response = test_stroke_t$stroke, 
+                                          predictor = roc_naiveBayes_both$stroke, 
+                                          levels = c("no_stroke", "stroke")), 
+                                      print.auc = TRUE,
+                                      xlim = c(1,0),
+                                      ylim = c(0,1),
+                                      xlab = "Specificity", 
+                                      ylab ="Sensibility", 
+                                      main = "Naive Bayes - both")
+
+```
+
+The final values used for the model were laplace = 0, usekernel = TRUE and adjust = 1.
 
 ### 3.2.3 Better Estimates Method
 
+The following code illustrates the how to generate the balanced training set with better estimates, and print the table with the resulting frequencies:
+
+```{r train_stroke_both, echo=TRUE, message=FALSE, warning=FALSE}
+
+# _______________________######## 
+# Better estimates ######
+# _______________________######## 
+
+set.seed(1969, sample.kind="Rounding") 
+# Every time we run the code, we get a different ovun.sample
+# Accuracy and balanced accuracy strongly depends on this ramdom process.
+
+train_stroke_better <- ROSE(stroke ~ ., data = train_stroke_t)$data
+
+# Relevel "stroke" "no_stroke" factors: positive class: "stroke"
+train_stroke_better$stroke <- relevel(train_stroke_better$stroke, ref = "stroke")
+
+# Strokes distribution #####
+table(train_stroke_better$stroke) %>% 
+  kable()
+```
+
+Again, we show only the results.
+
 #### 3.2.3.1 Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30
 
-#### 3.2.3.2 Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 3
+```{r gini_001_20_30_better, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Gini Tree, CP = 0.01, minslit = 20, minbucket round 20/3, maxdepht = 30 ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+gini_tree_cp0.01_better <- rpart(stroke ~ ., 
+                                 data = train_stroke_better)
+
+y_hat_gini_tree_cp0.01_better <- predict(gini_tree_cp0.01_better, test_stroke_t, 
+                                         type = "class")
+# Model Evaluation ::::::::
+
+cm_gini_tree_cp0.01_better <- confusionMatrix(y_hat_gini_tree_cp0.01_better, 
+                                              test_stroke_t$stroke)
+cm_gini_tree_cp0.01_better
+
+```
+
+```{r sens_espec_ROC_gini_001_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.01_better <- predict(gini_tree_cp0.01_better,
+                                       test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Sensitivity vs Specificity ROC CURVE
+sens_roc_gini_tree_cp0.01_better <- plot(roc(response = test_stroke_t$stroke, 
+                                             predictor = roc_gini_tree_cp0.01_better$stroke, 
+                                             levels = c("stroke", "no_stroke")), 
+                                         print.auc = TRUE,
+                                         xlim = c(1,0),
+                                         ylim = c(0,1),
+                                         xlab = "Specificity", 
+                                         ylab ="Sensibility", 
+                                         main = "Gini Tree, CP: 0.01 - better")
+```
+
+To obtain these results, the model has selected as best tunes: CP = 0.011, size of tree = 6:
+
+```{r plot_gini_tree_cp0.01_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+plotcp(gini_tree_cp0.01_better)
+
+```
+
+The variables considered have been:
+
+*Variable importance*
+
+|age|ever_married|work_type|smoking_status|avg_glucose_level|bmi|heart_disease|hypertension|
+|---:|----------:|--------:|-------------:|----------------:|--:|------------:|-----------:|
+|55  |         15|       11|             6|                6|  5|            2|           1|
+
+#### 3.2.3.2 Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30
+
+```{r gini_0001_20_30_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Gini Tree, CP = 0.001, minslit = 20, minbucket round 20/3, maxdepht = 30 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+gini_tree_cp0.001_better <- rpart(stroke ~., 
+                                  data = train_stroke_better, 
+                                  parms=list(split=c("gini")),
+                                  cp = 0.001)
+
+y_hat_gini_tree_cp0.001_better <- predict(gini_tree_cp0.001_both, test_stroke_t, 
+                                          type = "class")
+
+# Model Evaluation ::::::::
+
+confusionMatrix(y_hat_gini_tree_cp0.001_better,
+                test_stroke_t$stroke)$overall["Accuracy"]
+
+cm_gini_tree_cp0.001_better <- confusionMatrix(y_hat_gini_tree_cp0.001_better, 
+                                               test_stroke_t$stroke)
+cm_gini_tree_cp0.001_better
+
+```
+
+```{r sens_espec_ROC_gini_0001_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_gini_tree_cp0.001_better <- predict(gini_tree_cp0.001_better,
+                                        test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_gini_tree_cp0.001_better <- plot(roc(response = test_stroke_t$stroke, 
+                                                    predictor = roc_gini_tree_cp0.001_better$stroke, 
+                                                    levels = c("stroke", "no_stroke")), 
+                                                print.auc = TRUE,
+                                                xlim = c(1,0),
+                                                ylim = c(0,1),
+                                                xlab = "Specificity", 
+                                                ylab ="Sensibility", 
+                                                main = "Gini Tree, CP:001 - better")
+
+```
+
+To obtain these results, the model has selected as best tunes: CP = 0.001, size of tree 69:
+
+```{r plot_gini_tree_cp0.001_both, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+plotcp(gini_tree_cp0.001_better)
+```
 
 #### 3.2.3.3 Default Gini Tree & Cost Matrix 3 to 1
 
+```{r gini_tree_cost_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Default Gini Tree & Cost Matrix 3 to 1 #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+cost_matrix_tree_better <- rpart(stroke ~ ., 
+                                 data = train_stroke_better,
+                                 parms=list(
+                                   loss=matrix(c(0,3,1,0), # A false negative is 3 times worse than a false positive
+                                               byrow=TRUE,
+                                               nrow=2)))
+
+y_hat_cost_matrix_tree_better <- predict(cost_matrix_tree_both, test_stroke_t, 
+                                         type = "class")
+
+# Model Evaluation ::::::::
+
+cm_cost_matrix_tree_better <- confusionMatrix(y_hat_cost_matrix_tree_better, 
+                                              test_stroke_t$stroke)
+cm_cost_matrix_tree_better
+```
+
+```{r sens_espec_ROC_gini_tree_cost_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_cost_matrix_tree_better <- predict(cost_matrix_tree_better,
+                                       test_stroke_t, type = "prob") %>% 
+  data.frame()
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_cost_matrix_tree_better <- plot(roc(response = test_stroke_t$stroke, 
+                                                   predictor = roc_cost_matrix_tree_better$stroke, 
+                                                   levels = c("stroke", "no_stroke")), 
+                                               print.auc = TRUE,
+                                               xlim = c(1,0),
+                                               ylim = c(0,1),
+                                               xlab = "Specificity", 
+                                               ylab ="Sensibility", 
+                                               main = "Default Gini Tree & Cost Matrix 3 to 1 - better")
+
+```
+
+To obtain these results, the model has selected as best tunes: CP = 0.06, size of tree = 2
+
+```{r plot_gini_tree_cost_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+plotcp(cost_matrix_tree_better)
+```
+
+The variables considered have been:
+
+*Variable importance*
+
+|age |work_type|ever_married|bmi|
+|---:|--------:|-----------:|--:|
+|57  |       19|          19|  5|
+
 #### 3.2.3.4 RPART caret
+
+```{r rpart_caret_both, echo=FALSE, message=FALSE, warning=FALSE}
+
+# RPART caret ####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_caret_tree_better <- train(stroke ~ ., method = "rpart",
+                                 data = train_stroke_better, 
+                                 trControl = ctrl,
+                                 metric="ROC")
+
+y_hat_caret_tree_better <- predict(train_caret_tree_better, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_caret_tree_better <- confusionMatrix(y_hat_caret_tree_better, test_stroke_t$stroke)
+cm_caret_tree_better
+
+```
+
+```{r sens_espec_ROC_caret_tree_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_caret_tree_better <- predict(train_caret_tree_better,
+                                 test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_caret_tree_better <- plot(roc(response = test_stroke_t$stroke, 
+                                             predictor = roc_caret_tree_better$stroke, 
+                                             levels = c("stroke", "no_stroke")), 
+                                         print.auc = TRUE,
+                                         xlim = c(1,0),
+                                         ylim = c(0,1),
+                                         xlab = "Specificity", 
+                                         ylab ="Sensibility", 
+                                         main = "RPART caret - better")
+
+```
+
+The final value used for the model was cp = 0.005673027.
+
+The variables considered have been:
+
+*Variable importance*
+
+|age |ever_marriedYes|avg_glucose_level|bmi|smoking_statusUnknown|
+|---:|--------------:|----------------:|--:|--------------------:|
+|61  |             16|                6|  6|                    6|
+
+In addition to:
+
+- heart_diseaseYes: 2
+- smoking_statusnever smoked: 1
+- smoking_statussmokes: 1
+- work_typeSelf-employed: 1
 
 #### 3.2.3.5 K-Nearest-Neighbor
 
+```{r knn_better_2, echo=FALSE, message=FALSE, warning=FALSE}
+
+#KNN caret #######
+# K-Nearest-Neighbor #######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_knn_better <- train(stroke ~ ., method = "knn", 
+                          data = train_stroke_better, 
+                          trControl = ctrl,
+                          metric="ROC")
+
+y_hat_knn_better <- predict(train_knn_better, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+confusionMatrix(y_hat_knn_better,
+                test_stroke_t$stroke)$table
+
+cm_knn_better <- confusionMatrix(y_hat_knn_better, test_stroke_t$stroke)
+cm_knn_better
+
+```
+
+```{r knn_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_knn_better <- predict(train_knn_better,
+                          test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_knn_better <- plot(roc(response = test_stroke_t$stroke, 
+                                      predictor = roc_knn_better$stroke, levels = c("stroke", "no_stroke")), 
+                                  print.auc = TRUE,
+                                  xlim = c(1,0),
+                                  ylim = c(0,1),
+                                  xlab = "Specificity", 
+                                  ylab ="Sensibility", 
+                                  main = "KNN - better")
+```
+
+The final value used for the model was k = 7.
+
 #### 3.2.3.6 Ramdom Forest
+
+```{r rf_better, echo=FALSE, message=FALSE, warning=FALSE}
+
+# RANDOM FOREST ########
+# it takes time! ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_rf_better <- train(stroke ~ ., method = "rf", 
+                         data = train_stroke_better, 
+                         trControl = ctrl,
+                         metric="ROC")
+
+y_hat_rf_better <- predict(train_rf_better, test_stroke_t, type = "raw")
+
+# Model Evaluation ::::::::
+
+cm_rf_better <- confusionMatrix(y_hat_rf_better, test_stroke_t$stroke)
+cm_rf_better
+```
+
+```{r sens_espec_ROC_rf_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_rf_better <- predict(train_rf_better,
+                         test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_rf_better <- plot(roc(response = test_stroke_t$stroke, 
+                                     predictor = roc_rf_better$stroke, 
+                                     levels = c("stroke", "no_stroke")), 
+                                 print.auc = TRUE,
+                                 xlim = c(1,0),
+                                 ylim = c(0,1),
+                                 xlab = "Specificity", 
+                                 ylab ="Sensibility", 
+                                 main = "Random Forest - better")
+
+```
+
+The final value used for the model was mtry = 9.
 
 #### 3.2.3.7 Neural Network
 
+```{r nnet_better, echo=FALSE, message=FALSE, warning=FALSE}
+
+# NNET: great variability !!!#####
+# Neural Network ####
+# It takes some time!
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+
+train_nnet_better <- train(stroke ~ ., method = "nnet",
+                           data = train_stroke_better,
+                           trControl = ctrl,
+                           trace = FALSE,
+                           metric="ROC")
+
+y_hat_nnet_better <- predict(train_nnet_better, test_stroke_t, type = "raw")
+
+# Model Evaluation ::::::::
+
+cm_nnet_better <- confusionMatrix(as.factor(y_hat_nnet_better), test_stroke_t$stroke)
+cm_nnet_better
+
+```
+
+```{r sens_espec_ROC_nnet_beter, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_nnet_better <- predict(train_nnet_better,
+                           test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_nnet_better <- plot(roc(response = test_stroke_t$stroke, 
+                                       predictor = roc_nnet_better$stroke, 
+                                       levels = c("no_stroke", "stroke")), 
+                                   print.auc = TRUE,
+                                   xlim = c(1,0),
+                                   ylim = c(0,1),
+                                   xlab = "Specificity", 
+                                   ylab ="Sensibility", 
+                                   main = "NNET - better")
+
+```
+
+The final values used for the model were size = 5 and decay = 0.1.
+
 #### 3.2.3.8 Flexible Discriminant Analysis
+
+```{r fda_better, echo=FALSE, message=FALSE, warning=FALSE}
+
+# FDA #####
+# Flexible Discriminant Analysis #####
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_fda_better <- train(stroke ~ ., method = "fda", 
+                          data = train_stroke_better, 
+                          trControl = ctrl,
+                          metric="ROC")
+
+y_hat_fda_better <- predict(train_fda_better, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_fda_better <- confusionMatrix(y_hat_fda_better, test_stroke_t$stroke)
+cm_fda_better
+
+```
+
+```{r sens_espec_ROC_fda_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_fda_better <- predict(train_fda_better,
+                          test_stroke_t, type = "prob")
+
+# Curve graph
+sens_espec_roc_fda_better <- plot(roc(response = test_stroke_t$stroke, 
+                                      predictor = roc_fda_better$stroke, 
+                                      levels = c("no_stroke", "stroke")), 
+                                  print.auc = TRUE,
+                                  xlim = c(1,0),
+                                  ylim = c(0,1),
+                                  xlab = "Specificity", 
+                                  ylab ="Sensibility", 
+                                  main = "Flexible Discriminant Analysis - better")
+
+```
+
+The final values used for the model were degree = 1 and nprune = 13.
 
 #### 3.2.3.9 Naive Bayes
 
+```{r nb_better, echo=FALSE, message=FALSE, warning=FALSE}
 
-[^1]: https://www.kaggle.com/fedesoriano/stroke-prediction-dataset
-[^2]: https://www.kaggle.com/fedesoriano
-[^3]: Amat, Rodrigo: *Machine Learning con R y caret*. cienciadedatos.net, 2018: https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
-[^4]: *Learn by Marketing*: https://www.learnbymarketing.com/tutorials/rpart-decision-trees-in-r/
-[^5]: *Practical Guide to deal with Imbalanced Classification Problems in R*. Analytics Vidhya, 2016: https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
+# NAIVE BAYES ######
+set.seed(1, sample.kind="Rounding") # if using R 3.5 or earlier, use `set.seed(1)`
+train_naiveBayes_better <- train(stroke ~ ., method = "naive_bayes", 
+                                 data = train_stroke_better, 
+                                 trControl = ctrl,
+                                 metric="ROC")
+
+y_hat_naiveBayes_better <- predict(train_naiveBayes_better, test_stroke_t)
+
+# Model Evaluation ::::::::
+
+cm_naiveBayes_better <- confusionMatrix(y_hat_naiveBayes_better, test_stroke_t$stroke)
+cm_naiveBayes_better
+
+```
+
+```{r sens_espec_ROC_nb_better, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+# Calc. Probs for every class
+roc_naiveBayes_better <- predict(train_naiveBayes_better,
+                                 test_stroke_t, type = "prob")
+
+# Sensitivity vs Specificity ROC CURVE
+sens_espec_roc_naiveBayes_better<- plot(roc(response = test_stroke_t$stroke, 
+                                            predictor = roc_naiveBayes_better$stroke, 
+                                            levels = c("no_stroke", "stroke")), 
+                                        print.auc = TRUE,
+                                        xlim = c(1,0),
+                                        ylim = c(0,1),
+                                        xlab = "Specificity", 
+                                        ylab ="Sensibility", 
+                                        main = "Naive Bayes - better")
+
+```
+
+### 3.2.4 Results Summary
+
+Below we show the table with the results of all the models. The list is displayed in descending order based on the area under the ROC curve.
+
+```{r results_summary, echo=FALSE, message=FALSE, warning=FALSE}
+
+# _______________________########
+# RESULTS SUMMARY ########
+# _______________________########
+
+models <- c("gini_tree_cp0.01_over",
+            "gini_tree_cp0.001_over",
+            "cost_matrix_tree_over",
+            "caret_tree_over",
+            "knn_over",
+            "nnet_over",
+            "fda_over",
+            "gini_tree_cp0.01_both",
+            "gini_tree_cp0.001_both",
+            "cost_matrix_tree_both",
+            "caret_tree_both",
+            "knn_both",
+            "nnet_both",
+            "fda_both",
+            "gini_tree_cp0.01_better",
+            "gini_tree_cp0.001_better",
+            "cost_matrix_tree_better",
+            "caret_tree_better",
+            "knn_better",
+            "rf_better",
+            "nnet_better",
+            "fda_better",
+            "rf_over",
+            "rf_both",
+            "nb_over",
+            "nb_both",
+            "nb_better")
+
+sensitivity <- c(
+  0.73810,
+  0.47619,
+  0.90476,
+  0.73810,
+  0.42857,
+  0.76190,
+  0.73810,
+  0.71429,
+  0.38095,
+  0.85714,
+  0.71429,
+  0.57143,
+  0.76190,
+  0.73810,
+  0.73810,
+  0.38095,
+  0.85714,
+  0.73810,
+  0.61905,
+  0.59524,
+  0.71429,
+  0.85714,
+  0.07143,
+  0.11905,
+  0.26190,
+  0.26190,
+  0.14286)
+
+specificity <- c(
+  0.75745,
+  0.88723,
+  0.63085,
+  0.77553,
+  0.77553,
+  0.77766,
+  0.74574,
+  0.79894,
+  0.84681,
+  0.59574,
+  0.79894,
+  0.77340,
+  0.78085,
+  0.74149,
+  0.81277,
+  0.84681,
+  0.59574,
+  0.81277,
+  0.77021,
+  0.79468,
+  0.76064,
+  0.75426,
+  0.98617,
+  0.96383,
+  0.96489,
+  0.96596,
+  0.97340)
+
+balanced_accuracy <- c(
+  0.74777,
+  0.68171,
+  0.76781,
+  0.75681,
+  0.60205,
+  0.76978,
+  0.74192,
+  0.75661,
+  0.61388,
+  0.72644,
+  0.75661,
+  0.67242,
+  0.77138,
+  0.73979,
+  0.77543,
+  0.61388,
+  0.72644,
+  0.77543,
+  0.69463,
+  0.69496,
+  0.73746,
+  0.80570,
+  0.52880,
+  0.54144,
+  0.61340,
+  0.61393,
+  0.55813)
+
+AUC <- c(
+  0.7372,
+  0.3212,
+  0.7525,
+  0.8042,
+  0.4015,
+  0.8095,
+  0.8163,
+  0.7352,
+  0.3724,
+  0.7368,
+  0.7352,
+  0.6639,
+  0.8138,
+  0.8346,
+  0.8338,
+  0.8052,
+  0.2991,
+  0.8338,
+  0.7685,
+  0.8196,
+  0.8000,
+  0.8588,
+  0.7827,
+  0.8050,
+  0.8489,
+  0.8505,
+  0.8503)
+
+results_summary <- data.frame(models, 
+                              sensitivity, specificity, balanced_accuracy, AUC) %>% 
+  arrange(desc(AUC)) %>% 
+  kable()
+
+results_summary
+```
+
+So far the best model, in terms of Sensitivity and Balanced Accuracy, has turned out to be Flexible Discrimimant Analysis, along with the better estimates method for balancing the data. 
+
+As explained in the summary of the paper by Tevor Hastie, Robert Tibishirani and Andreas Buja, *Fisher's linear discriminant analysis is a valuable tool for multigroup classification. With a large number of predictors, one can find a reduced number of discriminant coordinate functions that are "optimal" for separating groups. With two such functions, one can produce a classification map that partitions the reduced space into regions taht are identified with group membership, and the desicion boundaries are linear* (Tevor Hastie, et al. 2021)[^7]:
+
+This model. As we have seen, it returns the following results when training with balanced data according to better estimates:
+
+|Accuracy|Sensitivity|Specificity|Balanced Accuracy|      AUC |
+|-------:|----------:|----------:|----------------:|---------:|
+|  0.7587|    0.85714|    0.75426|          0.80570|    0.8588|
+
+Comparing the results with the original test set, he is able to correctly classify 36 out of 42 observations as "stroke", keeping the Specificity at a reasonable 75%.
+
+If we order the list according to balanced accuracy, the same model is the winner:
+
+```{r results_summary_2, echo=FALSE, message=FALSE, warning=FALSE}
+
+data.frame(models, sensitivity, specificity, balanced_accuracy, AUC) %>% 
+  arrange(desc(AUC)) %>% 
+  kable()
+```
+
+However, under other criteria there are models that perform better. Below we compare the selected model with the best versions of the caret RPART (caret_tree), NNET, RF and NB models.
+
+```{r roc_curve_comp, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+comp_roc <- evalm(list(train_caret_tree_better, 
+                       train_nnet_both,
+                       train_rf_better, 
+                       train_knn_better, 
+                       train_naiveBayes_both, 
+                       train_fda_better), 
+                  positive = "stroke",
+                  plots = "r",
+                  title = "ROC True Positive - False Positive",
+                  gnames=c('caret_tree_better', 
+                           'nnet_both',
+                           'rf_better',
+                           'knn_better',
+                           'naive_bayes_both',
+                           'fda_better'))
+```
+
+```{r prg_curve_comp, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+comp_prg <- evalm(list(train_caret_tree_better, 
+                       train_nnet_both,
+                       train_rf_better, 
+                       train_knn_better, 
+                       train_naiveBayes_both, 
+                       train_fda_better), 
+                  positive = "stroke",
+                  plots = "prg",
+                  title = "ROC True Positive - False Positive",
+                  gnames=c('caret_tree_better', 
+                           'nnet_both',
+                           'rf_better',
+                           'knn_better',
+                           'naive_bayes_both',
+                           'fda_better'))
+```
+
+```{r pr_curve_comp, echo=FALSE, fig.align='center', fig.width=10, message=FALSE, warning=FALSE}
+
+comp_pr <- evalm(list(train_caret_tree_better, 
+                      train_nnet_both,
+                      train_rf_better, 
+                      train_knn_better, 
+                      train_naiveBayes_both, 
+                      train_fda_better), 
+                 positive = "stroke",
+                 plots = "pr",
+                 title = "ROC True Positive - False Positive",
+                 gnames=c('caret_tree_better', 
+                          'nnet_both',
+                          'rf_better',
+                          'knn_better',
+                          'naive_bayes_both',
+                          'fda_better'))
+
+```
+
+Therefore, the selection of the FDA model is due to the fact that it is the one that best meets the established criteria, although other models present better results in aspects such as areas under the curves. We will try to solve this problem in the next section. Before that, let us take a closer look at the results table. 
+
+It is clear that the results of the caret RPART model are practically the same as those of the default rpart function. So we will remove the gini_tree_cp_0.01 models from the list.
+
+The results of NNET Over, and NNET Both are practically the same, so we will eliminate the second of them. The same is true for FDA Over and FDA Both. We will only keep the first one.
+
+Cost Matrix Tree Both and Better only differ on the AUC (something we need to investigate further in the future). Let's just stick with Cost Matrix Tree Both.
+
+The same goes for gini_tree_cp0.001 Both and Better. In this case we will stick with the Better version, which has a higher AUC.
+
+After eliminating models with the same results, the final list is as follows (ordered according to Balanced Accuracy):
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|fda_better               |     0.85714|     0.75426|           0.80570| 0.8588|
+|caret_tree_better        |     0.73810|     0.81277|           0.77543| 0.8338|
+|nnet_both                |     0.76190|     0.78085|           0.77138| 0.8138|
+|cost_matrix_tree_over    |     0.90476|     0.63085|           0.76781| 0.7525|
+|caret_tree_over          |     0.73810|     0.77553|           0.75681| 0.8042|
+|caret_tree_both          |     0.71429|     0.79894|           0.75661| 0.7352|
+|fda_over                 |     0.73810|     0.74574|           0.74192| 0.8163|
+|nnet_better              |     0.71429|     0.76064|           0.73746| 0.8000|
+|cost_matrix_tree_both    |     0.85714|     0.59574|           0.72644| 0.7368|
+|rf_better                |     0.59524|     0.79468|           0.69496| 0.8196|
+|knn_better               |     0.61905|     0.77021|           0.69463| 0.7685|
+|gini_tree_cp0.001_over   |     0.47619|     0.88723|           0.68171| 0.3212|
+|knn_both                 |     0.57143|     0.77340|           0.67242| 0.6639|
+|nb_both                  |     0.26190|     0.96596|           0.61393| 0.8505|
+|gini_tree_cp0.001_better |     0.38095|     0.84681|           0.61388| 0.8052|
+|nb_over                  |     0.26190|     0.96489|           0.61340| 0.8489|
+|knn_over                 |     0.42857|     0.77553|           0.60205| 0.4015|
+|nb_better                |     0.14286|     0.97340|           0.55813| 0.8503|
+|rf_both                  |     0.11905|     0.96383|           0.54144| 0.8050|
+|rf_over                  |     0.07143|     0.98617|           0.52880| 0.7827|
+
+The best models, after FDA, are caret RPART (caret_tree), and NNET.
+
+As can be seen, in this case a classification tree responds in a similar way to our objectives than a complex neural network (and in a significantly shorter calculation time). It is true that the network has a little more Sensitivity, but in terms of Balanced Accuracy and AUC, the results are very similar.
+
+In any case, it is fair to acknowledge that our data set has relatively little data, and a neural network usually needs a lot of observations.
+
+The first finding we get from this is that sometimes a simpler model can offer similar results to a more complex one, especially if we don't have a lot of data. Between one model and another, we can choose to keep the simplest one, not only for calculation times but also for explicability. A decision tree is really easy to explain, whereas the criteria used by the neural network to classify observations are a black box.
+
+The second we see is that, as we suspected after the exploratory analysis, the KNN model is not suitable for this data set, where the points belonging to both classes share common neighbors.
+
+Third, we can say that Random Forest and Naive Bayes definitely do not perform well with this data set, and perhaps in similar cases.
+
+Finally, if we apply the "better estimates" method, it seems that we are somewhat more likely to optimize the results. 6 of the 9 groups of trained models present better results with this method. In 2 groups the "both" method is better, and in 1 group the "over" method is better (the criterion in this case is the AUC):
 
 
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|fda_better               |     0.85714|     0.75426|           0.80570| 0.8588|
+|fda_both                 |     0.73810|     0.74149|           0.73979| 0.8346|
+|fda_over                 |     0.73810|     0.74574|           0.74192| 0.8163|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|caret_tree_better        |     0.73810|     0.81277|           0.77543| 0.8338|
+|caret_tree_over          |     0.73810|     0.77553|           0.75681| 0.8042|
+|caret_tree_both          |     0.71429|     0.79894|           0.75661| 0.7352|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|gini_tree_cp0.01_better  |     0.73810|     0.81277|           0.77543| 0.8338|
+|gini_tree_cp0.01_both    |     0.71429|     0.79894|           0.75661| 0.7352|
+|gini_tree_cp0.01_over    |     0.73810|     0.75745|           0.74777| 0.7372|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|nnet_both                |     0.76190|     0.78085|           0.77138| 0.8138|
+|nnet_over                |     0.76190|     0.77766|           0.76978| 0.8095|
+|nnet_better              |     0.71429|     0.76064|           0.73746| 0.8000|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|cost_matrix_tree_over    |     0.90476|     0.63085|           0.76781| 0.7525|
+|cost_matrix_tree_both    |     0.85714|     0.59574|           0.72644| 0.7368|
+|cost_matrix_tree_better  |     0.85714|     0.59574|           0.72644| 0.2991|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|gini_tree_cp0.001_better |     0.38095|     0.84681|           0.61388| 0.8052|
+|gini_tree_cp0.001_both   |     0.38095|     0.84681|           0.61388| 0.3724|
+|gini_tree_cp0.001_over   |     0.47619|     0.88723|           0.68171| 0.3212|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|rf_better                |     0.59524|     0.79468|           0.69496| 0.8196|
+|rf_both                  |     0.11905|     0.96383|           0.54144| 0.8050|
+|rf_over                  |     0.07143|     0.98617|           0.52880| 0.7827|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|knn_better               |     0.61905|     0.77021|           0.69463| 0.7685|
+|knn_both                 |     0.57143|     0.77340|           0.67242| 0.6639|
+|knn_over                 |     0.42857|     0.77553|           0.60205| 0.4015|
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|nb_both                  |     0.26190|     0.96596|           0.61393| 0.8505|
+|nb_better                |     0.14286|     0.97340|           0.55813| 0.8503|
+|nb_over                  |     0.26190|     0.96489|           0.61340| 0.8489|
+
+In any case, the decision to use one method or another also depends on the amount of data available. If applying a method we are left with very little data, it is better to choose "over".
+
+In fact, there is a fourth method to balance the data: "under". With this system, observations of the majority class are randomly eliminated to match their frequency with the minority class. In this particular case, the resulting data set was reduced too much to train any model with a certain level of confidence.
+
+### 3.2.5 Ensembles
+
+The winning model meets part of our objectives, but still has a low Sensitivity considering the nature of the project (predicting the tendency to suffer a stroke).
+
+In addition, the Accuracy barely touches 76%, and the comparison with other models shows that some, with lower Sensitivity and Balanced Accuracy, present better areas under the curves (ROC, and Precision-Recall).
+
+We can try to improve the results by building ensembles of models that meet a certain condition. We have already said that we must give priority to Sensitivity, but we cannot sacrifice Specificity in such a way that the model is not able to predict negative cases.
+
+To build our ensembles, we have selected from the definitive list all the models whose AUC is higher than 0.8 (Ensemble A), and all those with a Balanced Accuracy higher than 0.7 (Ensemble B):
+
+```{r ensamble_a, message=FALSE, warning=FALSE, include=FALSE}
+
+# _______________________########
+# ENSEMBLE A ########
+# _______________________########
+
+ensamble_1_a <- data.frame(fda_better = y_hat_caret_tree_over,
+                           caret_tree_better = y_hat_caret_tree_better,
+                           nnet_both  = y_hat_nnet_both,
+                           caret_tree_over  = y_hat_caret_tree_over,
+                           fda_over  = y_hat_fda_over,
+                           nnet_better = y_hat_nnet_better,
+                           rf_better = y_hat_rf_better,
+                           nb_both = y_hat_naiveBayes_both,
+                           gini_tree_cp0.001_better = y_hat_gini_tree_cp0.001_better,
+                           nb_over = y_hat_naiveBayes_over,
+                           nb_better = y_hat_naiveBayes_better,
+                           rf_both  = y_hat_rf_both)
+
+ensamble_2_a <- ensamble_1_a %>% 
+  mutate(fda_better = ifelse(fda_better == "stroke", 1,0),
+         caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
+         nnet_both = ifelse(nnet_both == "stroke", 1,0),
+         caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
+         fda_over = ifelse(fda_over == "stroke", 1,0),
+         nnet_better = ifelse(nnet_better == "stroke", 1,0),
+         rf_better = ifelse(rf_better == "stroke", 1,0),
+         nb_both = ifelse(nb_both  == "stroke", 1,0),
+         gini_tree_cp0.001_better = ifelse(gini_tree_cp0.001_better == "stroke", 1,0),
+         nb_over = ifelse(nb_over == "stroke", 1,0),
+         nb_better = ifelse(nb_better == "stroke", 1,0),
+         rf_both = ifelse(rf_both == "stroke", 1,0))
+```
+
+```{r ensamble_b, echo=FALSE, message=FALSE, warning=FALSE}
+
+# _______________________########
+# ENSEMBLE B ########
+# _______________________########
+
+ensamble_1_b <- data.frame(fda_better = y_hat_fda_better,
+                           caret_tree_better = y_hat_caret_tree_better,
+                           nnet_both  = y_hat_nnet_both ,
+                           cost_matrix_tree_over  = y_hat_cost_matrix_tree_over,
+                           caret_tree_over  = y_hat_caret_tree_over ,
+                           caret_tree_both = y_hat_caret_tree_both,
+                           fda_over = y_hat_fda_over,
+                           nnet_better = y_hat_nnet_better,
+                           cost_matrix_tree_both = y_hat_cost_matrix_tree_both)
+
+ensamble_2_b <- ensamble_1_b %>% 
+  mutate(fda_better = ifelse(fda_better == "stroke", 1,0),
+         caret_tree_better = ifelse(caret_tree_better == "stroke", 1,0),
+         nnet_both = ifelse(nnet_both == "stroke", 1,0),
+         cost_matrix_tree_over = ifelse(cost_matrix_tree_over == "stroke", 1,0),
+         caret_tree_over = ifelse(caret_tree_over == "stroke", 1,0),
+         caret_tree_both = ifelse(caret_tree_both == "stroke", 1,0),
+         fda_over = ifelse(fda_over == "stroke", 1,0),
+         nnet_better = ifelse(nnet_better == "stroke", 1,0),
+         cost_matrix_tree_both = ifelse(cost_matrix_tree_both == "stroke", 1,0))
+
+```
+
+**Ensemble A**
+
+|models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|fda_better               |     0.85714|     0.75426|           0.80570| 0.8588|
+|caret_tree_better        |     0.73810|     0.81277|           0.77543| 0.8338|
+|nnet_both                |     0.76190|     0.78085|           0.77138| 0.8138|
+|caret_tree_over          |     0.73810|     0.77553|           0.75681| 0.8042|
+|fda_over                 |     0.73810|     0.74574|           0.74192| 0.8163|
+|nnet_better              |     0.71429|     0.76064|           0.73746| 0.8000|
+|rf_better                |     0.59524|     0.79468|           0.69496| 0.8196|
+|nb_both                  |     0.26190|     0.96596|           0.61393| 0.8505|
+|gini_tree_cp0.001_better |     0.38095|     0.84681|           0.61388| 0.8052|
+|nb_over                  |     0.26190|     0.96489|           0.61340| 0.8489|
+|nb_better                |     0.14286|     0.97340|           0.55813| 0.8503|
+|rf_both                  |     0.11905|     0.96383|           0.54144| 0.8050|
+
+**Ensemble B**
+
+models                   | sensitivity| specificity| balanced_accuracy|    AUC|
+|:------------------------|-----------:|-----------:|-----------------:|------:|
+|fda_better               |     0.85714|     0.75426|           0.80570| 0.8588|
+|caret_tree_better        |     0.73810|     0.81277|           0.77543| 0.8338|
+|nnet_both                |     0.76190|     0.78085|           0.77138| 0.8138|
+|cost_matrix_tree_over    |     0.90476|     0.63085|           0.76781| 0.7525|
+|caret_tree_over          |     0.73810|     0.77553|           0.75681| 0.8042|
+|caret_tree_both          |     0.71429|     0.79894|           0.75661| 0.7352|
+|fda_over                 |     0.73810|     0.74574|           0.74192| 0.8163|
+|nnet_better              |     0.71429|     0.76064|           0.73746| 0.8000|
+|cost_matrix_tree_both    |     0.85714|     0.59574|           0.72644| 0.7368|
+
+In both cases, the results depend on the selection of the number of models that have predicted "stroke", to predict "stroke".
+
+The smaller the number, the higher the Sensitivity at the expense of Specificity. As that number grows, you gain in Specificity at the cost of Sensitivity.
+
+Below we show the resulting graphs for Ensembe A, (made up of 12 models) according to the number of models that must predict "stroke", to classify an observation as "stroke".
+
+If we predict "stroke" when only one of the models has classified the observation as such, the Sensitivity exceeds 90%. If at the other extreme, we require that all 12 models have predicted "stroke" to classify an observation as "stroke", the Sensitivity drops to 2% (only 1 of 42 cases is classified correctly).
+
+```{r number_models_sensitivity, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Searching Best Cutoff
+
+cut_off_a <- seq(1:12)
+
+ensamble_sens_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Sensitivity"]
+})
+
+cut_of_sens_a <- data.frame(cut_off_a, ensamble_sens_a)
+plot(cut_off_a, ensamble_sens_a, main = "Number of models vs Sensitivity")
+
+```
+
+The graph is inverted for the case of Specificity, although in this case the lower Specificity is close to 60%, given the prevalence of the "no_stroke" class:
+
+```{r number_models_specificity, echo=FALSE, message=FALSE, warning=FALSE}
+
+ensamble_spe_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Specificity"]
+})
+
+cut_of_spe_a <- data.frame(cut_off_a, ensamble_spe_a)
+plot(cut_off_a, ensamble_spe_a, main = "Number of models = stroke vs Specificity")
+
+```
+
+The highest Balanced Accuracy is obtained by specifying that only 2 out of 12 models have classified an observation as "stroke" to predict "stroke":
+
+```{r number_models_balanced, echo=FALSE, message=FALSE, warning=FALSE}
+
+ensamble_bal_a <- map_dbl(cut_off_a, function(cut_off_a){
+  y_hat_ensamble <- data.frame(total = rowSums(ensamble_2_a)) %>% 
+    mutate(total = as.factor(ifelse(total >= cut_off_a, "stroke", "no_stroke"))) %>% 
+    pull(total) %>% relevel(ref = "stroke")
+  confmat <- confusionMatrix(y_hat_ensamble, test_stroke_t$stroke)
+  confmat$byClass["Balanced Accuracy"]
+})
+
+cut_of_bal_a <- data.frame(cut_off_a, ensamble_bal_a)
+plot(cut_off_a, ensamble_bal_a, main = "Number of models = stroke vs Balanced Accuracy")
+
+```
+
+The same analysis has been carried out for Ensemble B, which we do not reproduce here.
+
+If we choose the Balanced Accuracy criteria to select the best cutoff the results, compared to the FDA better model, are as follows:
+
+### 3.2.5.1 Ensemble A, cutoff = 2
+
+|Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+|:------------------------|--------:|-----------:|-----------:|-----------------:|
+|Ensemble A               |   0.7037|     0.88095|     0.69574|           0.78835|
+|fda_better               |   0.7587|     0.85714|     0.75426|           0.80570|
+
+We gain some Sensitivity, at the cost of a lot of Accuracy and Specificity. Balanced Accuracy also suffers.
+
+### 3.2.5.2 Ensemble A, cutoff = 1
+
+If we choose to further increase the Sensitivity, the results are as follows:
+
+|Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+|:------------------------|--------:|-----------:|-----------:|-----------------:|
+|Ensemble A               |   0.6130|     0.92857|     0.59894|           0.76375|
+|fda_better               |   0.7587|     0.85714|     0.75426|           0.80570|
+
+In terms of Sensitivity, the Ensemble A is obviously better, but at the cost of obtaining a Specificity of less than 60%. With a cutoff of 1, the Ensemble results are similar to those obtained with the Cost Matrix Over model:
+
+|Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+|:------------------------|--------:|-----------:|-----------:|-----------------:|
+|Ensemble A               |   0.6130|     0.92857|     0.59894|           0.76375|
+|cost_matrix_tree_over    |   0.6426|     0.90476|     0.63085|           0.76781|
+
+Obviously, if we had to bring one of the two models into production, we would opt for the Cost Matrix. It is much easier to train a single model. The Ensemble is only justified if it improves the results substantially, and in this case it does not appear to do so.
+
+### 3.2.5.3 Ensemble B, cutoff = 2
+
+Below we show the results of Assembly B,compared to FDA Better model, according to the cutoff that maximizes Balanced Accuracy and Sensitivity at the same time (cutoff = 2):
+
+|Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+|:------------------------|--------:|-----------:|-----------:|-----------------:|
+|Ensemble B               |   0.6375|     0.95238|     0.62340|           0.78789|
+|fda_better               |   0.7587|     0.85714|     0.75426|           0.80570|
+
+In this case, we obtain a Sensitivity greater than 95%. The FDA model is still the most balanced, but if we want to correctly classify the largest possible number of positive cases, this Ensemble could be the answer.
+
+Ensemble B presents similar results in terms of Accuracy and Balacend Accuracy, compared to Cost Matrix, But the Sensitivity is higher:
+
+|Models                   | Accuracy| Sensitivity| Specificity| Balanced Accuracy|
+|:------------------------|--------:|-----------:|-----------:|-----------------:|
+|Ensemble B               |   0.6375|     0.95238|     0.62340|           0.78789|
+|cost_matrix_tree_over    |   0.6426|     0.90476|     0.63085|           0.76781|
+
+Forced to decide on a very Sensitive model, Ensemble B could be the right choice.
+
+# 4. Conclusions 
+
+## 4.1 Summary
+Throughout this project we have experimented with various classification models, training them with unbalanced data (just to check the problems that this generates in terms of performance), and with balanced data using various methods.
+
+In the case of balanced data, we have applied balancing on the training data set (not on the test data set). This has raised doubts, but we have followed the example of the sources consulted.
+
+The results on the unbalanced data are, unsurprisingly, very poor. With the balanced training set we obtain much better results, although in no case does the Balanced Accuracy exceed 80% (our main indicator, along with AUC).
+
+In terms of balanced results (high Accuracy, high Sensitivity, high Specificity, high Balanced Accuracy, and high AUC) the best model has turned out to be FDA, trained with data obtained with the better estimates method.
+
+## 4.2 Limitations
+Given the prevalence of the negative class ("no_stroke"), and because we have decided to keep the test data set unbalanced, the correct classification of 1 case up or down has a great impact on Sensitivity.
+
+For this same reason, the minimum Specificity can never go below 60% (the same as Accuracy), and models with Specificity and Accuracy around that percentage are not performing really well in that regard.
+
+Furthermore, since the confusion matrices are so unbalanced, the F-Meas metric is always low. Even so in general the "good" models have a comparatively higher F-Meas than the others. In any case, we decided not to consider this metric when evaluating the models.
+
+In terms of Sensitivity, the Cost Matrix models (those that penalize false negatives) are the best, but at the cost of presenting a Specificity that is around the lower limit of 60% which, as we have already said, cannot be lower given the prevalence of the negative class. In this sense, our Ensembles perform similarly to Cost Matrix models.
+
+## 4.3 Pontential Impact
+The applicability of either model for this project is debatable. The best of them, from our point of view, has a Sensitivity of 85% (calculated on 42 positive cases, which is what the test data set contains).
+
+Taking into account the incidence of strokes in the population (suppose it is 4%, the same prevalence as in the original data set), the real possibility of suffering a stroke if the FDA better model predict "stroke" is 13% if we apply Bayes. This means that with a positive test, we have 3.25 more options to suffer a stroke than the population base.
+
+According to data from the world health organization, in 2019 about 6 million people died of stroke. That represents approximately 0.08% of the world's population for that year. Therefore, if our model predicts "stroke", the possibility of dying (not just suffering) from that disease is, according to Bayes, close to 0.27%. Again, we are talking about 3.5 more options than base population.
+
+If the decision to keep the training data set unbalanced was the right one, a positive result is enough to warn a person to watch their glucose level and body mass index. If the person smokes, it would be time to quit. Age and marital status "ever married" are factors that we cannot alter.
+
+## 4.4 Future Work
+To improve the results, there are least are three lines of action that would be worth testing:
+
+1. Create dummy variables from the categorical variables, and transform them to 0 and 1, instead of factors.
+2. Create age groups, "babies", "children", "young people" and "old people" to train the models using these groups, or at least group the ages to the nearest ten.
+3. Train the models eliminating variables with apparently little weight (Hypertension and Heart Disease, for example).
+
+However, to continue with this work with certain guarantees of improvement, we believe that it would be necessary to add other variables that may not be contemplated in the original data set.
+
+[^1]:*The top 10 causes of death*. World Health Organization, 2020. https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
+[^2]: https://www.kaggle.com/fedesoriano/stroke-prediction-data set
+[^3]: https://www.kaggle.com/fedesoriano
+[^4]: Amat, Rodrigo: *Machine Learning con R y caret*. cienciadedatos.net, 2018: https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret
+[^5]: *Learn by Marketing*: https://www.learnbymarketing.com/tutorials/rpart-decision-trees-in-r/
+[^6]: *Practical Guide to deal with Imbalanced Classification Problems in R*. Analytics Vidhya, 2016: https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
+[^7]: *Flexible Discriminant Analysis by Optimal Scoring*. Tevor Hastie, Robert Tibishirani & Andreas Buja. http://ww.web.stanford.edu/~hastie/Papers/fda.pdf
+
+
+# 5. References
+
+*The top 10 causes of death*. World Health Organization, 2020. https://www.who.int/news-room/fact-sheets/detail/the-top-10-causes-of-death
+
+Tevor Hastie, et al. (2021). *Flexible Discriminant Analysis by Optimal Scoring*. http://ww.web.stanford.edu/~hastie/Papers/fda.pdf
+
+Amat, Rodrigo (2020): *Machine Learning con R y caret*. https://www.cienciadedatos.net/documentos/41_machine_learning_con_r_y_caret#Introducci%C3%B3n
+
+# Bibliography and resources
+
+Irizarry, Rafael. *Introduction to Data Science. Data Analysis and Prediction Algorithms with R*, 2021.
+https://rafalab.github.io/dsbook/
+
+Kuhn, Max. *The caret Package*, 2019. http://topepo.github.io/caret/index.html
+
+Parra, Francisco. *Estadística y Machine Learning con R*, 2019. https://bookdown.org/content/2274/portada.html
+
+Delgado, Ronald. *Introducción a los Modelos de Clasificación en R*, 2018. https://rpubs.com/rdelgado/397838
+
+Dinov, Ivo. *Data Science and Predictive Analytics (UMich HS650). Improving Model Performance*, 2020. https://www.socr.umich.edu/people/dinov/courses/DSPA_notes/14_ImprovingModelPerformance.html
+
+Santillan, Carlos. *Parameter tuning caret*, 2017. https://csantill.github.io/RTuningModelParameters/
+
+*Practical Guide to deal with Imbalanced Classification Problems in R*, 2016. Analytics Vidhya: https://www.analyticsvidhya.com/blog/2016/03/practical-guide-deal-imbalanced-classification-problems/
+
+Brownlee, Jason. *Cost-Sensitive Learning for Imbalanced Classification*, Machine Learning Mastery, 2020.  https://machinelearningmastery.com/cost-sensitive-learning-for-imbalanced-classification/
+
+Brownlee, Jason. *Non-Linear Classification in R*, Machine Learning Mastery, 2020.  https://machinelearningmastery.com/non-linear-classification-in-r/
+
+*How to easily make a ROC curve in R*, 2019. INTOBIOINFORMATICS. https://intobioinformatics.wordpress.com/2019/11/26/how-to-easily-make-a-roc-curve-in-r/
+
+*Rpart decision trees in r*. Learn by Marketing. https://www.learnbymarketing.com/methods/classification-and-regression-decision-trees-explained/
+
+*Custom lollipop chart*. The R Graph Gallery. https://www.r-graph-gallery.com/301-custom-lollipop-chart.html
