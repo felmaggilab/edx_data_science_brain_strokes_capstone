@@ -166,7 +166,7 @@ The best model, according to the selected comparison criteria, turned out to be 
 
 # 1. Introduction
 
-The objective of this project is to develop a model capable of predicting whether a patient has a tendency to suffer a stroke, based on the following variables:
+The objective of this project is to find a model capable of predicting whether a patient has a tendency to suffer a stroke, based on the following variables:
 
 1. Gender (binary)
 2. Age (numerical)
@@ -177,6 +177,8 @@ The objective of this project is to develop a model capable of predicting whethe
 7. Average glucose level (numerical)
 8. Body mass index (numerical)
 9. Smoking status (categorical)
+
+The selected model must have a high Sensitivity, without sacrificing too much Specificity.
 
 ## 1.1 data set description
 
