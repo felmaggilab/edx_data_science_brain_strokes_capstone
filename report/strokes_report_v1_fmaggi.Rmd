@@ -1592,7 +1592,7 @@ Once we had verified what we already knew (with the unbalanced data we were not 
 - Random Forest (RF)
 - Neural Network (NNET)
 - Flexible Discriminant Analysis (FDA)
-- Naives Bayes (NB): we know that in this case Naives Bayes is not a good choice. Being a generative model, more than two numeric predictors are too many, and its distribution, as we will see, is not normal in all cases. We have included it for experimentation.
+- Naives Bayes (NB): We know that in this case Naives Bayes is not a good choice. Being a generative model, more than two numerical predictors are too many, and its distribution, as we have seen, is not normal in all cases. We have included it for experimentation.
 
 For balanced data, we have added two other models: Neural Network and Naive Bayes.
 
